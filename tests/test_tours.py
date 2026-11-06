@@ -1,7 +1,10 @@
 """Tests for page_tours.tours."""
 
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+
 import pytest
-from asgiref.sync import async_to_sync, iscoroutinefunction
+from asgiref.sync import iscoroutinefunction
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ImproperlyConfigured
 from django.http import HttpResponse
@@ -10,6 +13,16 @@ from django.utils.html import escape
 from django.utils.translation import gettext, gettext_lazy
 
 from page_tours.tours import Tour, TourStep, with_tour
+
+
+def run_in_own_loop(coroutine):
+    """Run a coroutine to completion on a fresh event loop in its own thread.
+
+    The browser tests leave an event loop running in the test thread, so the
+    coroutine cannot be run there.
+    """
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        return pool.submit(asyncio.run, coroutine).result()
 
 
 class TestTourStep:
@@ -167,7 +180,7 @@ class TestWithTour:
             seen.append(request.page_tour)
             return HttpResponse()
 
-        async_to_sync(view)(rf.get("/"))
+        run_in_own_loop(view(rf.get("/")))
 
         assert seen == [tour]
 
@@ -189,7 +202,7 @@ class TestWithTour:
 
         request = rf.get("/")
         with pytest.raises(PermissionError):
-            async_to_sync(view)(request)
+            run_in_own_loop(view(request))
 
         assert not hasattr(request, "page_tour")
 
