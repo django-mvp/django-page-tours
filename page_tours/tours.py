@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.functional import Promise
+from django.utils.html import escape
 from django.utils.translation import gettext_lazy as _
 
 StrOrPromise = str | Promise
@@ -55,3 +56,24 @@ class Tour:
         if not self.steps:
             raise ImproperlyConfigured(_("A tour needs at least one step."))
         object.__setattr__(self, "steps", tuple(self.steps))
+
+    def as_driver_steps(self) -> list[dict[str, str]]:
+        """Convert the steps to the form Driver.js takes.
+
+        Title and text are converted with ``str()`` when this is called, so the
+        active language applies, and escaped because Driver.js writes them as HTML.
+
+        Returns:
+            One dict per step, in the declared order. A step that names an element
+            carries an ``element`` key; the others do not.
+        """
+        driver_steps: list[dict[str, str]] = []
+        for step in self.steps:
+            driver_step: dict[str, str] = {
+                "title": escape(str(step.title)),
+                "text": escape(str(step.text)),
+            }
+            if step.element:
+                driver_step["element"] = step.element
+            driver_steps.append(driver_step)
+        return driver_steps

@@ -2,6 +2,9 @@
 
 import pytest
 from django.core.exceptions import ImproperlyConfigured
+from django.utils import translation
+from django.utils.html import escape
+from django.utils.translation import gettext, gettext_lazy
 
 from page_tours.tours import Tour, TourStep
 
@@ -41,3 +44,55 @@ class TestTour:
         tour = Tour(steps=[step])
 
         assert tour.steps == (step,)
+
+
+class TestTourAsDriverSteps:
+    """Converting a tour to the steps Driver.js takes."""
+
+    def test_steps_come_out_in_the_declared_order(self):
+        """One dict per step, in the order declared."""
+        tour = Tour(
+            steps=[
+                TourStep(title="First", text="One"),
+                TourStep(title="Second", text="Two"),
+                TourStep(title="Third", text="Three"),
+            ]
+        )
+
+        steps = tour.as_driver_steps()
+
+        assert [step["title"] for step in steps] == ["First", "Second", "Third"]
+
+    def test_the_element_key_is_present_only_for_a_step_that_names_one(self):
+        """A step with no element has no element key."""
+        tour = Tour(
+            steps=[
+                TourStep(title="Attached", text="One", element="#menu"),
+                TourStep(title="Floating", text="Two"),
+            ]
+        )
+
+        attached, floating = tour.as_driver_steps()
+
+        assert attached["element"] == "#menu"
+        assert "element" not in floating
+
+    def test_title_and_text_are_escaped(self):
+        """Markup characters come out as text, not as markup."""
+        raw = "<b>&\"'"
+        tour = Tour(steps=[TourStep(title=raw, text=raw)])
+
+        (step,) = tour.as_driver_steps()
+
+        assert step["title"] == escape(raw)
+        assert step["text"] == escape(raw)
+
+    def test_a_lazy_title_is_translated_into_the_active_language(self):
+        """The language active when the steps are built decides the text."""
+        tour = Tour(steps=[TourStep(title=gettext_lazy("Yes"), text="Body")])
+
+        with translation.override("de"):
+            (step,) = tour.as_driver_steps()
+            expected = str(gettext("Yes"))
+
+        assert step["title"] == expected
