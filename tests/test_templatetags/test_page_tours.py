@@ -1,0 +1,121 @@
+"""Tests for page_tours.templatetags.page_tours."""
+
+import json
+import re
+
+import pytest
+from django.template import Context, Template
+from django.urls import reverse
+from django.utils import translation
+from django.utils.html import escape
+
+from tests.views import CLASS_TOUR, FUNCTION_TOUR, MARKUP_TITLE
+
+STEPS_SCRIPT = re.compile(
+    r'<script id="page-tour-steps" type="application/json">(.*?)</script>', re.DOTALL
+)
+URL_ATTRIBUTE = re.compile(r'\b(?:src|href)="([^"]*)"')
+
+
+def tour_steps(response):
+    """Return the steps the page carries, parsed from their script element."""
+    match = STEPS_SCRIPT.search(response.content.decode())
+    assert match is not None
+    return json.loads(match.group(1))
+
+
+class TestPageTourTag:
+    """The tag that puts a page's tour on the page."""
+
+    def test_the_page_carries_its_steps_in_order(self, client):
+        """A class-based page's steps arrive in the order declared."""
+        response = client.get(reverse("class-tour"))
+
+        titles = [step["title"] for step in tour_steps(response)]
+        assert titles == [step.title for step in CLASS_TOUR.steps]
+
+    def test_a_step_with_an_element_carries_its_selector(self, client):
+        """The selector of a step is in its entry."""
+        response = client.get(reverse("class-tour"))
+
+        assert tour_steps(response)[1]["element"] == "h1"
+
+    def test_a_step_with_no_element_has_no_element_key(self, client):
+        """A step attached to nothing carries no ``element`` key."""
+        response = client.get(reverse("class-tour"))
+
+        assert "element" not in tour_steps(response)[0]
+
+    def test_a_page_with_no_tour_carries_nothing_of_the_package(self, client):
+        """No steps and no reference to the package's files."""
+        response = client.get(reverse("no-tour"))
+
+        content = response.content.decode()
+        assert "page-tour-steps" not in content
+        assert "page_tours/" not in content
+
+    def test_every_file_comes_from_the_sites_static_url(self, client, settings):
+        """Each ``src`` and ``href`` starts with ``STATIC_URL`` and names no host."""
+        response = client.get(reverse("class-tour"))
+
+        urls = URL_ATTRIBUTE.findall(response.content.decode())
+        assert urls
+        assert all(url.startswith(settings.STATIC_URL) for url in urls)
+        assert not any("//" in url for url in urls)
+
+    def test_markup_characters_in_a_step_arrive_escaped(self, client):
+        """The step is plain text: its markup characters reach the page escaped."""
+        response = client.get(reverse("markup-tour"))
+
+        assert tour_steps(response)[0]["title"] == escape(MARKUP_TITLE)
+        assert MARKUP_TITLE not in response.content.decode()
+
+    @pytest.mark.django_db
+    def test_a_signed_in_and_an_anonymous_visitor_get_the_same_steps(
+        self, client, django_user_model
+    ):
+        """The tour does not depend on who is looking."""
+        anonymous = tour_steps(client.get(reverse("class-tour")))
+        client.force_login(django_user_model.objects.create_user("visitor"))
+
+        signed_in = tour_steps(client.get(reverse("class-tour")))
+
+        assert signed_in == anonymous
+
+    def test_both_urls_of_a_view_carry_its_tour(self, client):
+        """A view routed twice shows its tour on both."""
+        first = tour_steps(client.get(reverse("class-tour")))
+        second = tour_steps(client.get(reverse("class-tour-again")))
+
+        assert first == second
+
+    def test_a_function_based_page_carries_its_tour(self, client):
+        """A page rendered by a ``with_tour`` view carries the tour."""
+        response = client.get(reverse("function-tour"))
+
+        assert tour_steps(response) == FUNCTION_TOUR.as_driver_steps()
+
+    def test_a_template_with_no_request_renders_nothing(self):
+        """Rendered outside a request, the tag has nothing to emit."""
+        template = Template("{% load page_tours %}{% page_tour %}")
+
+        assert template.render(Context({})).strip() == ""
+
+    @pytest.mark.parametrize("name", ["missing-class-tour", "missing-function-tour"])
+    def test_a_not_found_page_does_not_carry_the_tour(self, client, settings, name):
+        """The error page shown instead of the page has no tour."""
+        settings.DEBUG = False
+
+        response = client.get(reverse(name))
+
+        assert response.status_code == 404
+        assert "page-tour-steps" not in response.content.decode()
+
+    def test_a_translated_step_is_in_the_active_language(self, client):
+        """A lazy title is converted when the page is rendered."""
+        with translation.override("de"):
+            response = client.get(reverse("translated-tour"))
+
+            expected = str(translation.gettext("Yes"))
+        assert tour_steps(response)[0]["title"] == expected
+        assert expected != "Yes"

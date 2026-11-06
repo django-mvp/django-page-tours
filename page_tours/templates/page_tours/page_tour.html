@@ -1,0 +1,7 @@
+{% if steps %}
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'page_tours/vendor/driver.js-1.10.2/driver.css' %}">
+  {{ steps|json_script:"page-tour-steps" }}
+  <script src="{% static 'page_tours/vendor/driver.js-1.10.2/driver.js.iife.js' %}" defer></script>
+  <script src="{% static 'page_tours/page-tours.js' %}" defer></script>
+{% endif %}
