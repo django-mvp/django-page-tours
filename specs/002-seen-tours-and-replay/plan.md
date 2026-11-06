@@ -43,6 +43,9 @@ the tour from its first step.
   `Tour.for_page(context)` is not `None`:
   - a class-based view: walk `type(context["view"]).__mro__` and return the dotted path of the
     first class whose own `__dict__` holds `tour`;
+  - a class-based view where no class in the MRO holds `tour` (set on the instance, or through
+    `as_view(tour=...)`): the dotted path of `type(view)`. Per-URL tours on one class therefore
+    share that class's seen state;
   - otherwise `request.page_tour_view`.
 - `Tour.for_page` is unchanged (ADR 0001 stands).
 
@@ -63,21 +66,23 @@ still emits nothing.
 
 ### The replay control (`page_tours/templatetags/page_tours.py`)
 
-`{% page_tour_replay [name=value ...] %}content{% endpage_tour_replay %}` — a block tag, a
-`template.Node` subclass named `PageTourReplayNode`.
+`{% page_tour_replay [name=value ...] %}content{% endpage_tour_replay %}`, declared with Django's
+`@register.simple_block_tag(takes_context=True)` as
+`def page_tour_replay(context, content, **attrs)` (Django 5.2 and later, the package's floor).
+Django parses the `name=value` arguments, resolves them against the context, passes the rendered
+block as `content`, and raises `TemplateSyntaxError` on a positional argument.
 
-- Arguments are `name=value` pairs only, parsed with `django.template.base.token_kwargs`, values
-  resolved against the context. Any other argument is a `TemplateSyntaxError`.
-- Renders `""` when `Tour.for_page(context)` is `None`.
-- Otherwise renders, with `format_html`:
+- Returns `""` when `Tour.for_page(context)` is `None`.
+- Otherwise returns, with `format_html`:
 
   ```html
   <template data-page-tour-replay><button type="button"{attrs}>{content}</button></template>
   ```
 
-  `attrs` is `flatatt` of the resolved arguments. `content` is the rendered block, or
-  `gettext("Show the tour")` when the block renders to only whitespace. A `type` given by the
-  developer is ignored (the button is always `type="button"`, so it never submits a form).
+  `attrs` is `flatatt` of the arguments with every `_` in a name turned into `-`, so
+  `aria_label="…"` renders `aria-label` and `data_x` renders `data-x`. `content` is the block, or
+  `gettext_lazy("Show the tour")` when the block is only whitespace. A `type` given by the
+  developer is dropped (the button is always `type="button"`, so it never submits a form).
 
 ### The starter script (`page_tours/static/page_tours/page-tours.js`)
 
@@ -90,14 +95,16 @@ Kept: step building, `visibleElement`, `endTour()`, the error listener. Changed:
 - `start()`:
   1. return when no step is showable (checked now, not at load, so elements that appeared later
      count);
-  2. if a tour is active, destroy it;
+  2. if a tour is active, destroy it. This happens before the new driver is created and before
+     `window.addEventListener("error", endTour)`: the old driver's `onDestroyed` removes that
+     listener, so destroying it later would strip the new tour's listener;
   3. create the driver as today and `drive()`;
   4. `markSeen()`.
   Any throw → `endTour()`.
-- At load: when `payload.autoplay` and not `isSeen()`, `start()`.
-- At load: for each `template[data-page-tour-replay]`, insert a deep clone of its content's
-  first element before it, add a `click` listener that calls `start()`, and remove the
-  `<template>`.
+- At load, first: for each `template[data-page-tour-replay]`, insert a deep clone of its
+  content's first element before it, add a `click` listener that calls `start()`, and remove the
+  `<template>`. This comes before autoplay, so a step that points at the control finds it.
+- At load, then: when `payload.autoplay` and not `isSeen()`, `start()`.
 
 ### FS-001's specification (`specs/001-tour-on-a-page/spec.md`)
 
@@ -127,13 +134,13 @@ says a tour plays every time its page opens. CHANGELOG `[Unreleased]` gains the 
 ### Tests
 
 - `tests/test_tours.py`: `tour_id` for a class-based view, a subclass inheriting the tour, a
-  subclass declaring its own, and a function-based view; `with_tour` cleans up
+  subclass declaring its own, a view whose tour no class holds, and a function-based view; `with_tour` cleans up
   `page_tour_view` on raise; `autoplay` defaults to `True`.
 - `tests/test_templatetags/test_page_tours.py`: the payload carries `id`, `autoplay` and
   `steps`; two URLs of one view carry the same id; the replay tag renders nothing on a page
   with no tour, renders a `<template data-page-tour-replay>` holding a `<button type="button">`
   with the given attributes and content and no other class on a page with a tour, escapes
-  attribute values, falls back to the translatable text when empty, and raises
+  attribute values, renders `aria_label` as `aria-label`, falls back to the translatable text when empty, and raises
   `TemplateSyntaxError` on a positional argument.
 - `tests/test_static/test_page_tours_js.py` (browser): plays on first open, not after reload;
   not after closing mid-tour; not after leaving mid-tour; a different tour still plays; one view
@@ -145,6 +152,8 @@ says a tour plays every time its page opens. CHANGELOG `[Unreleased]` gains the 
   tour leaves no Driver.js markup and no page error; `autoplay=False` does not play on first open
   and plays from the control; two controls on one page both start it; replay while a step points
   at the control restarts from step one.
+- `tests/test_apps.py`: the app has no models, and a page with a tour sets no cookie
+  (FR-005, SC-003).
 - Tests never assert on wording or layout (`docs/contributing/standards/testing.md`).
 
 ## Project Structure

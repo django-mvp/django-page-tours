@@ -41,7 +41,8 @@ edge cases need it unchanged when the tour's steps change (showing a changed tou
   the class whose own body sets `tour`, found along the method resolution order, so a subclass
   that inherits its parent's tour shares the parent's seen state, and one that sets its own tour
   has its own. For a function-based view it is the decorated function, recorded by `@with_tour`.
-  The same view on many addresses is one tour (FR-004). Renaming or moving the view makes the
+  The same view on many addresses is one tour (FR-004). A class-based view whose tour no class
+  body holds (set on the instance or through `as_view(tour=...)`) takes its own class's path. Renaming or moving the view makes the
   tour unseen again, which is the one cost, documented in the developer guide.
 
 The identity travels to the browser in the JSON the tag already emits. Nothing is stored on the
@@ -67,10 +68,12 @@ templates (FR-007).
   down: a site class such as `display: inline-flex` overrides it, and the control would show with
   JavaScript off.
 - A native `<button>` is reachable and operable by keyboard (FR-010). Its accessible name is its
-  content. A developer whose content is an icon gives `aria-label`, which the tag passes through
-  like any other attribute.
-- Attributes are any keyword arguments, rendered with `django.forms.utils.flatatt`, which
-  escapes them. The package adds no class and no style (FR-011). An empty block renders the
+  content. A developer whose content is an icon gives `aria_label="…"`, which the tag renders as
+  `aria-label` (template tag argument names cannot carry a hyphen, so every `_` in a name
+  becomes `-`).
+- The tag is Django's `Library.simple_block_tag`, which parses the keyword arguments, passes
+  the rendered block as `content` and refuses positional arguments. Attributes are rendered with
+  `django.forms.utils.flatatt`, which escapes them. The package adds no class and no style (FR-011). An empty block renders the
   translatable text "Show the tour" (Article VIII).
 - Placed several times, each copy starts the tour (edge case).
 
@@ -85,6 +88,11 @@ plays by itself later (FR-013). If no step is showable when the control is used,
 While a step is showing, Driver.js's overlay covers the page and holds keyboard focus in the
 popover (FS-001 D20), so a visitor can use the control during a tour only when a step points at
 it. The edge case "replay while playing restarts" holds wherever the control can be reached.
+
+Driver.js calls checked in the vendored `driver.js.iife.js` 1.10.2: `isActive()` returns
+`isInitialized`; `destroy()` skips `onDestroyStarted` and still calls `onDestroyed`; `drive(0)`
+initialises and shows the first step; a second `driver()` replaces a previous instance; the Tab
+handler cycles focus only between the popover and the active element.
 
 ### Recording seen when the tour starts
 
@@ -113,5 +121,5 @@ The spec directory has no `planning-notes.md`.
 | Finding the page's tour for the control tag | this repo: `Tour.for_page` |
 | Starting, stopping and restarting the tour | an installed package: Driver.js `drive()`, `isActive()`, `destroy()` |
 | Tour identity from the declaring view | new code: a few lines in `Tour.for_page` and `with_tour` |
-| The block tag | new code: one `Node` subclass in `page_tours/templatetags/page_tours.py` |
+| Parsing the block tag's arguments and content | Django: `Library.simple_block_tag` |
 | Autoplay check, seen record and replay wiring | new code, in the existing `page-tours.js` |

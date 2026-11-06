@@ -26,7 +26,8 @@ it not play; open a page with a different tour and see it play.
 - [ ] T002 [US1] The tag's payload object `{"id", "autoplay", "steps"}`, as plan.md "The tag's
   payload". `Tour` gains `autoplay: bool = True` here, used only to fill the payload. Update the
   FS-001 tag tests in `tests/test_templatetags/test_page_tours.py` that read the bare list so
-  they read `steps` (they assert the same behaviour; the change is the payload's shape). New
+  they read `steps` (they assert the same behaviour; the change is the payload's shape), and
+  `TestTourPage.steps` in `tests/test_demo.py` the same way. New
   tests (`TestPageTourPayload`): the payload carries the page's id and `autoplay` true; the two
   URLs of one view carry the same id (FR-004); a page with no tour still carries nothing.
 - [ ] T003 [US1] Seen in the starter script, as plan.md "The starter script", without the
@@ -38,7 +39,8 @@ it not play; open a page with a different tour and see it play.
   on two URLs is seen once (US1-6); a fresh browser context plays it again (US1-7); with
   `localStorage` made to throw by an init script, the tour plays on every open and no page error
   is raised (US1-8, FR-006); a nothing-showable tour is not seen (US1-9). The FS-001 browser
-  tests keep passing unchanged, each test starting in a fresh context.
+  tests keep passing unchanged, each test starting in a fresh context. In `tests/test_apps.py`:
+  the app has no models, and a page with a tour sets no cookie (FR-005, SC-003).
 - [ ] T004 [US1] FS-001's specification to current state, as plan.md "FS-001's specification",
   and `docs/developer/tours.md`: every sentence saying a tour plays each time its page opens now
   says it plays by itself the first time a browser opens the page. A short "Seen tours" section
@@ -56,13 +58,13 @@ from its first step; on a page with no tour, see no control.
 ### Group 1 — the replay control
 
 - [ ] T005 [US2] `{% page_tour_replay %}…{% endpage_tour_replay %}`, as plan.md "The replay
-  control". Test templates in `tests/templates/` placing it, test views and URLs in
+  control" (`simple_block_tag`). Test templates in `tests/templates/` placing it, test views and URLs in
   `tests/views.py` and `tests/urls.py`. Rendered-HTML tests in
   `tests/test_templatetags/test_page_tours.py` (`TestPageTourReplayTag`): nothing on a page with
   no tour (US2-4); on a page with a tour, one `<template data-page-tour-replay>` holding a
   `<button type="button">` with the block's content; the developer's `class` and other
   attributes are on the button and no other class is (US3-2, FR-011); attribute values are
-  escaped; an empty block gives a non-empty translatable fallback (assert it is not empty and
+  escaped; `aria_label` renders as `aria-label` (FR-010); an empty block gives a non-empty translatable fallback (assert it is not empty and
   comes from `gettext`, not its words); a `type` argument does not change `type="button"`; a
   positional argument raises `TemplateSyntaxError`.
 - [ ] T006 [US2] Replay wiring in the starter script: each `<template data-page-tour-replay>`
@@ -72,12 +74,13 @@ from its first step; on a page with no tour, see no control.
   (US2-2); after a replay, reopening does not autoplay (US2-3, FR-013); with JavaScript off no
   replay button is visible (US2-5); the control is focused with Tab and started with Enter
   (US2-6, FR-010); on a nothing-showable tour, using it leaves no Driver.js markup and no page
-  error (US2-7); two controls on one page each start it (edge case); with a step pointing at the
-  control, using it during that step restarts the tour at step one, with one popover on the page
-  (FR-009).
+  error (US2-7); two controls on one page each start it (edge case); on a fresh first open of a
+  tour whose second step points at the control, that step shows (the control exists before
+  autoplay), and using the control during it restarts the tour at step one, with one popover on
+  the page (FR-009).
 - [ ] T007 [US2] Documentation: new `docs/developer/replaying-a-tour.md` in the Guides toctree
   after `tours`, covering placing the control, giving it your own content and attributes,
-  `aria-label` for an icon-only control, and that it shows only on pages with a tour and only
+  `aria_label="…"` for an icon-only control, and that it shows only on pages with a tour and only
   with JavaScript on. CHANGELOG entry.
 
 ## Phase 3: User Story 3 — A developer chooses how a page's tour is started (P2)
@@ -118,7 +121,7 @@ needs the control to be useful. One dispatch per story.
 | FR-001 | T003, T008 |
 | FR-002, FR-003 | T003 |
 | FR-004 | T001, T002, T003 |
-| FR-005 | T003 (nothing server-side; no model added) |
+| FR-005, SC-003 | T003 (`tests/test_apps.py`: no models, no cookie) |
 | FR-006, FR-014 | T003, T006 |
 | FR-007, FR-008 | T005, T006, T008 |
 | FR-009, FR-010, FR-013 | T006 |
