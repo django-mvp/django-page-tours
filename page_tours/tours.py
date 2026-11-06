@@ -10,7 +10,6 @@ from django.utils.functional import Promise
 from django.utils.html import escape
 from django.utils.translation import gettext_lazy as _
 
-StrOrPromise = str | Promise
 F = TypeVar("F", bound=Callable[..., Any])
 
 
@@ -28,8 +27,8 @@ class TourStep:
         ImproperlyConfigured: If ``title`` or ``text`` is empty or only whitespace.
     """
 
-    title: StrOrPromise
-    text: StrOrPromise
+    title: str | Promise
+    text: str | Promise
     element: str = ""
 
     def __post_init__(self):

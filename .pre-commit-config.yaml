@@ -2,8 +2,9 @@
 # their versions come from the mvp-shared[dev] bundle, not per-repo `rev:` pins.
 
 # Unlike the shared template, this repo lints its tests: keep `^tests/` out of
-# the exclude when re-copying.
-exclude: "^docs/|/migrations/"
+# the exclude when re-copying. The vendored Driver.js files are kept byte for byte
+# as published, so no hook may rewrite them.
+exclude: "^docs/|/migrations/|^page_tours/static/page_tours/vendor/"
 default_stages: [pre-commit]
 
 repos:

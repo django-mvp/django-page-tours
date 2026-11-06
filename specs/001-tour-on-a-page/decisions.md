@@ -70,3 +70,6 @@ the maintainer and is recorded here so it can be overruled.
     its attached element works and the rest of the page is reached by closing the tour in one
     action; after the tour ends or fails, every control works. This keeps Article XIII, which
     allows a change to the page only while a step is showing.
+21. **No formatting hook touches the vendored Driver.js files.** The end-of-file and
+    trailing-whitespace hooks rewrote them, and Article XII asks for the published release as
+    it is. Their directory is excluded from pre-commit.
