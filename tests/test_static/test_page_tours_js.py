@@ -1,5 +1,7 @@
 """Tests for the starter script, page_tours/static/page_tours/page-tours.js."""
 
+import re
+
 from django.urls import reverse
 from playwright.sync_api import expect
 
@@ -88,3 +90,80 @@ class TestTourNavigation:
 
         expect(page.locator(".driver-popover")).to_have_count(0)
         assert_no_driver_markup(page)
+
+
+class TestTourSkipsSteps:
+    """A step whose element cannot be shown is passed over."""
+
+    def test_a_missing_element_is_skipped_forward_and_back(self, page, live_server):
+        """Moving past a step with no element lands on its neighbours, silently."""
+        problems = []
+        page.on("console", lambda m: m.type == "error" and problems.append(m.text))
+        page.on("pageerror", lambda error: problems.append(str(error)))
+        page.goto(live_server.url + reverse("missing-middle"))
+        title = page.locator(TITLE)
+        expect(title).to_have_text("Step 1")
+
+        page.click(NEXT)
+        expect(title).to_have_text("Step 3")
+        page.click(PREVIOUS)
+        expect(title).to_have_text("Step 1")
+
+        assert problems == []
+
+    def test_a_hidden_element_is_skipped(self, page, live_server):
+        """An element with the hidden attribute is not shown."""
+        page.goto(live_server.url + reverse("hidden-middle"))
+        expect(page.locator(TITLE)).to_have_text("Step 1")
+
+        page.click(NEXT)
+
+        expect(page.locator(TITLE)).to_have_text("Step 3")
+
+    def test_an_invalid_selector_is_skipped(self, page, live_server):
+        """A selector the browser rejects counts as a missing element."""
+        page.goto(live_server.url + reverse("invalid"))
+        expect(page.locator(TITLE)).to_have_text("Step 1")
+
+        page.click(NEXT)
+
+        expect(page.locator(TITLE)).to_have_text("Step 3")
+
+    def test_the_tour_starts_at_the_first_showable_step(self, page, live_server):
+        """With the first element missing, the second step shows first."""
+        page.goto(live_server.url + reverse("missing-first"))
+
+        expect(page.locator(TITLE)).to_have_text("Step 2")
+
+    def test_a_tour_with_nothing_showable_does_not_play(self, page, live_server):
+        """When every step names a missing element, no popover and no markup."""
+        page.goto(live_server.url + reverse("nothing"))
+        page.wait_for_load_state("load")
+
+        expect(page.locator(".driver-popover")).to_have_count(0)
+        assert_no_driver_markup(page)
+
+    def test_a_tour_with_nothing_showable_never_starts_driver(self, page, live_server):
+        """Driver.js is not even asked for a tour when no step could show."""
+        stand_in = "window.driver = {js: {driver: () => {window.started = true;}}};"
+        page.route(
+            "**/driver.js.iife.js",
+            lambda route: route.fulfill(body=stand_in, content_type="text/javascript"),
+        )
+        page.goto(live_server.url + reverse("nothing"))
+        page.wait_for_load_state("load")
+
+        assert page.evaluate("window.started") is None
+
+    def test_a_selector_matching_two_elements_highlights_the_first(
+        self, page, live_server
+    ):
+        """The first match carries the highlight and the second does not."""
+        page.goto(live_server.url + reverse("twins"))
+
+        expect(page.locator("#twin-first")).to_have_class(
+            re.compile(r"driver-active-element")
+        )
+        expect(page.locator("#twin-second")).not_to_have_class(
+            re.compile(r"driver-active-element")
+        )
