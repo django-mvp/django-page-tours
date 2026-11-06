@@ -101,11 +101,37 @@ class Tour:
         return driver_steps
 
 
+def tour_id(context: Any) -> str:
+    """Name the tour of the page being rendered, for remembering that it was seen.
+
+    A class-based view is named by the class that declares ``tour`` itself, so a
+    subclass that inherits the tour shares its parent's id. When no class declares
+    it, because it was set on the instance or through ``as_view``, the view's own
+    class gives the name. A function-based view is named by ``with_tour``.
+
+    Call it only for a page whose ``Tour.for_page(context)`` is not ``None``.
+
+    Args:
+        context: The template context, or any mapping with ``get``.
+
+    Returns:
+        The dotted path of the view that declares the tour.
+    """
+    view = context.get("view")
+    if isinstance(getattr(view, "tour", None), Tour):
+        for cls in type(view).__mro__:
+            if "tour" in cls.__dict__:
+                return f"{cls.__module__}.{cls.__qualname__}"
+        return f"{type(view).__module__}.{type(view).__qualname__}"
+    return str(context["request"].page_tour_view)
+
+
 def with_tour(tour: Tour) -> Callable[[F], F]:
     """Attach a tour to a function-based view, sync or async.
 
-    The tour is on ``request.page_tour`` while the view runs, and removed again if the
-    view raises, so the error page that follows does not play it.
+    The tour is on ``request.page_tour`` while the view runs, and the view's dotted
+    path on ``request.page_tour_view``. Both are removed again if the view raises, so
+    the error page that follows does not play the tour.
 
     Args:
         tour: The tour to show on the page the view renders.
@@ -115,15 +141,18 @@ def with_tour(tour: Tour) -> Callable[[F], F]:
     """
 
     def decorator(view: F) -> F:
+        view_path = f"{view.__module__}.{view.__qualname__}"
+
         if iscoroutinefunction(view):
 
             @wraps(view)
             async def async_wrapper(request, *args, **kwargs):
                 request.page_tour = tour
+                request.page_tour_view = view_path
                 try:
                     return await view(request, *args, **kwargs)
                 except BaseException:
-                    del request.page_tour
+                    del request.page_tour, request.page_tour_view
                     raise
 
             return async_wrapper  # type: ignore[return-value]
@@ -131,10 +160,11 @@ def with_tour(tour: Tour) -> Callable[[F], F]:
         @wraps(view)
         def wrapper(request, *args, **kwargs):
             request.page_tour = tour
+            request.page_tour_view = view_path
             try:
                 return view(request, *args, **kwargs)
             except BaseException:
-                del request.page_tour
+                del request.page_tour, request.page_tour_view
                 raise
 
         return wrapper  # type: ignore[return-value]

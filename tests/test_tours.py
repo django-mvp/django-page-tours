@@ -12,7 +12,7 @@ from django.utils import translation
 from django.utils.html import escape
 from django.utils.translation import gettext, gettext_lazy
 
-from page_tours.tours import Tour, TourStep, with_tour
+from page_tours.tours import Tour, TourStep, tour_id, with_tour
 
 
 def run_in_own_loop(coroutine):
@@ -206,6 +206,58 @@ class TestWithTour:
 
         assert not hasattr(request, "page_tour")
 
+    def test_the_view_is_recorded_on_the_request(self, rf, tour):
+        """The request names the decorated view by its dotted path."""
+        seen = []
+
+        @with_tour(tour)
+        def view(request):
+            seen.append(request.page_tour_view)
+            return HttpResponse()
+
+        view(rf.get("/"))
+
+        assert seen == [f"{view.__module__}.{view.__wrapped__.__qualname__}"]
+
+    def test_an_async_view_is_recorded_on_the_request(self, rf, tour):
+        """An async view is named on the request too."""
+        seen = []
+
+        @with_tour(tour)
+        async def view(request):
+            seen.append(request.page_tour_view)
+            return HttpResponse()
+
+        run_in_own_loop(view(rf.get("/")))
+
+        assert seen == [f"{view.__module__}.{view.__wrapped__.__qualname__}"]
+
+    def test_the_view_is_forgotten_if_the_view_raises(self, rf, tour):
+        """The error page that follows does not name a view."""
+
+        @with_tour(tour)
+        def view(request):
+            raise PermissionError
+
+        request = rf.get("/")
+        with pytest.raises(PermissionError):
+            view(request)
+
+        assert not hasattr(request, "page_tour_view")
+
+    def test_an_async_view_that_raises_forgets_the_view(self, rf, tour):
+        """An async view's error page does not name a view either."""
+
+        @with_tour(tour)
+        async def view(request):
+            raise PermissionError
+
+        request = rf.get("/")
+        with pytest.raises(PermissionError):
+            run_in_own_loop(view(request))
+
+        assert not hasattr(request, "page_tour_view")
+
     def test_the_wrapper_keeps_the_view_name(self, tour):
         """The wrapper is made with functools.wraps."""
 
@@ -215,6 +267,67 @@ class TestWithTour:
 
         assert my_view.__name__ == "my_view"
         assert my_view.__wrapped__.__name__ == "my_view"
+
+
+class ParentView:
+    """A class-based view that declares a tour."""
+
+    tour = Tour(steps=[TourStep(title="Title", text="Body")])
+
+
+class InheritingView(ParentView):
+    """A view that takes its parent's tour."""
+
+
+class OwnTourView(ParentView):
+    """A view that declares a tour of its own."""
+
+    tour = Tour(steps=[TourStep(title="Other", text="Body")])
+
+
+class TourlessView:
+    """A view whose tour is set after the class is made."""
+
+
+def dotted_path(cls):
+    """Return the dotted path of a class as the tests expect to see it."""
+    return f"{cls.__module__}.{cls.__qualname__}"
+
+
+class TestTourId:
+    """Naming the tour of the page being rendered."""
+
+    def test_a_class_based_view_is_named_by_its_class(self):
+        """The class that holds the tour gives the id."""
+        assert tour_id({"view": ParentView()}) == dotted_path(ParentView)
+
+    def test_a_subclass_inheriting_the_tour_shares_its_parents_id(self):
+        """Inheriting a tour is showing the same tour."""
+        assert tour_id({"view": InheritingView()}) == dotted_path(ParentView)
+
+    def test_a_subclass_declaring_its_own_tour_has_its_own_id(self):
+        """Declaring a tour makes it a different tour."""
+        assert tour_id({"view": OwnTourView()}) == dotted_path(OwnTourView)
+
+    def test_a_tour_set_on_the_instance_is_named_by_the_views_class(self):
+        """With no class holding the tour, the view's own class gives the id."""
+        view = TourlessView()
+        view.tour = Tour(steps=[TourStep(title="Title", text="Body")])
+
+        assert tour_id({"view": view}) == dotted_path(TourlessView)
+
+    def test_a_function_based_view_is_named_by_the_request(self, rf, tour):
+        """The view that ``with_tour`` recorded gives the id."""
+
+        @with_tour(tour)
+        def view(request):
+            return request
+
+        request = view(rf.get("/"))
+
+        assert tour_id({"request": request}) == (
+            f"{view.__module__}.{view.__wrapped__.__qualname__}"
+        )
 
 
 class TestTourForPage:
