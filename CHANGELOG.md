@@ -9,3 +9,4 @@ All notable changes to this project are documented in this file. The format foll
 ### Added
 
 - The package skeleton: an installable Django app with its test suite, CI and release flow.
+- A demo project in `demo/` and the documentation site, with installation and contributing pages.

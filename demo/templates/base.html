@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Django Page Tours demo{% endblock title %}</title>
+    <style>
+      body { font-family: system-ui, sans-serif; line-height: 1.5; margin: 0; }
+      header, main { max-width: 48rem; margin: 0 auto; padding: 1rem 1.5rem; }
+      header { border-bottom: 1px solid #ddd; }
+      header a { margin-right: 1rem; }
+    </style>
+    {% block head %}{% endblock head %}
+  </head>
+  <body>
+    <header>
+      <nav aria-label="Demo pages">
+        <a href="{% url 'overview' %}">Overview</a>
+      </nav>
+    </header>
+    <main>
+      {% block content %}{% endblock content %}
+    </main>
+  </body>
+</html>

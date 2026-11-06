@@ -99,6 +99,9 @@ extend = "ruff-base.toml"
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S101", "S105", "S106", "B017", "A001", "RUF059"]
+# The demo project is a demonstration target, never deployed: its settings
+# carry a literal SECRET_KEY on purpose.
+"demo/*" = ["S101", "S105", "S106"]
 
 [tool.mypy]
 files = ["page_tours"]
@@ -119,7 +122,11 @@ django_settings_module = "tests.settings"
 ignore_missing_model_attributes = "True"
 
 [tool.deptry]
-extend_exclude = ["tasks.py", "tests/", "docs/"]
+extend_exclude = ["tasks.py", "tests/", "docs/", "demo/", "manage.py"]
 
 [tool.deptry.per_rule_ignores]
 DEP003 = ["page_tours"]
+
+[tool.forge.conformance]
+# test_demo.py tests the demo project's pages, which is not a module of the package.
+non-mirror-paths = ["tests/test_demo.py"]
