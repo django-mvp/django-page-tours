@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1>A page with a tour</h1>
+  <p>The tour plays when this page opens. The controls below keep working throughout.</p>
+  <details id="demo-disclosure">
+    <summary>More about this page</summary>
+    <p>This text is inside a disclosure the tour points at.</p>
+  </details>
+  <form method="get" action="{% url 'tour' %}">
+    <label for="demo-field">Your name</label>
+    <input id="demo-field" name="name" type="text">
+    <button type="submit">Send</button>
+  </form>
+{% endblock content %}
