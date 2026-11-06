@@ -21,6 +21,7 @@ the steps in JavaScript far from the view they describe, and remembering who has
 django-page-tours moves the steps into Python, next to the page, and handles the rest.
 
 > **Status:** pre-release. A tour can be declared for a page and plays when the page opens.
+> Visitors can step through it or close it, and a tour that fails leaves the page usable.
 > Nothing is published to PyPI until the first usable version.
 
 ## Scope & philosophy
@@ -68,7 +69,7 @@ class DashboardView(TemplateView):
 ```
 
 The [documentation](https://django-mvp.github.io/django-page-tours/) covers function-based views,
-steps attached to elements and translation.
+steps attached to elements, what a visitor sees, and translation.
 
 ## Requirements
 

@@ -118,6 +118,32 @@ from django.utils.translation import gettext_lazy as _
 TourStep(title=_("Your projects"), text=_("Everything is listed here."))
 ```
 
+## See a tour in the demo project
+
+The demo project in `demo/` has a tour page at `/tour/`, linked from the bar at the top of every
+demo page. Its tour has a step attached to nothing, a step attached to a disclosure, a step
+attached to an element that is not on the page, and a closing step attached to a text field. Run
+`python manage.py runserver` from the repository root and open the page to see all of them.
+
+## Why a visitor can always use the page
+
+This is what a visitor sees when a page with a tour opens in their browser.
+
+- **The tour plays every time the page opens.** Nothing is remembered between visits.
+- **Moving and closing.** A step offers next, back and close. Next on the last step ends the
+  tour, and so does close. Nothing of the tour stays on the page afterwards.
+- **Only the highlighted element can be used while a step shows.** The rest of the page is dimmed.
+  One click anywhere on the dimmed part closes the tour, so the rest of the page is one click away.
+- **Steps whose element cannot be shown are skipped,** going forward and going back. That covers
+  an element that is not on the page, one that is hidden, and a selector that is not valid CSS.
+  The first step shown is the first one that can be.
+- **A tour whose every element is missing does not play.** The page opens as if it had no tour.
+- **A tour that fails ends, and the page keeps working.** If the Driver.js file cannot be loaded,
+  fails while starting, or a step raises an error while the tour plays, the tour ends and
+  everything it added to the page is removed. Every control on the page works afterwards.
+- **With JavaScript off nothing of the tour shows.** The page looks and lays out exactly as it
+  does on a page with no tour.
+
 ## Why a mistake in a tour stops the project at start-up
 
 A tour is declared as the module that holds it is imported, so a mistake stops the project
