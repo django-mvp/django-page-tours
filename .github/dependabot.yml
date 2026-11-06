@@ -1,0 +1,72 @@
+# Family Dependabot configuration — materialized into each repo at onboarding.
+#
+# The load-bearing choice is the grouping: one group per ecosystem matching "*",
+# so a cycle's updates arrive as a SINGLE pull request. That is what makes
+# auto-merge-dependabot.yml viable — one PR, one set of checks, merged when they
+# pass. Partial grouping (a "django*" group, a "dev tools" group, everything else
+# loose) opens a PR per package instead, and they accumulate faster than anyone
+# merges them.
+#
+# `reviewers:` is deliberately absent. GitHub removed that option on 2025-08-08
+# (announced 2025-04-29) because it overlapped with code owners; repos still
+# carrying it are being silently ignored. Use a CODEOWNERS file if review
+# assignment is wanted.
+#
+# Add a `docker` ecosystem only where a Dockerfile exists. Dependabot's docker
+# ecosystem scans Dockerfiles and does NOT read docker-compose.yml, so a docker
+# block in a compose-only repo never produces anything.
+version: 2
+updates:
+  # Python dependencies (uv.lock)
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "python"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    # mvp-shared is a git dependency pinned to a tag, and the same tag is
+    # pinned again in every workflow that calls django-mvp/shared. The two have
+    # to move together, which a Dependabot bump to pyproject.toml and uv.lock
+    # alone cannot do, so the tag is bumped by hand when a shared release lands.
+    ignore:
+      - dependency-name: "mvp-shared"
+      # Runtime dependencies of a library are a statement about the versions it
+      # supports, not a record of what is installed here. Dependabot rewrites
+      # them to the newest release, which reads as "drop support for everything
+      # older" and leaves the package uninstallable beside Django versions the
+      # test matrix still runs. Every name in [project].dependencies therefore
+      # belongs on this list, and a new runtime dependency is added here when it
+      # is added there. Bumping a supported range stays a deliberate change.
+      # Development dependencies are unaffected and keep updating on the weekly
+      # cycle.
+      - dependency-name: "django"
+    groups:
+      python-dependencies:
+        patterns:
+          - "*"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      github-actions:
+        patterns:
+          - "*"

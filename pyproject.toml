@@ -1,0 +1,125 @@
+[project]
+name = "django-page-tours"
+# Pre-viable. The first published release is 0.1.0, cut once the Essential goals
+# in GOALS.md are delivered; until then the version stays in 0.0.x.
+version = "0.0.1"
+description = "Guided tours of a page for Django sites, shown with Driver.js"
+authors = [
+    { name = "Samuel Jennings", email = "samuel.scott.jennings@gmail.com" },
+]
+license = "MIT"
+readme = "README.md"
+requires-python = ">=3.12,<4.0"
+# The Django floor is the oldest supported release, so raising it drops consumers. It
+# agrees with the classifiers, the README and the test matrix.
+dependencies = ["django>=5.2"]
+keywords = ["django", "tour", "guided tour", "onboarding", "driver.js"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Environment :: Web Environment",
+    "Framework :: Django",
+    "Framework :: Django :: 5.2",
+    "Framework :: Django :: 6.0",
+    "Framework :: Django :: 6.1",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
+]
+
+[project.urls]
+Homepage = "https://github.com/django-mvp/django-page-tours"
+Repository = "https://github.com/django-mvp/django-page-tours"
+Documentation = "https://django-mvp.github.io/django-page-tours/"
+Issues = "https://github.com/django-mvp/django-page-tours/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["page_tours"]
+
+# Hatchling's default sdist is the whole working tree. Ship only the package, the
+# readme and the licence.
+[tool.hatch.build.targets.sdist]
+include = ["page_tours", "README.md", "LICENSE"]
+
+[dependency-groups]
+# Toolchain bundle from django-mvp/shared, pinned to a release tag so every
+# package in the organisation runs the same version of each tool.
+dev = ["mvp-shared[dev,test]"]
+# Installed only where the documentation is built: `uv sync --group docs`.
+docs = ["fairdm-docs[sphinx_book_theme]"]
+
+[tool.uv.sources]
+mvp-shared = { git = "https://github.com/django-mvp/shared.git", tag = "v0.6.0" }
+fairdm-docs = { git = "https://github.com/FAIR-DM/fairdm-docs" }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "tests.settings"
+pythonpath = [".", "tests"]
+testpaths = ["tests"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--verbose",
+    "--tb=short",
+    "-ra",
+]
+
+[tool.coverage.report]
+skip_empty = true
+show_missing = true
+
+[tool.coverage.run]
+branch = true
+source = ["page_tours"]
+
+[tool.djlint]
+profile = "django"
+indent = 2
+preserve_leading_space = true
+preserve_blank_lines = true
+format_attribute_template_tags = true
+format_css = true
+format_js = true
+max_line_length = 120
+max_attribute_length = 70
+include = "H006,H013,H020,H021,H023,H025,H030,H031"
+ignore = "H017"
+extension = "html"
+
+# The shared rule set lives in ruff-base.toml, copied in because `extend` only
+# accepts a local path.
+[tool.ruff]
+extend = "ruff-base.toml"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "S105", "S106", "B017", "A001", "RUF059"]
+
+[tool.mypy]
+files = ["page_tours"]
+disallow_untyped_defs = "False"
+disallow_any_unimported = "False"
+ignore_missing_imports = "True"
+no_implicit_optional = "True"
+check_untyped_defs = "False"
+warn_return_any = "True"
+warn_unused_ignores = "True"
+show_error_codes = "True"
+exclude = ["docs/", "migrations/", "tests/settings.py"]
+mypy_path = "page_tours/"
+plugins = ["mypy_django_plugin.main"]
+
+[tool.django-stubs]
+django_settings_module = "tests.settings"
+ignore_missing_model_attributes = "True"
+
+[tool.deptry]
+extend_exclude = ["tasks.py", "tests/", "docs/"]
+
+[tool.deptry.per_rule_ignores]
+DEP003 = ["page_tours"]

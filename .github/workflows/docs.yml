@@ -1,0 +1,32 @@
+name: Deploy Docs
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/**'
+      - 'page_tours/**'
+      - 'README.md'
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'docs/**'
+      - 'page_tours/**'
+      - 'README.md'
+  workflow_dispatch:
+
+# The shared workflow's deploy job publishes to GitHub Pages, and a reusable
+# workflow can only use permissions its caller grants. Pull request runs skip
+# that job, but GitHub checks the grant when the workflow starts.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  call-docs:
+    uses: django-mvp/shared/.github/workflows/docs.yml@v0.6.0
+    with:
+      uv-sync-args: '--group docs'
+    secrets: inherit
