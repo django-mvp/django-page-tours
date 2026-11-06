@@ -18,19 +18,19 @@ it not play; open a page with a different tour and see it play.
 
 ### Group 1 — seen once per browser
 
-- [ ] T001 [US1] Tour identity, as plan.md "Tour identity": `with_tour` sets and cleans up
+- [x] T001 [US1] Tour identity, as plan.md "Tour identity": `with_tour` sets and cleans up
   `request.page_tour_view`; `tour_id(context)` in `page_tours/tours.py`. Tests in
   `tests/test_tours.py` (`TestTourId`, and `TestWithTour` for the clean-up): a class-based view,
   a subclass inheriting the tour shares its parent's id, a subclass declaring its own tour has
   its own, a function-based view (FR-004).
-- [ ] T002 [US1] The tag's payload object `{"id", "autoplay", "steps"}`, as plan.md "The tag's
+- [x] T002 [US1] The tag's payload object `{"id", "autoplay", "steps"}`, as plan.md "The tag's
   payload". `Tour` gains `autoplay: bool = True` here, used only to fill the payload. Update the
   FS-001 tag tests in `tests/test_templatetags/test_page_tours.py` that read the bare list so
   they read `steps` (they assert the same behaviour; the change is the payload's shape), and
   `TestTourPage.steps` in `tests/test_demo.py` the same way. New
   tests (`TestPageTourPayload`): the payload carries the page's id and `autoplay` true; the two
   URLs of one view carry the same id (FR-004); a page with no tour still carries nothing.
-- [ ] T003 [US1] Seen in the starter script, as plan.md "The starter script", without the
+- [x] T003 [US1] Seen in the starter script, as plan.md "The starter script", without the
   replay wiring: `isSeen`, `markSeen`, `start()` checking showable at call time, autoplay only
   when not seen, seen written after `drive()`. Browser tests in
   `tests/test_static/test_page_tours_js.py` (`TestSeenTour`): plays on first open (US1-1); not
@@ -41,7 +41,7 @@ it not play; open a page with a different tour and see it play.
   is raised (US1-8, FR-006); a nothing-showable tour is not seen (US1-9). The FS-001 browser
   tests keep passing unchanged, each test starting in a fresh context. In `tests/test_apps.py`:
   the app has no models, and a page with a tour sets no cookie (FR-005, SC-003).
-- [ ] T004 [US1] FS-001's specification to current state, as plan.md "FS-001's specification",
+- [x] T004 [US1] FS-001's specification to current state, as plan.md "FS-001's specification",
   and `docs/developer/tours.md`: every sentence saying a tour plays each time its page opens now
   says it plays by itself the first time a browser opens the page. A short "Seen tours" section
   in `tours.md`: what counts as seen, kept in the browser only, keyed by the declaring view so
@@ -57,7 +57,7 @@ from its first step; on a page with no tour, see no control.
 
 ### Group 1 — the replay control
 
-- [ ] T005 [US2] `{% page_tour_replay %}…{% endpage_tour_replay %}`, as plan.md "The replay
+- [x] T005 [US2] `{% page_tour_replay %}…{% endpage_tour_replay %}`, as plan.md "The replay
   control" (`simple_block_tag`). Test templates in `tests/templates/` placing it, test views and URLs in
   `tests/views.py` and `tests/urls.py`. Rendered-HTML tests in
   `tests/test_templatetags/test_page_tours.py` (`TestPageTourReplayTag`): nothing on a page with
@@ -67,7 +67,7 @@ from its first step; on a page with no tour, see no control.
   escaped; `aria_label` renders as `aria-label` (FR-010); an empty block gives a non-empty translatable fallback (assert it is not empty and
   comes from `gettext`, not its words); a `type` argument does not change `type="button"`; a
   positional argument raises `TemplateSyntaxError`.
-- [ ] T006 [US2] Replay wiring in the starter script: each `<template data-page-tour-replay>`
+- [x] T006 [US2] Replay wiring in the starter script: each `<template data-page-tour-replay>`
   becomes its button, whose click calls `start()`; an active tour is destroyed before it starts
   again. Browser tests (`TestReplay`): on a seen tour the control plays from step one (US2-1);
   after the end or a close, the page has no Driver.js markup and the control starts it again
@@ -78,7 +78,7 @@ from its first step; on a page with no tour, see no control.
   tour whose second step points at the control, that step shows (the control exists before
   autoplay), and using the control during it restarts the tour at step one, with one popover on
   the page (FR-009).
-- [ ] T007 [US2] Documentation: new `docs/developer/replaying-a-tour.md` in the Guides toctree
+- [x] T007 [US2] Documentation: new `docs/developer/replaying-a-tour.md` in the Guides toctree
   after `tours`, covering placing the control, giving it your own content and attributes,
   `aria_label="…"` for an icon-only control, and that it shows only on pages with a tour and only
   with JavaScript on. CHANGELOG entry.
@@ -94,19 +94,19 @@ control.
 
 ### Group 1 — play only on request, and the demo
 
-- [ ] T008 [US3] `autoplay=False` in the starter script and its tests. `tests/test_tours.py`:
+- [x] T008 [US3] `autoplay=False` in the starter script and its tests. `tests/test_tours.py`:
   `autoplay` defaults to `True` (US3-7). Rendered HTML: the payload carries `autoplay` false for
   such a tour. A base test template placing the control once, extended by a page with a tour and
   one without: the control is only on the first (US3-1). Browser tests (`TestOnRequestTour`): a
   fresh browser does not autoplay it (US3-4); the control plays it from step one (US3-5); with
   no control placed, no Driver.js markup appears and the page has no page error (US3-6); with no
   control and an ordinary tour, it still plays once (US3-3).
-- [ ] T009 [US3] Demo, as plan.md "Demo": the control in `demo/templates/base.html`; the
+- [x] T009 [US3] Demo, as plan.md "Demo": the control in `demo/templates/base.html`; the
   `/plays-once/` and `/on-request/` pages with their templates, views and URLs, linked from the
   header nav and named on the overview. Tests in `tests/test_demo.py`, as its existing tests do:
   both pages answer and carry a tour, `/on-request/` with `autoplay` false; the overview and the
   header link to both (FR-015).
-- [ ] T010 [US3] Documentation: `autoplay=False` in `docs/developer/replaying-a-tour.md`
+- [x] T010 [US3] Documentation: `autoplay=False` in `docs/developer/replaying-a-tour.md`
   ("A tour that plays only on request"), with a full example declaring it. CHANGELOG entry.
 
 ## Dependencies
@@ -128,3 +128,12 @@ needs the control to be useful. One dispatch per story.
 | FR-011 | T005 |
 | FR-012 | T002, T008 |
 | FR-015 | T004, T007, T009, T010 |
+
+## Fixes from the code review
+
+- [x] T011 [US1] Name a view decorated with `with_tour` that comes from `as_view()` by its
+  class, and one with no qualified name (a `functools.partial`) by its type. A tour put on the
+  request without `with_tour` gets an id instead of failing the page.
+- [x] T012 [US2] Prove the replay button carries only the developer's attributes, in the
+  rendered HTML and in the browser, and that full storage still plays the tour with no error.
+- [x] T013 [US3] Keep the new lines within 88 columns.
