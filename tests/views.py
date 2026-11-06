@@ -157,3 +157,40 @@ class NoTourControlsView(TemplateView):
     """The same page as BareTourView, with no tour."""
 
     template_name = "test_controls.html"
+
+
+class ReplayView(TemplateView):
+    """A page with a tour and a replay control carrying attributes of its own."""
+
+    template_name = "test_replay.html"
+    tour = steps_for("h1", "#control")
+
+    def get_context_data(self, **kwargs):
+        """Add an attribute value full of markup characters."""
+        context = super().get_context_data(**kwargs)
+        context["hostile"] = 'a "quoted" <b>&'
+        return context
+
+
+class ReplayNoTourView(ReplayView):
+    """The same page with no tour."""
+
+    tour = None
+
+
+class ReplayPointedAtView(ReplayView):
+    """The second step points at the replay control."""
+
+    tour = steps_for("h1", "#replay", "#control")
+
+
+class ReplayNothingShowableView(ReplayView):
+    """Every step names an element that is not on the page."""
+
+    tour = steps_for("#absent", "#also-absent")
+
+
+class ReplayTwiceView(ReplayView):
+    """A page placing the replay control twice."""
+
+    template_name = "test_replay_twice.html"
