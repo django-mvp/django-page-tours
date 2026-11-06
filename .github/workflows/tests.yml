@@ -21,4 +21,6 @@ jobs:
     uses: django-mvp/shared/.github/workflows/tests.yml@v0.6.0
     with:
       coverage-package: page_tours
+      # Tours run in the browser, so their behaviour is tested in Chromium.
+      install-playwright: true
     secrets: inherit
