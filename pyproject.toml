@@ -69,6 +69,9 @@ addopts = [
     "--tb=short",
     "-ra",
 ]
+# Playwright's sync API runs an event loop that Django's async guard refuses
+# database access under, and the live server's pages need it.
+env = ["DJANGO_ALLOW_ASYNC_UNSAFE=true"]
 
 [tool.coverage.report]
 skip_empty = true
