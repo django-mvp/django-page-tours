@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% load page_tours %}
+{% block content %}
+  <h1>A tour that plays only on request</h1>
+  {% page_tour_replay id="demo-replay" class="replay-inline" %}Start the tour{% endpage_tour_replay %}
+  <p>This page's tour never plays by itself. It plays when you use a replay control: the one in the page bar or the one beside the heading.</p>
+{% endblock content %}

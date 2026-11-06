@@ -65,6 +65,78 @@ class TestTourPage:
         assert any(f'id="{s.removeprefix("#")}"' not in page for s in selectors)
 
 
+class TestDemoTourPages:
+    """The two demo pages that show how a tour is started."""
+
+    PAGES = ["plays-once", "on-request"]
+
+    def payload(self, page):
+        """Return the payload the page hands to the browser."""
+        match = re.search(
+            r'<script id="page-tour-steps" type="application/json">(.*?)</script>',
+            page,
+            re.DOTALL,
+        )
+        return json.loads(match.group(1))
+
+    def bar(self, page):
+        """Return the markup of the page bar."""
+        return page.split('aria-label="Demo pages"', 1)[1].split("</nav>", 1)[0]
+
+    @pytest.mark.parametrize("name", PAGES)
+    def test_the_page_responds_and_carries_a_tour(self, client, name):
+        """Each page renders for an anonymous visitor with a tour on it."""
+        response = client.get(reverse(name))
+
+        assert response.status_code == 200
+        assert 'id="page-tour-steps"' in response.content.decode()
+
+    def test_the_plays_once_page_plays_by_itself(self, client):
+        """Its payload says the tour autoplays."""
+        page = client.get(reverse("plays-once")).content.decode()
+
+        assert self.payload(page)["autoplay"] is True
+
+    def test_the_on_request_page_does_not_play_by_itself(self, client):
+        """Its payload says the tour does not autoplay."""
+        page = client.get(reverse("on-request")).content.decode()
+
+        assert self.payload(page)["autoplay"] is False
+
+    @pytest.mark.parametrize("name", PAGES)
+    def test_the_page_bar_links_the_page(self, client, name):
+        """The bar every demo page shares links both pages."""
+        page = client.get(reverse("overview")).content.decode()
+
+        assert f'href="{reverse(name)}"' in self.bar(page)
+
+    @pytest.mark.parametrize("name", PAGES)
+    def test_the_overview_links_the_page(self, client, name):
+        """The overview names both pages outside the page bar."""
+        page = client.get(reverse("overview")).content.decode()
+
+        assert f'href="{reverse(name)}"' in page.split("</nav>", 1)[1]
+
+    @pytest.mark.parametrize("name", PAGES)
+    def test_the_page_bar_carries_the_replay_control_on_a_tour_page(self, client, name):
+        """The control placed once in the base template shows with a tour."""
+        page = client.get(reverse(name)).content.decode()
+
+        assert "data-page-tour-replay" in self.bar(page)
+
+    def test_the_page_bar_has_no_replay_control_on_the_overview(self, client):
+        """A page with no tour gets no control."""
+        page = client.get(reverse("overview")).content.decode()
+
+        assert "data-page-tour-replay" not in self.bar(page)
+
+    def test_the_on_request_page_places_a_second_control_in_its_body(self, client):
+        """The page carries two controls: the bar's and its own."""
+        page = client.get(reverse("on-request")).content.decode()
+
+        assert page.count("data-page-tour-replay") == 2
+
+
 class TestTourPageInBrowser:
     """A visitor walks the demo tour and then uses the page."""
 
