@@ -121,7 +121,8 @@ to the first, close part-way, and use the page's own controls throughout.
   `#page-tour-steps` carries a step with an element on the page, a step with none, and a step
   whose element is not on the page (FR-015); one browser test walks the demo tour forward
   through every showable step, back to the first, and closes it, then uses the page's
-  disclosure (SC-002, SC-005).
+  disclosure (SC-002, SC-005); while the step attached to the disclosure shows, the disclosure
+  opens, and one click on the overlay at another step closes the tour (SC-005).
 - [ ] T014 [US2] Documentation: what a visitor sees in `docs/developer/tours.md` (plays on every
   visit, moving and closing, missing and hidden elements skipped, a failing tour ends, nothing
   with JavaScript off); `CHANGELOG.md` and `README.md` updated to match. The docs build clean.

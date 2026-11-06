@@ -62,3 +62,11 @@ the maintainer and is recorded here so it can be overruled.
 18. **No fallback for browsers without `Element.checkVisibility()`.** Every current browser has
     it, and the browser tests run in Chromium only.
 19. **A title or text of only whitespace counts as missing** (FR-004).
+20. **Spec delta, approved by the orchestrating session holding the spec gate: what works while a
+    step shows.** SC-005 and User Story 2's independent test said every control on the page works
+    "during" the tour. Driver.js, which FR-008 makes the tour's drawing library, covers the page
+    with an overlay while a step shows, and a click on the overlay closes the tour, so only the
+    element the step is attached to can be used during it. Both now read: while a step shows,
+    its attached element works and the rest of the page is reached by closing the tour in one
+    action; after the tour ends or fails, every control works. This keeps Article XIII, which
+    allows a change to the page only while a step is showing.

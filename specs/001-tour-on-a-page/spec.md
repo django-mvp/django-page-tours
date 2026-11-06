@@ -75,8 +75,9 @@ as it would without one.
 G4 makes a page that still works the condition for showing one at all.
 
 **Independent Test**: Open the demo page with a tour in a browser, step forward to the last step
-and back to the first, close the tour part-way, and confirm the page's own controls work
-throughout and afterwards.
+and back to the first, close the tour part-way, and confirm that the element a step is attached
+to works while that step shows, that the rest of the page is reached by closing the tour in one
+action, and that every control the page offers works afterwards.
 
 **Acceptance Scenarios**:
 
@@ -173,7 +174,9 @@ throughout and afterwards.
 - **SC-004**: With JavaScript off, the visible content of a page with a tour is identical to the
   same page with its tour removed.
 - **SC-005**: On a page whose tour has a missing element and on a page whose tour script fails,
-  every control the page offers still works, during and after the tour.
+  the element a step is attached to works while that step shows, the rest of the page is reached
+  by closing the tour in one action, and every control the page offers works after the tour ends
+  or fails.
 
 ## Clarifications
 
