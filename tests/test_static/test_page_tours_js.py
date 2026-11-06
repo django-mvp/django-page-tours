@@ -255,6 +255,10 @@ Object.defineProperty(window, "localStorage", {
 });
 """
 
+STORAGE_FULL = """
+Storage.prototype.setItem = function () { throw new Error("full"); };
+"""
+
 
 class TestSeenTour:
     """A tour plays by itself once per browser and is then seen."""
@@ -353,6 +357,20 @@ class TestSeenTour:
         expect(page.locator(TITLE)).to_have_text("Step 1")
         assert errors == []
 
+    def test_full_storage_plays_the_tour_with_no_error(self, page, live_server):
+        """When seen cannot be written, the tour still plays, with no page error."""
+        errors = []
+        page.on("pageerror", lambda error: errors.append(str(error)))
+        page.add_init_script(STORAGE_FULL)
+        url = live_server.url + reverse("navigation-tour")
+
+        page.goto(url)
+        expect(page.locator(TITLE)).to_have_text("Step 1")
+        page.goto(url)
+
+        expect(page.locator(TITLE)).to_have_text("Step 1")
+        assert errors == []
+
     def test_a_tour_with_nothing_showable_is_not_marked_seen(self, page, live_server):
         """The tour that could not play plays once its elements can show."""
         page.goto(live_server.url + reverse("nothing"))
@@ -392,6 +410,23 @@ class TestReplay:
         page.click(REPLAY)
 
         expect(page.locator(TITLE)).to_have_text("Step 1")
+
+    def test_the_live_button_carries_only_the_developers_attributes(
+        self, page, live_server
+    ):
+        """The button the script builds has no class, style or attribute of its own."""
+        page.goto(live_server.url + reverse("replay"))
+        page.wait_for_load_state("load")
+
+        names = page.evaluate(
+            '() => [...document.querySelector("#replay").attributes]'
+            ".map((attribute) => attribute.name).sort()"
+        )
+        classes = page.evaluate(
+            '() => [...document.querySelector("#replay").classList]'
+        )
+        assert names == sorted(["aria-label", "class", "data-x", "id", "title", "type"])
+        assert classes == ["mine"]
 
     def test_the_control_starts_the_tour_again_after_it_ends(self, page, live_server):
         """After the last step, nothing is left and the control plays it again."""

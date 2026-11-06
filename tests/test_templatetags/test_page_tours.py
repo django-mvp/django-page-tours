@@ -286,6 +286,13 @@ class TestPageTourReplayTag:
 
         assert replay_markup(response.content.decode()).classes == ["mine"]
 
+    def test_the_button_carries_only_the_developers_attributes(self, client):
+        """No attribute but ``type`` and the developer's own reaches the button."""
+        response = client.get(reverse("replay"))
+
+        button = replay_markup(response.content.decode()).buttons[0]
+        assert set(button) == {"type", "id", "class", "aria-label", "data-x", "title"}
+
     def test_attribute_values_are_escaped(self, client):
         """A value with markup characters reaches the button as text."""
         response = client.get(reverse("replay"))
