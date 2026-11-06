@@ -21,6 +21,9 @@ All notable changes to this project are documented in this file. The format foll
 - A tour plays by itself the first time a browser opens its page, and not again in that browser.
   Which tours a browser has seen is kept in its local storage only, per declaring view; a
   browser that blocks storage sees the tour on every visit.
+- A replay control: `{% page_tour_replay %}` places a button, with your own content and
+  attributes, that plays the page's tour again from its first step. It shows only on pages with
+  a tour and only with JavaScript on.
 - The system check `page_tours.W001` warns when the request context processor is missing.
 - Driver.js 1.10.2 is shipped as a static file, so nothing is loaded from a CDN. sha256 of
   `driver.js.iife.js`: `541520f33f84cc5cf6696b421f705cc9efe2d72656b3b5cd7f72c22e6d7e17c0`; of
