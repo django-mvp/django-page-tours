@@ -43,3 +43,10 @@ the maintainer and is recorded here so it can be overruled.
 13. **A page with no tour loads nothing of the package.** A site that installs the package for one
     page should not pay for it on every other page, and Article XIII asks that a page without a
     tour be the same as without the package.
+
+## Planning
+
+14. **Browser installation in CI is set up outside this branch.** The browser tests need the
+    shared tests workflow called with `install-playwright: true`. That change lands on main as
+    its own pull request, and this branch is rebased onto it before it is marked ready for
+    review, so no workflow file changes here.
