@@ -50,8 +50,8 @@ on a page without a tour the tag emits nothing but whitespace.
 ```python
 @dataclass(frozen=True)
 class TourStep:
-    title: StrOrPromise
-    text: StrOrPromise
+    title: str | Promise
+    text: str | Promise
     element: str = ""          # a CSS selector; empty means attached to nothing
 
 @dataclass(frozen=True)

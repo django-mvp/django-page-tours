@@ -19,11 +19,11 @@ class TourView(TemplateView):
         steps=[
             TourStep(
                 title="Welcome",
-                text="This step points at nothing, so it shows in the middle of the page.",
+                text="This step points at nothing, so it shows mid-page.",
             ),
             TourStep(
                 title="A disclosure",
-                text="Open it while this step shows. The page still works.",
+                text="Open it while this step shows. It stays usable.",
                 element="#demo-disclosure",
             ),
             TourStep(

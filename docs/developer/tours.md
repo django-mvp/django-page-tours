@@ -85,8 +85,8 @@ def dashboard(request):
     return render(request, "dashboard.html")
 ```
 
-The tag finds the tour through the request, so the request context processor from the setup
-above must be listed.
+`with_tour` works the same on an `async def` view. The tag finds the tour through the request,
+so the request context processor from the setup above must be listed.
 
 ## Attach a step to an element, or to nothing
 
@@ -144,10 +144,11 @@ This is what a visitor sees when a page with a tour opens in their browser.
 - **With JavaScript off nothing of the tour shows.** The page looks and lays out exactly as it
   does on a page with no tour.
 
-## Why a mistake in a tour stops the project at start-up
+## Why a mistake in a tour is an error, not a skipped step
 
-A tour is declared as the module that holds it is imported, so a mistake stops the project
-starting and never reaches a visitor. A tour with no steps, and a step with an empty title or
+A tour is checked as the module that declares it is imported: at start-up for the development
+server and `manage.py check`, and at the latest on the first request a production server handles.
+A mistake raises an error there instead of being shown to a visitor. A tour with no steps, and a step with an empty title or
 empty text (whitespace counts as empty), raise `ImproperlyConfigured`.
 
 ## Why a tour never shows on an error page
