@@ -2,6 +2,7 @@
 
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
+from functools import partial
 
 import pytest
 from asgiref.sync import iscoroutinefunction
@@ -11,6 +12,7 @@ from django.http import HttpResponse
 from django.utils import translation
 from django.utils.html import escape
 from django.utils.translation import gettext, gettext_lazy
+from django.views import View
 
 from page_tours.tours import Tour, TourStep, tour_id, with_tour
 
@@ -236,6 +238,38 @@ class TestWithTour:
 
         assert seen == [f"{view.__module__}.{view.__wrapped__.__qualname__}"]
 
+    def test_class_based_views_wrapped_with_with_tour_keep_their_own_names(
+        self, rf, tour
+    ):
+        """Two ``as_view()`` views are named by their own classes, not as one."""
+        seen = []
+
+        class FirstView(View):
+            def get(self, request):
+                seen.append(request.page_tour_view)
+                return HttpResponse()
+
+        class SecondView(FirstView):
+            pass
+
+        with_tour(tour)(FirstView.as_view())(rf.get("/"))
+        with_tour(tour)(SecondView.as_view())(rf.get("/"))
+
+        assert seen == [dotted_path(FirstView), dotted_path(SecondView)]
+
+    def test_a_view_without_a_qualified_name_can_carry_a_tour(self, rf, tour):
+        """A ``functools.partial`` view is decorated and named without error."""
+        seen = []
+
+        def view(request, answer):
+            seen.append(request.page_tour_view)
+            return HttpResponse()
+
+        with_tour(tour)(partial(view, answer=42))(rf.get("/"))
+
+        assert len(seen) == 1
+        assert isinstance(seen[0], str)
+
     def test_the_view_is_forgotten_if_the_view_raises(self, rf, tour):
         """The error page that follows does not name a view."""
 
@@ -319,6 +353,13 @@ class TestTourId:
         view.tour = Tour(steps=[TourStep(title="Title", text="Body")])
 
         assert tour_id({"view": view}) == dotted_path(TourlessView)
+
+    def test_a_tour_put_on_the_request_by_hand_still_gets_an_id(self, rf, tour):
+        """A request carrying a tour but no recorded view does not raise."""
+        request = rf.get("/")
+        request.page_tour = tour
+
+        assert isinstance(tour_id({"request": request}), str)
 
     def test_a_function_based_view_is_named_by_the_request(self, rf, tour):
         """The view that ``with_tour`` recorded gives the id."""

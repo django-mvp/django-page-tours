@@ -126,7 +126,25 @@ def tour_id(context: Any) -> str:
             if "tour" in cls.__dict__:
                 return f"{cls.__module__}.{cls.__qualname__}"
         return f"{type(view).__module__}.{type(view).__qualname__}"
-    return str(context["request"].page_tour_view)
+    return str(getattr(context.get("request"), "page_tour_view", ""))
+
+
+def view_path(view: Any) -> str:
+    """Return the dotted path that names a view.
+
+    A view made by ``as_view()`` is named by its class. A callable with no name of
+    its own, such as a ``functools.partial``, is named by its type.
+
+    Args:
+        view: The view function, or any callable used as one.
+
+    Returns:
+        The view's module and qualified name, joined by a dot.
+    """
+    named = getattr(view, "view_class", view)
+    module = getattr(named, "__module__", None) or type(named).__module__
+    qualname = getattr(named, "__qualname__", None) or type(named).__qualname__
+    return f"{module}.{qualname}"
 
 
 def with_tour(tour: Tour) -> Callable[[F], F]:
@@ -144,14 +162,14 @@ def with_tour(tour: Tour) -> Callable[[F], F]:
     """
 
     def decorator(view: F) -> F:
-        view_path = f"{view.__module__}.{view.__qualname__}"
+        path = view_path(view)
 
         if iscoroutinefunction(view):
 
             @wraps(view)
             async def async_wrapper(request, *args, **kwargs):
                 request.page_tour = tour
-                request.page_tour_view = view_path
+                request.page_tour_view = path
                 try:
                     return await view(request, *args, **kwargs)
                 except BaseException:
@@ -163,7 +181,7 @@ def with_tour(tour: Tour) -> Callable[[F], F]:
         @wraps(view)
         def wrapper(request, *args, **kwargs):
             request.page_tour = tour
-            request.page_tour_view = view_path
+            request.page_tour_view = path
             try:
                 return view(request, *args, **kwargs)
             except BaseException:
