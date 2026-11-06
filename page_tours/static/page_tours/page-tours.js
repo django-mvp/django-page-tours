@@ -114,7 +114,8 @@
     }
   }
 
-  document.querySelectorAll("template[data-page-tour-replay]").forEach(function (holder) {
+  var holders = document.querySelectorAll("template[data-page-tour-replay]");
+  holders.forEach(function (holder) {
     var control = holder.content.firstElementChild;
     if (control) {
       var button = control.cloneNode(true);

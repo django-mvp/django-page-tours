@@ -48,11 +48,17 @@ class PlaysOnceView(TemplateView):
         steps=[
             TourStep(
                 title="Plays once",
-                text="This tour opened by itself. It will not open again in this browser.",
+                text=(
+                    "This tour opened by itself. "
+                    "It will not open again in this browser."
+                ),
             ),
             TourStep(
                 title="Play it again",
-                text="The button in the page bar plays the tour again from its first step.",
+                text=(
+                    "The button in the page bar plays the tour again "
+                    "from its first step."
+                ),
                 element="[aria-label='Demo pages'] button",
             ),
         ]
