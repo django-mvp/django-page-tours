@@ -1,6 +1,7 @@
 """Tests for page_tours.tours."""
 
 import pytest
+from asgiref.sync import async_to_sync, iscoroutinefunction
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ImproperlyConfigured
 from django.http import HttpResponse
@@ -156,6 +157,41 @@ class TestWithTour:
         decorated(request)
 
         assert seen == [tour]
+
+    def test_an_async_view_gets_the_tour_on_the_request(self, rf, tour):
+        """An async function-based view stays async and sees the tour."""
+        seen = []
+
+        @with_tour(tour)
+        async def view(request):
+            seen.append(request.page_tour)
+            return HttpResponse()
+
+        async_to_sync(view)(rf.get("/"))
+
+        assert seen == [tour]
+
+    def test_an_async_view_stays_async(self, tour):
+        """Django still recognises the decorated view as async."""
+
+        @with_tour(tour)
+        async def view(request):
+            return HttpResponse()
+
+        assert iscoroutinefunction(view)
+
+    def test_an_async_view_that_raises_loses_the_tour(self, rf, tour):
+        """An async view's error page does not carry the tour either."""
+
+        @with_tour(tour)
+        async def view(request):
+            raise PermissionError
+
+        request = rf.get("/")
+        with pytest.raises(PermissionError):
+            async_to_sync(view)(request)
+
+        assert not hasattr(request, "page_tour")
 
     def test_the_wrapper_keeps_the_view_name(self, tour):
         """The wrapper is made with functools.wraps."""

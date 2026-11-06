@@ -3,6 +3,7 @@
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from functools import wraps
+from inspect import iscoroutinefunction
 from typing import Any, TypeVar
 
 from django.core.exceptions import ImproperlyConfigured
@@ -101,7 +102,7 @@ class Tour:
 
 
 def with_tour(tour: Tour) -> Callable[[F], F]:
-    """Attach a tour to a function-based view.
+    """Attach a tour to a function-based view, sync or async.
 
     The tour is on ``request.page_tour`` while the view runs, and removed again if the
     view raises, so the error page that follows does not play it.
@@ -114,6 +115,19 @@ def with_tour(tour: Tour) -> Callable[[F], F]:
     """
 
     def decorator(view: F) -> F:
+        if iscoroutinefunction(view):
+
+            @wraps(view)
+            async def async_wrapper(request, *args, **kwargs):
+                request.page_tour = tour
+                try:
+                    return await view(request, *args, **kwargs)
+                except BaseException:
+                    del request.page_tour
+                    raise
+
+            return async_wrapper  # type: ignore[return-value]
+
         @wraps(view)
         def wrapper(request, *args, **kwargs):
             request.page_tour = tour
