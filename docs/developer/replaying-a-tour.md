@@ -74,6 +74,44 @@ Give the control that `id`: `{% page_tour_replay id="replay-tour" %}Show the tou
 While a step shows, only the highlighted element can be used. Pressing the control during that
 step starts the tour over from its first step.
 
+## A tour that plays only on request
+
+Some tours should never open by themselves, for example a long tour of an advanced page. Declare
+the tour with `autoplay=False`, then place the replay control so a visitor can start it:
+
+```python
+from django.views.generic import TemplateView
+
+from page_tours import Tour, TourStep
+
+
+class ReportsView(TemplateView):
+    template_name = "reports.html"
+    tour = Tour(
+        steps=[
+            TourStep(title="Reports", text="Everything you have filed, in one place."),
+            TourStep(
+                title="Filters",
+                text="Narrow the list by date or author.",
+                element="#filters",
+            ),
+        ],
+        autoplay=False,
+    )
+```
+
+```django
+{% load page_tours %}
+{% page_tour_replay %}Show the tour{% endpage_tour_replay %}
+```
+
+The tour does not open when a browser first visits the page, and a browser that has not seen it
+is not changed by that. Pressing the control plays it from its first step, every time.
+
+With no control on the page, a tour declared with `autoplay=False` never plays. Place the control
+in your base template, as in [Place the replay control](#place-the-replay-control), so it shows
+on every page that has a tour.
+
 ## Why a replay does not change what a browser has seen
 
 A replay is recorded as seen, like any play. It does not change whether the tour plays by itself

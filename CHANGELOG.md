@@ -24,6 +24,9 @@ All notable changes to this project are documented in this file. The format foll
 - A replay control: `{% page_tour_replay %}` places a button, with your own content and
   attributes, that plays the page's tour again from its first step. It shows only on pages with
   a tour and only with JavaScript on.
+- A tour declared with `autoplay=False` does not play by itself and plays only when a visitor
+  uses a replay control. The demo project has a page for a tour that plays once and a page for
+  one that plays only on request.
 - The system check `page_tours.W001` warns when the request context processor is missing.
 - Driver.js 1.10.2 is shipped as a static file, so nothing is loaded from a CDN. sha256 of
   `driver.js.iife.js`: `541520f33f84cc5cf6696b421f705cc9efe2d72656b3b5cd7f72c22e6d7e17c0`; of
