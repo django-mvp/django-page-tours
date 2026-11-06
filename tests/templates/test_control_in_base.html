@@ -1,0 +1,6 @@
+{% extends "test_base.html" %}
+{% load page_tours %}
+{% block content %}
+  <nav>{% page_tour_replay id="replay" %}Replay{% endpage_tour_replay %}</nav>
+  {% block page %}{% endblock page %}
+{% endblock content %}

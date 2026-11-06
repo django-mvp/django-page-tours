@@ -519,3 +519,45 @@ class TestReplay:
 
         expect(page.locator(TITLE)).to_have_text("Step 1")
         expect(page.locator(".driver-popover")).to_have_count(1)
+
+
+class TestOnRequestTour:
+    """A tour declared with ``autoplay=False`` plays only when asked."""
+
+    def assert_does_not_play(self, page):
+        """Assert that the page has loaded and shows no tour."""
+        page.wait_for_load_state("load")
+        expect(page.locator(".driver-popover")).to_have_count(0)
+        assert_no_driver_markup(page)
+
+    def test_a_fresh_browser_does_not_play_it(self, page, live_server):
+        """Opening the page for the first time shows no tour."""
+        page.goto(live_server.url + reverse("on-request"))
+
+        self.assert_does_not_play(page)
+
+    def test_the_control_plays_it_from_the_first_step(self, page, live_server):
+        """Using the control shows step one."""
+        page.goto(live_server.url + reverse("on-request"))
+
+        page.click(REPLAY)
+
+        expect(page.locator(TITLE)).to_have_text("Step 1")
+
+    def test_with_no_control_it_never_plays_and_raises_no_error(
+        self, page, live_server
+    ):
+        """No Driver.js markup appears and the page has no page error."""
+        errors = []
+        page.on("pageerror", lambda error: errors.append(error))
+
+        page.goto(live_server.url + reverse("on-request-no-control"))
+
+        self.assert_does_not_play(page)
+        assert errors == []
+
+    def test_with_no_control_an_ordinary_tour_still_plays_once(self, page, live_server):
+        """A tour that autoplays does not need the control."""
+        page.goto(live_server.url + reverse("bare-with-tour"))
+
+        expect(page.locator(TITLE)).to_have_text("Step 1")

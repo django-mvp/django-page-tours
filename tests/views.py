@@ -194,3 +194,38 @@ class ReplayTwiceView(ReplayView):
     """A page placing the replay control twice."""
 
     template_name = "test_replay_twice.html"
+
+
+def on_request_tour():
+    """Build a tour of the page's heading and button that plays only on request.
+
+    Returns:
+        A tour with ``autoplay`` off.
+    """
+    return Tour(steps=steps_for("h1", "#control").steps, autoplay=False)
+
+
+class OnRequestView(ReplayView):
+    """A page whose tour plays only when the replay control is used."""
+
+    tour = on_request_tour()
+
+
+class OnRequestNoControlView(TemplateView):
+    """A page whose tour plays only on request, with no control placed."""
+
+    template_name = "test_controls.html"
+    tour = on_request_tour()
+
+
+class ControlInBaseView(TemplateView):
+    """A page with a tour, extending a base template that places the control."""
+
+    template_name = "test_control_in_base_page.html"
+    tour = steps_for("h1", "#control")
+
+
+class ControlInBaseNoTourView(TemplateView):
+    """A page with no tour, extending the base template that places the control."""
+
+    template_name = "test_control_in_base_page.html"

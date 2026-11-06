@@ -61,6 +61,10 @@ class TestTour:
 
         assert tour.steps == (step,)
 
+    def test_a_tour_plays_by_itself_unless_told_otherwise(self):
+        """Autoplay is on by default."""
+        assert Tour(steps=[TourStep(title="Title", text="Body")]).autoplay is True
+
 
 class TestTourAsDriverSteps:
     """Converting a tour to the steps Driver.js takes."""

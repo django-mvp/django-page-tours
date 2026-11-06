@@ -34,6 +34,18 @@ urlpatterns = [
         name="replay-nothing",
     ),
     path("replay-twice/", views.ReplayTwiceView.as_view(), name="replay-twice"),
+    path("on-request/", views.OnRequestView.as_view(), name="on-request"),
+    path(
+        "on-request-no-control/",
+        views.OnRequestNoControlView.as_view(),
+        name="on-request-no-control",
+    ),
+    path("control-in-base/", views.ControlInBaseView.as_view(), name="control-in-base"),
+    path(
+        "control-in-base-no-tour/",
+        views.ControlInBaseNoTourView.as_view(),
+        name="control-in-base-no-tour",
+    ),
     path("tour/", views.ClassTourView.as_view(), name="class-tour"),
     path("tour-again/", views.ClassTourView.as_view(), name="class-tour-again"),
     path("function-tour/", views.function_tour_view, name="function-tour"),

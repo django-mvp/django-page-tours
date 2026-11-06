@@ -150,6 +150,12 @@ class TestPageTourPayload:
 
         assert payload["autoplay"] is True
 
+    def test_a_tour_declared_to_play_only_on_request_says_so(self, client):
+        """``autoplay`` is false for a tour declared with ``autoplay=False``."""
+        payload = tour_payload(client.get(reverse("on-request")))
+
+        assert payload["autoplay"] is False
+
     def test_the_payload_carries_exactly_an_id_autoplay_and_steps(self, client):
         """Nothing else reaches the browser."""
         payload = tour_payload(client.get(reverse("class-tour")))
@@ -240,6 +246,16 @@ class TestPageTourReplayTag:
         assert markup.templates == [{"data-page-tour-replay": None}]
         assert len(markup.buttons) == 1
         assert markup.buttons[0]["type"] == "button"
+
+    def test_a_control_placed_once_in_a_base_template_shows_only_with_a_tour(
+        self, client
+    ):
+        """Pages extending the base get the control only if they have a tour."""
+        with_tour = client.get(reverse("control-in-base")).content.decode()
+        without_tour = client.get(reverse("control-in-base-no-tour")).content.decode()
+
+        assert len(replay_markup(with_tour).templates) == 1
+        assert replay_markup(without_tour).templates == []
 
     def test_the_button_holds_the_content_of_the_block(self):
         """What sits between the tags is what the button holds."""
