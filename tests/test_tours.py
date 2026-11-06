@@ -1,12 +1,14 @@
 """Tests for page_tours.tours."""
 
 import pytest
+from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ImproperlyConfigured
+from django.http import HttpResponse
 from django.utils import translation
 from django.utils.html import escape
 from django.utils.translation import gettext, gettext_lazy
 
-from page_tours.tours import Tour, TourStep
+from page_tours.tours import Tour, TourStep, with_tour
 
 
 class TestTourStep:
@@ -96,3 +98,104 @@ class TestTourAsDriverSteps:
             expected = str(gettext("Yes"))
 
         assert step["title"] == expected
+
+
+@pytest.fixture
+def tour():
+    """Return a valid one-step tour."""
+    return Tour(steps=[TourStep(title="Title", text="Body")])
+
+
+class TestWithTour:
+    """Attaching a tour to a function-based view."""
+
+    def test_the_tour_is_on_the_request_while_the_view_runs(self, rf, tour):
+        """The view can reach the tour through the request."""
+        seen = []
+
+        @with_tour(tour)
+        def view(request):
+            seen.append(request.page_tour)
+            return HttpResponse()
+
+        view(rf.get("/"))
+
+        assert seen == [tour]
+
+    def test_the_tour_is_removed_if_the_view_raises(self, rf, tour):
+        """An error page rendered afterwards does not carry the tour."""
+
+        @with_tour(tour)
+        def view(request):
+            raise PermissionError
+
+        request = rf.get("/")
+        with pytest.raises(PermissionError):
+            view(request)
+
+        assert not hasattr(request, "page_tour")
+
+    @pytest.mark.parametrize("login_required_is_outer", [True, False])
+    def test_the_tour_reaches_the_request_through_login_required(
+        self, rf, tour, login_required_is_outer
+    ):
+        """The order of with_tour and login_required does not matter."""
+        seen = []
+
+        def view(request):
+            seen.append(getattr(request, "page_tour", None))
+            return HttpResponse()
+
+        if login_required_is_outer:
+            decorated = login_required(with_tour(tour)(view))
+        else:
+            decorated = with_tour(tour)(login_required(view))
+        request = rf.get("/")
+        request.user = type("User", (), {"is_authenticated": True})()
+
+        decorated(request)
+
+        assert seen == [tour]
+
+    def test_the_wrapper_keeps_the_view_name(self, tour):
+        """The wrapper is made with functools.wraps."""
+
+        @with_tour(tour)
+        def my_view(request):
+            return HttpResponse()
+
+        assert my_view.__name__ == "my_view"
+        assert my_view.__wrapped__.__name__ == "my_view"
+
+
+class TestTourForPage:
+    """Finding the tour of the page being rendered."""
+
+    def test_a_class_based_view_supplies_its_tour(self, tour):
+        """The tour attribute of the view in the context is found."""
+        view = type("View", (), {"tour": tour})()
+
+        assert Tour.for_page({"view": view}) is tour
+
+    def test_a_function_view_supplies_its_tour_through_the_request(self, rf, tour):
+        """The tour set by with_tour on the request is found."""
+        request = rf.get("/")
+        request.page_tour = tour
+
+        assert Tour.for_page({"request": request}) is tour
+
+    def test_an_empty_context_has_no_tour(self):
+        """With no view and no request there is nothing to find."""
+        assert Tour.for_page({}) is None
+
+    def test_a_view_without_a_tour_has_no_tour(self, rf):
+        """A view that declares no tour yields none."""
+        context = {"view": object(), "request": rf.get("/")}
+
+        assert Tour.for_page(context) is None
+
+    def test_a_tour_that_is_not_a_tour_is_ignored(self):
+        """Only a Tour counts as a tour."""
+        view = type("View", (), {"tour": "not a tour"})()
+
+        assert Tour.for_page({"view": view}) is None

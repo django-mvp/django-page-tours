@@ -1,7 +1,9 @@
 """Declarations of a tour and its steps."""
 
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
+from functools import wraps
+from typing import Any, TypeVar
 
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.functional import Promise
@@ -9,6 +11,7 @@ from django.utils.html import escape
 from django.utils.translation import gettext_lazy as _
 
 StrOrPromise = str | Promise
+F = TypeVar("F", bound=Callable[..., Any])
 
 
 @dataclass(frozen=True)
@@ -57,6 +60,25 @@ class Tour:
             raise ImproperlyConfigured(_("A tour needs at least one step."))
         object.__setattr__(self, "steps", tuple(self.steps))
 
+    @classmethod
+    def for_page(cls, context: Any) -> "Tour | None":
+        """Find the tour of the page whose own view is being rendered.
+
+        A class-based view supplies its ``tour`` attribute through ``context["view"]``.
+        A function-based view supplies the tour that ``with_tour`` put on the request.
+        An error page has neither, so it has no tour.
+
+        Args:
+            context: The template context, or any mapping with ``get``.
+
+        Returns:
+            The tour, or ``None`` when the page has none.
+        """
+        tour = getattr(context.get("view"), "tour", None)
+        if not isinstance(tour, cls):
+            tour = getattr(context.get("request"), "page_tour", None)
+        return tour if isinstance(tour, cls) else None
+
     def as_driver_steps(self) -> list[dict[str, str]]:
         """Convert the steps to the form Driver.js takes.
 
@@ -77,3 +99,31 @@ class Tour:
                 driver_step["element"] = step.element
             driver_steps.append(driver_step)
         return driver_steps
+
+
+def with_tour(tour: Tour) -> Callable[[F], F]:
+    """Attach a tour to a function-based view.
+
+    The tour is on ``request.page_tour`` while the view runs, and removed again if the
+    view raises, so the error page that follows does not play it.
+
+    Args:
+        tour: The tour to show on the page the view renders.
+
+    Returns:
+        A decorator for the view.
+    """
+
+    def decorator(view: F) -> F:
+        @wraps(view)
+        def wrapper(request, *args, **kwargs):
+            request.page_tour = tour
+            try:
+                return view(request, *args, **kwargs)
+            except BaseException:
+                del request.page_tour
+                raise
+
+        return wrapper  # type: ignore[return-value]
+
+    return decorator
