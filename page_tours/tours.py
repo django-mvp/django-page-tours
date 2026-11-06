@@ -47,12 +47,15 @@ class Tour:
 
     Args:
         steps: The steps in the order they are shown. At least one.
+        autoplay: Whether the tour plays by itself the first time a browser opens
+            the page.
 
     Raises:
         ImproperlyConfigured: If ``steps`` is empty.
     """
 
     steps: Sequence[TourStep]
+    autoplay: bool = True
 
     def __post_init__(self):
         """Refuse a tour with no steps and freeze the steps as a tuple."""

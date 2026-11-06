@@ -2,7 +2,7 @@
 
 from django import template
 
-from page_tours.tours import Tour
+from page_tours.tours import Tour, tour_id
 
 register = template.Library()
 
@@ -17,8 +17,17 @@ def page_tour(context):
         context: The template context, supplied by Django.
 
     Returns:
-        The context for ``page_tours/page_tour.html``: the steps in the form
-        Driver.js takes, empty when the page has no tour.
+        The context for ``page_tours/page_tour.html``: the tour's id, whether it
+        plays by itself and its steps in the form Driver.js takes, or an empty
+        payload when the page has no tour.
     """
     tour = Tour.for_page(context)
-    return {"steps": tour.as_driver_steps() if tour else []}
+    if tour is None:
+        return {"payload": None}
+    return {
+        "payload": {
+            "id": tour_id(context),
+            "autoplay": tour.autoplay,
+            "steps": tour.as_driver_steps(),
+        }
+    }

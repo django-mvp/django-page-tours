@@ -17,11 +17,16 @@ STEPS_SCRIPT = re.compile(
 URL_ATTRIBUTE = re.compile(r'\b(?:src|href)="([^"]*)"')
 
 
-def tour_steps(response):
-    """Return the steps the page carries, parsed from their script element."""
+def tour_payload(response):
+    """Return the payload the page carries, parsed from its script element."""
     match = STEPS_SCRIPT.search(response.content.decode())
     assert match is not None
     return json.loads(match.group(1))
+
+
+def tour_steps(response):
+    """Return the steps the page carries."""
+    return tour_payload(response)["steps"]
 
 
 class TestPageTourTag:
@@ -119,3 +124,44 @@ class TestPageTourTag:
             expected = str(translation.gettext("Yes"))
         assert tour_steps(response)[0]["title"] == expected
         assert expected != "Yes"
+
+
+class TestPageTourPayload:
+    """The object the tag hands to the starter script."""
+
+    def test_the_payload_names_the_view_that_declares_the_tour(self, client):
+        """The id is the dotted path of the view class."""
+        payload = tour_payload(client.get(reverse("class-tour")))
+
+        assert payload["id"] == "tests.views.ClassTourView"
+
+    def test_the_payload_names_a_function_based_view(self, client):
+        """The id of a ``with_tour`` view is its dotted path."""
+        payload = tour_payload(client.get(reverse("function-tour")))
+
+        assert payload["id"] == "tests.views.function_tour_view"
+
+    def test_a_tour_plays_by_itself_unless_told_otherwise(self, client):
+        """``autoplay`` is true for a tour that does not say."""
+        payload = tour_payload(client.get(reverse("class-tour")))
+
+        assert payload["autoplay"] is True
+
+    def test_the_payload_carries_exactly_an_id_autoplay_and_steps(self, client):
+        """Nothing else reaches the browser."""
+        payload = tour_payload(client.get(reverse("class-tour")))
+
+        assert set(payload) == {"id", "autoplay", "steps"}
+
+    def test_both_urls_of_a_view_carry_the_same_id(self, client):
+        """A view routed twice is one tour."""
+        first = tour_payload(client.get(reverse("class-tour")))
+        second = tour_payload(client.get(reverse("class-tour-again")))
+
+        assert first["id"] == second["id"]
+
+    def test_a_page_with_no_tour_carries_no_payload(self, client):
+        """No script element at all."""
+        response = client.get(reverse("no-tour"))
+
+        assert STEPS_SCRIPT.search(response.content.decode()) is None

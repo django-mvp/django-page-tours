@@ -19,7 +19,7 @@
     return undefined;
   }
 
-  var parsed = JSON.parse(script.textContent);
+  var parsed = JSON.parse(script.textContent).steps;
   var steps = parsed.map(function (step) {
     var driverStep = { popover: { title: step.title, description: step.text } };
     if (step.element) {

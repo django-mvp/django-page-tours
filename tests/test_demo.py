@@ -35,7 +35,7 @@ class TestTourPage:
             page,
             re.DOTALL,
         )
-        return json.loads(match.group(1))
+        return json.loads(match.group(1))["steps"]
 
     def test_it_responds(self, client):
         """The page renders for an anonymous visitor."""
