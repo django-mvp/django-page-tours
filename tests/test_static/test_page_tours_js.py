@@ -219,3 +219,31 @@ class TestTourFailure:
 
         expect(page.locator(".driver-popover")).to_have_count(0)
         self.assert_page_still_works(page)
+
+
+VISIBLE_ELEMENTS = "body *:not(script):not(link):not(style)"
+
+
+class TestTourWithoutJavaScript:
+    """With JavaScript off, a page with a tour looks like the page without one."""
+
+    def layout(self, browser, url):
+        """Return the body text and the box of every element in it, in order."""
+        context = browser.new_context(java_script_enabled=False)
+        try:
+            page = context.new_page()
+            page.goto(url)
+            boxes = [el.bounding_box() for el in page.locator(VISIBLE_ELEMENTS).all()]
+            return page.inner_text("body"), boxes
+        finally:
+            context.close()
+
+    def test_the_page_is_unchanged(self, browser, live_server):
+        """Text and the box of every element in the body match the untoured page."""
+        with_tour = self.layout(browser, live_server.url + reverse("bare-with-tour"))
+        without_tour = self.layout(
+            browser, live_server.url + reverse("bare-without-tour")
+        )
+
+        assert with_tour == without_tour
+        assert len(with_tour[1]) > 0
