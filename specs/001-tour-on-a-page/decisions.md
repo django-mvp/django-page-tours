@@ -137,7 +137,7 @@ A title or text of only whitespace counts as missing(FR-004).
 
 **ADR:** none — a reading of FR-004, local to TourStep
 
-## D20 — Spec delta, approved by the orchestrating session holding the spec gate: what works while a step shows
+## D20 — Spec change, approved at the specification gate: what works while a step shows
 
 SC-005 and User Story 2's independent test said every control on the page works "during" the
 tour. Driver.js, which FR-008 makes the tour's drawing library, covers the page with an overlay
