@@ -106,8 +106,7 @@ make an edited tour play again, which is R7's behaviour, and a name per tour wou
 setting the specification rules out. The cost: renaming or moving the view makes its tour unseen
 again. Per-URL tours on one class (`as_view(tour=...)`) share that class's seen state.
 
-**ADR:** to graduate at S5 — every site's stored seen state depends on it, and a later change
-to it shows every tour again
+**ADR:** docs/adr/0002-a-tour-is-seen-per-declaring-view.md
 
 ## D15 — Replay while a tour plays is reachable only through a step that points at the control
 
