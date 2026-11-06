@@ -23,7 +23,8 @@ the page in the declared order, with every file served by the site.
   `tests/test_static/test_vendor.py` (`TestVendoredDriverJs`) that the staticfiles finders find
   all three (FR-008).
 - [ ] T002 [US1] `TourStep` and `Tour` in `page_tours/tours.py`, frozen dataclasses. Empty
-  `steps`, and a step with an empty `title` or `text`, raise `ImproperlyConfigured` on
+  `steps`, and a step with an empty or whitespace-only `title` or `text`, raise
+  `ImproperlyConfigured` on
   construction. `steps` is stored as a tuple (FR-003, FR-004). Tests: `TestTourStep`,
   `TestTour` in `tests/test_tours.py`.
 - [ ] T003 [US1] `Tour.as_driver_steps()`: one dict per step in declared order, `title` and
@@ -31,11 +32,13 @@ the page in the declared order, with every file served by the site.
   step with and without an element; `<b>&"'` in a title and a text come out escaped; a
   `gettext_lazy("Yes")` title under `translation.override("de")` comes out as the German string
   (FR-003, FR-005, FR-006).
-- [ ] T004 [US1] `with_tour(tour)` decorator and `Tour.for_view(func)`: the tour of an
-  `as_view()` function from its class's `tour` attribute, of a decorated function from its
-  `tour` attribute, through `login_required` in either order, `None` for a view with no tour
-  and for a non-`Tour` attribute (FR-001, FR-002). Export `Tour`, `TourStep`, `with_tour` from
-  `page_tours/__init__.py`. Tests: `TestWithTour`, `TestTourForView` in `tests/test_tours.py`.
+- [ ] T004 [US1] `with_tour(tour)` decorator and `Tour.for_page(context)`, exactly as plan.md
+  "Declaring a tour": a class-based view's tour from `context["view"].tour`; a function-based
+  view's from `request.page_tour`, which `with_tour` sets before calling the view and removes if
+  the view raises; through `login_required` in either order; `None` with no view and no
+  request, for a view with no tour, and for a non-`Tour` value (FR-001, FR-002). Export `Tour`,
+  `TourStep`, `with_tour` from `page_tours/__init__.py`. Tests: `TestWithTour`,
+  `TestTourForPage` in `tests/test_tours.py`, using `rf` requests and plain context dicts.
 
 ### Group 2 — the one-time setup and the starter script
 
@@ -53,12 +56,16 @@ the page in the declared order, with every file served by the site.
   the page escaped inside the JSON (US1-7); a signed-in and an anonymous visitor get the same
   tag output (US1-9, FR-014); both URLs of the same view carry the tour (edge case); the
   function-based view's page carries its tour (FR-002); a template rendered with no request in
-  its context renders the tag as nothing.
+  its context renders the tag as nothing; a class-based and a function-based test view with a
+  tour that raise `Http404` give a 404 page (a `tests/templates/404.html` extending the test
+  base template) with no `page-tour-steps` (plan.md "A tour is emitted only on the page its own
+  view renders"); a page rendered under `translation.override("de")` carries the German title
+  of a `gettext_lazy("Yes")` step in `#page-tour-steps` (US1-6).
 - [ ] T006 [US1] `page_tours.W001` in `page_tours/checks.py`, registered in
   `PageToursConfig.ready()`, a `Warning` when no `DjangoTemplates` backend has
   `django.template.context_processors.request`; message wrapped with `gettext_lazy`. Tests:
-  `TestRequestContextProcessorCheck` in `tests/test_checks.py` (warns without it, silent with
-  it, asserted by check id); `tests/test_apps.py` asserts the check is registered.
+  `TestRequestContextProcessorCheck` in `tests/test_checks.py`, through
+  `django.core.checks.run_checks()` (warns without it, silent with it, asserted by check id).
 - [ ] T007 [US1] `page_tours/static/page_tours/page-tours.js`: plan.md "The starter script"
   steps 1, 2 (without the visibility test: an element step resolves to the first
   `querySelector` match) and 4. Browser-test set-up: `DJANGO_ALLOW_ASYNC_UNSAFE=true` in
@@ -96,12 +103,14 @@ to the first, close part-way, and use the page's own controls throughout.
   invalid selector treated as missing, no tour when nothing is showable. Tests in
   `TestTourSkipsSteps`: a step whose element is missing is skipped going forward and going back
   with no console error (US2-5); a step whose element is `hidden` is skipped (edge case,
-  FR-012); a step whose selector is invalid is skipped; a tour whose every step names a missing
+  FR-012); a step whose selector is invalid is skipped; a tour whose first step's element is
+  missing starts at its second step (FR-010); a tour whose every step names a missing
   element plays nothing and leaves no `driver-` markup (US2-6); a selector matching two
   elements highlights the first (edge case).
 - [ ] T011 [US2] Failure, plan.md "The starter script" step 5. Tests in `TestTourFailure`, each
   fault injected as plan.md "Tests" describes, each asserting no `driver-` markup left and the
-  page's own control still working: the Driver.js file cannot load (FR-009); Driver.js fails
+  page's own control still working and no element carrying
+  `aria-controls="driver-popover-content"`: the Driver.js file cannot load (FR-009); Driver.js fails
   while starting (US2-7); a step fails while the tour is playing (US2-7, SC-005).
 - [ ] T012 [US2] JavaScript off, `TestTourWithoutJavaScript`: the same template rendered with and
   without a tour has equal `inner_text("body")` and equal bounding boxes for every element in

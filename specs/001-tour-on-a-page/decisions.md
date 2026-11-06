@@ -50,3 +50,15 @@ the maintainer and is recorded here so it can be overruled.
     shared tests workflow called with `install-playwright: true`. That change lands on main as
     its own pull request, and this branch is rebased onto it before it is marked ready for
     review, so no workflow file changes here.
+15. **A tour plays only on the page its own view renders, never on an error page shown in its
+    place.** A view with a tour that raises `Http404` or `PermissionDenied` is followed by a 404
+    or 403 page rendered with the same request. Looking the tour up from the URL's view would
+    play it there, including to a visitor refused the page. The tag reads the class-based view
+    from the context, and `with_tour` marks the request only while its view runs without error.
+16. **Driver.js's step count stays off.** It counts skipped steps, so a tour with a missing
+    element would count steps the visitor never sees.
+17. **The demo's text field submits by GET.** The demo page is a `TemplateView`, which answers
+    GET only.
+18. **No fallback for browsers without `Element.checkVisibility()`.** Every current browser has
+    it, and the browser tests run in Chromium only.
+19. **A title or text of only whitespace counts as missing** (FR-004).

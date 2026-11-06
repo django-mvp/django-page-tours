@@ -25,7 +25,7 @@ against `live_server` for what only a browser shows.
 **Target Platform**: any Django site; evergreen browsers.
 **Project Type**: reusable Django app.
 **Constraints**: nothing loaded from another origin; no CSS framework classes in emitted markup;
-a page without a tour is byte-for-byte unaffected by the tag.
+on a page without a tour the tag emits nothing but whitespace.
 
 ## Constitution Check
 
@@ -59,25 +59,34 @@ class Tour:
     steps: Sequence[TourStep]
 
     @classmethod
-    def for_view(cls, view) -> "Tour | None": ...
+    def for_page(cls, context) -> "Tour | None": ...
     def as_driver_steps(self) -> list[dict]: ...
 
 def with_tour(tour: Tour) -> Callable[[F], F]: ...
 ```
 
 - **Validation at declaration (FR-004).** `TourStep.__post_init__` raises `ImproperlyConfigured`
-  when `title` or `text` is empty. `Tour.__post_init__` raises `ImproperlyConfigured` when
-  `steps` is empty, and stores `steps` as a tuple so a declared tour cannot change later. Tours
-  are declared at import time, so the error appears when the project starts, before any visitor.
-  An empty `element` is the same as none.
+  when `title` or `text` is empty or only whitespace. `Tour.__post_init__` raises
+  `ImproperlyConfigured` when `steps` is empty, and stores `steps` as a tuple so a declared tour
+  cannot change later. Tours are declared at import time, so the error appears when the project
+  starts, before any visitor. An empty `element` is the same as none.
+- **A tour is emitted only on the page its own view renders.** An error page is not that page:
+  when a view with a tour raises `Http404` or `PermissionDenied`, Django renders the 404 or 403
+  page with the same request (`django/views/defaults.py`), so a lookup through
+  `request.resolver_match` would play the refused page's tour on the error page. The lookup
+  therefore reads what only the view's own rendering carries.
 - **Class-based views (FR-002).** A class attribute: `tour = Tour(steps=[...])`, read the way
-  `template_name` is. No mixin is needed because nothing is read from the instance.
-- **Function-based views (FR-002).** `@with_tour(Tour(...))` sets `view.tour` and returns the
-  same function. It sits under any `login_required`-style decorator or over it: `functools.wraps`
-  copies the attribute (research, "How the tag finds the page's tour").
-- **`Tour.for_view(func)`** returns `func.view_class.tour` when the function came from
-  `as_view()`, otherwise `func.tour`, otherwise `None`. `getattr` with a default throughout. A
-  non-`Tour` value is ignored (returns `None`).
+  `template_name` is. Django's generic views put the view instance in the template context as
+  `view` (`ContextMixin.get_context_data`), and an error handler's context has no `view`, so the
+  tag reads `context["view"].tour`. No mixin is needed.
+- **Function-based views (FR-002).** `@with_tour(Tour(...))` wraps the view
+  (`functools.wraps`): it sets `request.page_tour = tour` before calling the view, and removes it
+  again if the view raises, so the error page that follows has none. A response rendered later
+  (a `TemplateResponse`) still sees it, because nothing raised. It sits under or over any
+  `login_required`-style decorator.
+- **`Tour.for_page(context)`** returns the `tour` of `context["view"]` when it is a `Tour`,
+  otherwise `request.page_tour` of `context["request"]` when it is a `Tour`, otherwise `None`.
+  `getattr` with a default throughout.
 - **`Tour.as_driver_steps()`** returns one dict per step, in the declared order:
   `{"title": escape(str(title)), "text": escape(str(text))}`, plus `"element": selector` when the
   step has one. `str()` runs at render time, so the active language applies (FR-005).
@@ -90,9 +99,8 @@ def with_tour(tour: Tour) -> Callable[[F], F]: ...
 `{% load page_tours %}{% page_tour %}`, placed once in the base template's `<head>`. An
 inclusion tag, `takes_context=True`, template `page_tours/page_tour.html`.
 
-- Reads `context.get("request")`, then `request.resolver_match` (absent on error pages and
-  outside a request), then `Tour.for_view(resolver_match.func)`. Any of them missing → the tag
-  renders an empty string (FR-007, edge cases).
+- Calls `Tour.for_page(context)`. No tour → the tag renders nothing but whitespace (FR-007,
+  edge cases): the template's whole body sits inside `{% if steps %}`.
 - With a tour, the template emits, and nothing else:
 
   ```django
@@ -114,13 +122,14 @@ inclusion tag, `takes_context=True`, template `page_tours/page_tour.html`.
 A system check registered in `PageToursConfig.ready()`, `page_tours.W001`, a `Warning` when no
 `DjangoTemplates` backend lists `django.template.context_processors.request`, modelled on
 `admin.W411`. The message is wrapped for translation (Article VIII). Without it the tag can never
-find a tour, and the developer would get no sign of it.
+find a function-based view's tour, and the developer would get no sign of it.
 
 ### Vendored Driver.js (`page_tours/static/page_tours/vendor/driver.js-1.10.2/`)
 
 `driver.js.iife.js`, `driver.css` and `LICENSE`, copied byte for byte from the npm archive of
-`driver.js@1.10.2` (sha256 recorded in the CHANGELOG entry: `541520f3…e17c0` for the script,
-`ff1934a5…bf12` for the stylesheet). The release is in the directory name, so moving to a new
+`driver.js@1.10.2` (sha256 recorded in the CHANGELOG entry:
+`541520f33f84cc5cf6696b421f705cc9efe2d72656b3b5cd7f72c22e6d7e17c0` for the script,
+`ff1934a5a7ef3f50deb9266ba8945b3eb407ee10b97da12feda4b7c10055bf12` for the stylesheet). The release is in the directory name, so moving to a new
 release is one visible change (Article XII). Source on disk:
 `/home/sam/projects/worktrees/driverjs-1.10.2/package/`.
 
@@ -133,12 +142,13 @@ An IIFE, no globals of its own, no build step:
 2. Parse the JSON. Map each step to `{popover: {title, description: text}}`, and for a step with
    an `element`, `element: () => visibleElement(selector)`, where `visibleElement` returns the
    first match of `document.querySelector(selector)` when it exists and
-   `el.checkVisibility({visibilityProperty: true, opacityProperty: true})` is true (falling back
-   to `el.getClientRects().length > 0` where `checkVisibility` is absent), and `undefined`
-   otherwise, including when the selector is invalid and `querySelector` throws.
+   `el.checkVisibility({visibilityProperty: true, opacityProperty: true})` is true, and
+   `undefined` otherwise, including when the selector is invalid and `querySelector` throws.
 3. If no step is showable now (every step has an element and none resolves) → return; no tour
    plays (US2 scenario 6).
-4. `driver({steps, skipMissingElement: true, showProgress: true})`, then `drive()`. Driver.js
+4. `driver({steps, skipMissingElement: true})`, then `drive()`. Driver.js's step count stays
+   off, its default: it counts skipped steps, so a tour with a missing element would read
+   "4 of 4" with three shown. Driver.js
    skips a step whose element function returns nothing as the tour reaches it, going forward and
    going back (research). The first step shown is the first showable one (FR-010).
 5. **Failure (FR-013).** Starting is inside `try`. A `window` `error` listener is added just
@@ -147,7 +157,10 @@ An IIFE, no globals of its own, no build step:
    `try`, then it removes any element still carrying `driver-overlay`, `driver-popover` or the id
    `driver-dummy-element`, and the classes `driver-active`, `driver-fade`, `driver-simple`,
    `driver-active-element`, `driver-active-element-parent` and
-   `driver-active-element-parent-no-scroll` wherever they remain. Ending the tour on any
+   `driver-active-element-parent-no-scroll` wherever they remain, the attributes
+   `aria-haspopup`, `aria-expanded` and `aria-controls` from any element whose `aria-controls` is
+   `driver-popover-content`, and the `--driver-animation-duration` property from `body`'s
+   style. Ending the tour on any
    uncaught error while it is active, not only Driver.js's own, is deliberate: the page outranks
    the tour (Article XIII), and telling Driver.js's errors from others is not reliable.
 
@@ -157,8 +170,8 @@ An IIFE, no globals of its own, no build step:
 `demo/templates/base.html`. Its tour has a welcome step attached to nothing, a step attached to
 an element on the page, a step attached to an element that is not on the page, and a closing
 step attached to a second element. The page has its own working controls (a `<details>`
-disclosure and a text field with a submit button posting to the same page) so a visitor can see
-the page still works during and after the tour. `base.html` gets `{% load page_tours %}` and
+disclosure, and a text field in a `method="get"` form submitting to the same page) so a visitor
+can see the page still works during and after the tour. `base.html` gets `{% load page_tours %}` and
 `{% page_tour %}` in `<head>`, which is the one-time setup. The overview page stops saying no
 tours are built. Demo strings are plain, never marked for translation (Article VIII).
 
@@ -168,8 +181,8 @@ tours are built. Demo strings are plain, never marked for translation (Article V
 |---|---|
 | `tests/test_tours.py` | `TestTourStep`, `TestTour`, `TestWithTour`: validation, order, lookup for CBV, FBV, wrapped views, escaping, translation |
 | `tests/test_templatetags/test_page_tours.py` | `TestPageTourTag`: rendered pages through `client`, with test views in `tests/views.py` and templates in `tests/templates/` |
-| `tests/test_checks.py` | `TestRequestContextProcessorCheck` |
-| `tests/test_apps.py` | the check is registered (existing module, new test) |
+| `tests/test_checks.py` | `TestRequestContextProcessorCheck`, through `django.core.checks.run_checks()`, so it also fails if `ready()` stops registering the check |
+| `tests/test_static/test_vendor.py` | the vendored Driver.js files are found by the staticfiles finders |
 | `tests/test_static/test_page_tours_js.py` | browser behaviour of the starter script, through `live_server` and Playwright. Declared in `[tool.forge.conformance] non-mirror-paths` as `tests/test_static/` |
 | `tests/test_demo.py` | the demo tour page responds, is linked from the bar, and its tour carries the three kinds of step; one browser test walks it (SC-002) |
 
@@ -190,7 +203,7 @@ with Playwright, never from package code:
   in `body` are equal between the two (SC-004).
 
 After every fault, the test asserts no element with a `driver-` class or the dummy id remains,
-`body` has no `driver-` class, and the page's own control still works (SC-005).
+`body` has no `driver-` class, no element has `aria-controls="driver-popover-content"`, and the page's own control still works (SC-005).
 
 `DJANGO_ALLOW_ASYNC_UNSAFE=true` goes in `[tool.pytest.ini_options] env` (research). The tests
 run under xdist as the verify step does.
@@ -210,7 +223,7 @@ page_tours/
     ├── page-tours.js
     └── vendor/driver.js-1.10.2/{driver.js.iife.js,driver.css,LICENSE}
 demo/  views.py, urls.py, templates/base.html, templates/demo/{overview,tour}.html
-tests/ test_tours.py, test_checks.py, test_apps.py, test_demo.py, views.py, urls.py,
+tests/ test_tours.py, test_checks.py, test_demo.py, views.py, urls.py,
        settings.py, templates/…, test_templatetags/{__init__,test_page_tours}.py,
        test_static/{__init__,test_page_tours_js}.py
 docs/  developer/tours.md (new), developer/installation.md, developer/index.md, index.md

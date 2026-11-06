@@ -51,17 +51,22 @@ Quotations are from `package/dist/driver.js.iife.js`.
 The tour belongs to the view that renders the page (CONTEXT.md, Tour), so the one-time setup in
 the base template must find the view without the view passing anything to its template.
 
-- `request.resolver_match.func` is the view function the URL resolved to. For a class-based view
-  that is the function `as_view()` returns, which carries the class as `view_class`
-  (`django/views/generic/base.py`, `View.as_view`, `view.view_class = cls`). For a function-based
-  view it is the function itself.
-- Django's own view decorators (`login_required`, `cache_page`, …) wrap with `functools.wraps`,
-  which copies the wrapped function's `__dict__`. A `tour` attribute set on a function, and
-  `view_class` set by `as_view()`, both survive wrapping.
+- **`request.resolver_match` is the wrong source.** It names the view the URL resolved to, and
+  it stays set when that view raises: `django/core/handlers/base.py` sets it in
+  `resolve_request` before calling the view, and the 404 and 403 handlers render their page with
+  the same request (`django/views/defaults.py`, `page_not_found` and `permission_denied`). A
+  lookup through it would play a page's tour on the error page shown instead of that page,
+  including to a visitor refused permission.
+- **A class-based view's own rendering carries the view.** `ContextMixin.get_context_data` puts
+  the instance in the context as `view` (`django/views/generic/base.py`), and an error handler's
+  context has no `view`.
+- **A function-based view's rendering can carry it on the request**, set by a wrapping decorator
+  and removed if the view raises. Django's own view decorators wrap with `functools.wraps`, so
+  stacking with `login_required` and the like keeps working.
 - `request` is in a template's context only with `django.template.context_processors.request`.
   Django's own project template enables it, and the admin already checks for it with a warning
-  (`django/contrib/admin/checks.py`, `admin.W411`). Without it the tag cannot find the view and
-  would play no tour without a word to the developer.
+  (`django/contrib/admin/checks.py`, `admin.W411`). Without it the tag cannot find a
+  function-based view's tour and would play none without a word to the developer.
 
 ## Browser tests
 
@@ -80,9 +85,8 @@ the base template must find the view without the view passing anything to its te
 | New piece | Where the search stopped |
 |---|---|
 | `Tour` and `TourStep` declarations | 7, new code. Nothing in the repo, its dependencies or Django declares a guided tour |
-| Attaching a tour to a class-based view | 4, Django: a class attribute read from `view_class`, the way `template_name` is |
-| Attaching a tour to a function-based view | 7, new code: a decorator that sets the attribute. Nothing in Django attaches data to a view function |
-| Finding the view for the request | 4, Django: `request.resolver_match.func` |
+| Attaching a tour to a class-based view | 4, Django: a class attribute read from the `view` the generic views put in the context, the way `template_name` is declared |
+| Attaching a tour to a function-based view | 7, new code: a decorator that marks the request while the view runs. Nothing in Django attaches data to a view function's rendering |
 | The tag placed once in the base template | 4, Django: an inclusion tag |
 | Getting the steps to the browser safely | 4, Django: the `json_script` filter, after `django.utils.html.escape` |
 | Drawing the tour, moving through it, closing it | 6, Driver.js 1.10.2, vendored |
