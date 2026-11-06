@@ -129,24 +129,6 @@ def tour_id(context: Any) -> str:
     return str(getattr(context.get("request"), "page_tour_view", ""))
 
 
-def view_path(view: Any) -> str:
-    """Return the dotted path that names a view.
-
-    A view made by ``as_view()`` is named by its class. A callable with no name of
-    its own, such as a ``functools.partial``, is named by its type.
-
-    Args:
-        view: The view function, or any callable used as one.
-
-    Returns:
-        The view's module and qualified name, joined by a dot.
-    """
-    named = getattr(view, "view_class", view)
-    module = getattr(named, "__module__", None) or type(named).__module__
-    qualname = getattr(named, "__qualname__", None) or type(named).__qualname__
-    return f"{module}.{qualname}"
-
-
 def with_tour(tour: Tour) -> Callable[[F], F]:
     """Attach a tour to a function-based view, sync or async.
 
@@ -162,7 +144,12 @@ def with_tour(tour: Tour) -> Callable[[F], F]:
     """
 
     def decorator(view: F) -> F:
-        path = view_path(view)
+        # A view from as_view() is named by its class, and a callable with no name
+        # of its own, such as a functools.partial, by its type.
+        named = getattr(view, "view_class", view)
+        module = getattr(named, "__module__", None) or type(named).__module__
+        qualname = getattr(named, "__qualname__", None) or type(named).__qualname__
+        path = f"{module}.{qualname}"
 
         if iscoroutinefunction(view):
 
