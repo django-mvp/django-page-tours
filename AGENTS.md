@@ -16,7 +16,9 @@ it in the browser. A tour plays once per browser until it is Seen, and can be Re
 - **Lint:** `uv run pre-commit run --all-files` (ruff lint + format, mypy, deptry)
 - **Type-check:** `uv run mypy`
 - **Build:** `uv build`
-- **Docs:** `uv run --group docs sphinx-build -E -b html docs docs/_build`
+- **Docs:** `uv run --group docs sphinx-build -E -W -b html docs docs/_build`
+- **Demo project:** `uv run python manage.py migrate && uv run python manage.py seed_demo && uv run python manage.py runserver`
+  (`demo/`, never distributed; every feature adds its page there)
 
 Lint is the pre-commit run, not a bare `ruff check .`: the hook config excludes `docs/` and
 migrations, and runs hooks a bare invocation does not.

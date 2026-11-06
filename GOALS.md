@@ -25,6 +25,5 @@ Importance is a tag on each goal, not a ranking:
 | G7 | A site gives tours its own look, and a design system can style them for every site built on it | Expected | | |
 | G8 | A reusable app ships tours for its own pages, which a project can change or turn off without editing the app | Expected | | |
 | G9 | When a tour changes enough to matter, people who saw the old one see it again | Expected | | |
-| G10 | Documentation and a demo project that show every kind of step in use | Expected | | |
 
 _Written 2026-11-06. Revise as the goals change._

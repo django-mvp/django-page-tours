@@ -154,7 +154,9 @@ Read at plan and review; applies to every change.
 - The package builds and its metadata is valid; the README renders on the package index
   (absolute URLs only — a relative link breaks there); the public API honors the deprecation
   policy in Article XI.
-- Documentation builds clean.
+- Documentation builds clean, with warnings treated as errors.
+- Every feature ships its documentation page and its page in the demo project in the same pull
+  request. The demo has a page showing each kind of tour step the package supports.
 
 Article IX is satisfied trivially: there are no models, and seen state lives in the browser.
 Adding a model brings the article into play rather than being an exception to it.
@@ -168,4 +170,4 @@ Adding a model brings the article into play rather than being an exception to it
 
 ---
 
-**Version**: 1.0.0 | **Ratified**: 2026-11-06 | **Last Amended**: 2026-11-06
+**Version**: 1.1.0 | **Ratified**: 2026-11-06 | **Last Amended**: 2026-11-06

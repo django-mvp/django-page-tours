@@ -18,6 +18,9 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "page_tours",
+    # The demo project, so its pages are tested as part of the suite.
+    "demo",
+    "django_browser_reload",
 ]
 
 MIDDLEWARE = [

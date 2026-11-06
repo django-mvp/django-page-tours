@@ -85,9 +85,3 @@ A reusable Django app declares tours for its own pages, and a project that insta
 *resolve · advances G9*
 
 When a developer changes a tour enough that people should see it again, they mark it as a new version, and visitors who saw the old version see the new one once. Serves G9.
-
-### R8 — Documentation and a demo project
-
-*feature · advances G10*
-
-A documentation site with a guide for each part of the package, and a demo project whose pages show every kind of step in use, so a developer can see a tour working before installing anything. Each feature documents itself as it lands. This item covers the demo project and the guides that tie the parts together. Serves G10.

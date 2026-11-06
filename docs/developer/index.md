@@ -1,0 +1,10 @@
+# Developer guide
+
+For a developer adding guided tours to the pages of their own Django project.
+
+```{toctree}
+:caption: Getting started
+:maxdepth: 1
+
+installation
+```

@@ -63,3 +63,6 @@ env.bak/
 venv.bak/
 
 dist
+
+# The demo project's database
+demo.sqlite3
