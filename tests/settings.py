@@ -1,6 +1,4 @@
-"""
-Django settings for testing django-page-tours.
-"""
+"""Django settings for testing django-page-tours."""
 
 import os
 

@@ -13,7 +13,7 @@ extensions = [*extensions, "autodoc2"]
 
 autodoc2_packages = ["../page_tours"]
 autodoc2_render_plugin = "myst"
-autodoc2_output_dir = "api"
+autodoc2_output_dir = "reference/api"
 html_logo = None
 html_favicon = None
 html_theme_options["path_to_docs"] = "docs"
