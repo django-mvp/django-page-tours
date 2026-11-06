@@ -96,7 +96,7 @@
       return;
     }
     try {
-      if (tour) {
+      if (tour && tour.isActive()) {
         tour.destroy();
       }
       tour = driver({
@@ -113,6 +113,16 @@
       endTour();
     }
   }
+
+  document.querySelectorAll("template[data-page-tour-replay]").forEach(function (holder) {
+    var control = holder.content.firstElementChild;
+    if (control) {
+      var button = control.cloneNode(true);
+      button.addEventListener("click", start);
+      holder.before(button);
+    }
+    holder.remove();
+  });
 
   if (payload.autoplay && !isSeen()) {
     start();

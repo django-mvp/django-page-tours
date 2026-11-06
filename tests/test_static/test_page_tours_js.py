@@ -370,3 +370,152 @@ class TestSeenTour:
         keys = page.evaluate("Object.keys(localStorage)")
 
         assert keys == ["page-tours:seen:tests.views.NavigationTourView"]
+
+
+REPLAY = "#replay"
+
+
+class TestReplay:
+    """A control the developer places plays the tour again from its first step."""
+
+    def open_and_close(self, page, url):
+        """Open the page, let the first play start, and close it."""
+        page.goto(url)
+        expect(page.locator(TITLE)).to_have_text("Step 1")
+        page.click(CLOSE)
+        expect(page.locator(".driver-popover")).to_have_count(0)
+
+    def test_the_control_plays_a_seen_tour_from_the_first_step(self, page, live_server):
+        """Using the control on a seen tour shows step one."""
+        self.open_and_close(page, live_server.url + reverse("replay"))
+
+        page.click(REPLAY)
+
+        expect(page.locator(TITLE)).to_have_text("Step 1")
+
+    def test_the_control_starts_the_tour_again_after_it_ends(self, page, live_server):
+        """After the last step, nothing is left and the control plays it again."""
+        page.goto(live_server.url + reverse("replay"))
+        page.click(NEXT)
+        page.click(NEXT)
+        expect(page.locator(".driver-popover")).to_have_count(0)
+        assert_no_driver_markup(page)
+
+        page.click(REPLAY)
+
+        expect(page.locator(TITLE)).to_have_text("Step 1")
+
+    def test_the_control_starts_the_tour_again_after_a_close(self, page, live_server):
+        """After a close, nothing is left and the control plays it again."""
+        self.open_and_close(page, live_server.url + reverse("replay"))
+        assert_no_driver_markup(page)
+
+        page.click(REPLAY)
+
+        expect(page.locator(TITLE)).to_have_text("Step 1")
+
+    def test_a_replay_that_ends_leaves_nothing_behind(self, page, live_server):
+        """Closing a replayed tour removes everything Driver.js added."""
+        self.open_and_close(page, live_server.url + reverse("replay"))
+        page.click(REPLAY)
+        expect(page.locator(TITLE)).to_have_text("Step 1")
+
+        page.click(CLOSE)
+
+        expect(page.locator(".driver-popover")).to_have_count(0)
+        assert_no_driver_markup(page)
+
+    def test_a_replay_does_not_make_the_tour_play_on_the_next_visit(
+        self, page, live_server
+    ):
+        """Seen stays seen: reopening after a replay shows nothing."""
+        url = live_server.url + reverse("replay")
+        self.open_and_close(page, url)
+        page.click(REPLAY)
+        page.click(CLOSE)
+
+        page.goto(url)
+
+        page.wait_for_load_state("load")
+        expect(page.locator(REPLAY)).to_be_visible()
+        expect(page.locator(".driver-popover")).to_have_count(0)
+        assert_no_driver_markup(page)
+
+    def test_the_control_is_a_button_in_the_page_and_the_template_is_gone(
+        self, page, live_server
+    ):
+        """The script swaps the template for its button."""
+        page.goto(live_server.url + reverse("replay"))
+
+        expect(page.locator(REPLAY)).to_have_count(1)
+        expect(page.locator("template[data-page-tour-replay]")).to_have_count(0)
+
+    def test_with_javascript_off_no_control_is_visible(self, browser, live_server):
+        """The control exists only where the script can make it work."""
+        context = browser.new_context(java_script_enabled=False)
+        try:
+            page = context.new_page()
+            page.goto(live_server.url + reverse("replay"))
+
+            expect(page.locator(REPLAY)).to_have_count(0)
+            expect(page.locator("button:visible")).to_have_count(1)
+        finally:
+            context.close()
+
+    def test_the_control_is_reached_and_pressed_with_the_keyboard(
+        self, page, live_server
+    ):
+        """Tab reaches the button, Enter starts the tour."""
+        self.open_and_close(page, live_server.url + reverse("replay"))
+        for _ in range(5):
+            page.keyboard.press("Tab")
+            if page.evaluate("document.activeElement.id") == "replay":
+                break
+        expect(page.locator(REPLAY)).to_be_focused()
+
+        page.keyboard.press("Enter")
+
+        expect(page.locator(TITLE)).to_have_text("Step 1")
+
+    def test_using_it_on_a_tour_with_nothing_showable_does_nothing(
+        self, page, live_server
+    ):
+        """No Driver.js markup and no page error."""
+        errors = []
+        page.on("pageerror", lambda error: errors.append(str(error)))
+        page.goto(live_server.url + reverse("replay-nothing"))
+
+        page.click(REPLAY)
+
+        expect(page.locator(".driver-popover")).to_have_count(0)
+        assert_no_driver_markup(page)
+        assert errors == []
+
+    def test_two_controls_each_start_the_tour(self, page, live_server):
+        """Each placement of the control works."""
+        self.open_and_close(page, live_server.url + reverse("replay-twice"))
+        controls = page.locator(".replay-control")
+        expect(controls).to_have_count(2)
+
+        controls.nth(0).click()
+        expect(page.locator(TITLE)).to_have_text("Step 1")
+        page.click(CLOSE)
+        expect(page.locator(".driver-popover")).to_have_count(0)
+        controls.nth(1).click()
+
+        expect(page.locator(TITLE)).to_have_text("Step 1")
+
+    def test_a_step_can_point_at_the_control_and_using_it_restarts_the_tour(
+        self, page, live_server
+    ):
+        """On a first open the control exists for a step; using it restarts."""
+        page.goto(live_server.url + reverse("replay-pointed-at"))
+        expect(page.locator(TITLE)).to_have_text("Step 1")
+        page.click(NEXT)
+        expect(page.locator(TITLE)).to_have_text("Step 2")
+        expect(page.locator(REPLAY)).to_have_class(re.compile("driver-active-element"))
+
+        page.click(REPLAY)
+
+        expect(page.locator(TITLE)).to_have_text("Step 1")
+        expect(page.locator(".driver-popover")).to_have_count(1)
