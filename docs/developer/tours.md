@@ -1,0 +1,131 @@
+# Adding a tour to a page
+
+A tour is a short list of steps that Driver.js shows over one page, each step pointing at a part
+of the page with a title and a sentence. You declare the tour in Python, next to the view that
+renders the page. The page plays it when it opens in the browser.
+
+## Set up the tour tag once
+
+Every page that can carry a tour needs two things in its base template and its settings. You do
+this once for the whole project.
+
+1. Load the tag library and place the tag in the `<head>` of your base template:
+
+   ```django
+   {% load page_tours %}
+   <head>
+     ...
+     {% page_tour %}
+   </head>
+   ```
+
+2. Check that `django.template.context_processors.request` is listed in the
+   `context_processors` option of your `DjangoTemplates` backend in `TEMPLATES`:
+
+   ```python
+   TEMPLATES = [
+       {
+           "BACKEND": "django.template.backends.django.DjangoTemplates",
+           "OPTIONS": {
+               "context_processors": [
+                   "django.template.context_processors.request",
+                   # ...
+               ],
+           },
+           # ...
+       },
+   ]
+   ```
+
+A page with no tour gets nothing from the tag: no script, no stylesheet, no reference to
+Driver.js. A page with a tour gets the Driver.js stylesheet and script from your own static
+files, and the page's steps.
+
+Django's `check` command warns with `page_tours.W001` when no `DjangoTemplates` backend lists
+the request context processor. Without it a tour on a function-based view is never found.
+
+## Add a tour to a class-based view
+
+Set `tour` on a view built on Django's generic views, which put `view` in the template context:
+
+```python
+from django.views.generic import TemplateView
+
+from page_tours import Tour, TourStep
+
+
+class DashboardView(TemplateView):
+    template_name = "dashboard.html"
+    tour = Tour(
+        steps=[
+            TourStep(title="Welcome", text="A quick look around."),
+            TourStep(
+                title="Your projects",
+                text="Everything you work on is listed here.",
+                element="#projects",
+            ),
+        ]
+    )
+```
+
+The tour is on every URL that routes to the view.
+
+## Add a tour to a function-based view
+
+Decorate the view with `with_tour`. The page the view renders carries the tour:
+
+```python
+from django.shortcuts import render
+
+from page_tours import Tour, TourStep, with_tour
+
+
+@with_tour(Tour(steps=[TourStep(title="Welcome", text="A quick look around.")]))
+def dashboard(request):
+    return render(request, "dashboard.html")
+```
+
+The tag finds the tour through the request, so the request context processor from the setup
+above must be listed.
+
+## Attach a step to an element, or to nothing
+
+A step with `element` points at the first element on the page matching that CSS selector. Driver.js
+highlights it and places the step beside it:
+
+```python
+TourStep(title="Your projects", text="Everything is listed here.", element="#projects")
+```
+
+A step without `element` is attached to nothing. Driver.js shows it in the middle of the page,
+which suits a welcome or a closing step:
+
+```python
+TourStep(title="Welcome", text="A quick look around.")
+```
+
+## Translate a step
+
+Titles and texts are plain text. Markup characters in them are escaped, so
+`<b>bold</b>` shows as those characters and not as bold text.
+
+Mark a step for translation with `gettext_lazy`. It is converted when the page is rendered, in
+the visitor's language:
+
+```python
+from django.utils.translation import gettext_lazy as _
+
+TourStep(title=_("Your projects"), text=_("Everything is listed here."))
+```
+
+## Why a mistake in a tour stops the project at start-up
+
+A tour is declared as the module that holds it is imported, so a mistake stops the project
+starting and never reaches a visitor. A tour with no steps, and a step with an empty title or
+empty text (whitespace counts as empty), raise `ImproperlyConfigured`.
+
+## Why a tour never shows on an error page
+
+A tour is found only from the page its own view renders. When a view raises, such as `Http404`,
+Django renders the error page instead, and the tour is not on it, even when the error page
+extends the same base template.

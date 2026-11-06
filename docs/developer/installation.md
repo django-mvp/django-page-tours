@@ -25,3 +25,19 @@ INSTALLED_APPS = [
 ```
 
 Django can now find the package's templates and static files. There are no migrations to run.
+
+## Add the tag to your base template
+
+Load the tag library and place the tag once in the `<head>` of your base template:
+
+```django
+{% load page_tours %}
+<head>
+  ...
+  {% page_tour %}
+</head>
+```
+
+The tag needs `django.template.context_processors.request` in the `context_processors` option of
+your `TEMPLATES` setting, and Django's `check` command warns with `page_tours.W001` when it is
+missing. [Adding a tour to a page](tours.md) shows how to declare a tour.

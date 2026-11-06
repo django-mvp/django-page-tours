@@ -8,3 +8,10 @@ For a developer adding guided tours to the pages of their own Django project.
 
 installation
 ```
+
+```{toctree}
+:caption: Guides
+:maxdepth: 1
+
+tours
+```
