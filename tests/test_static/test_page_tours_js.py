@@ -167,3 +167,55 @@ class TestTourSkipsSteps:
         expect(page.locator("#twin-second")).not_to_have_class(
             re.compile(r"driver-active-element")
         )
+
+
+STAND_IN_THAT_FAILS = """
+window.driver = {js: {driver: () => ({drive: () => {
+  const overlay = document.createElement("div");
+  overlay.className = "driver-overlay";
+  document.body.appendChild(overlay);
+  document.body.classList.add("driver-active");
+  throw new Error("cannot start");
+}})}};
+"""
+
+
+class TestTourFailure:
+    """A tour that fails ends and leaves the page as usable as it was."""
+
+    def assert_page_still_works(self, page):
+        """Assert that nothing of Driver.js is left and the page's control works."""
+        assert_no_driver_markup(page)
+        page.click("#control")
+        expect(page.locator("#output")).to_have_text("worked")
+
+    def test_a_script_that_cannot_load_leaves_the_page_alone(self, page, live_server):
+        """With the Driver.js file unreachable, the page is as it would be untoured."""
+        page.route("**/driver.js.iife.js", lambda route: route.abort())
+        page.goto(live_server.url + reverse("navigation-tour"))
+        page.wait_for_load_state("load")
+
+        self.assert_page_still_works(page)
+
+    def test_a_failure_while_starting_cleans_up(self, page, live_server):
+        """Driver.js adding markup and then throwing leaves none of it behind."""
+        page.route(
+            "**/driver.js.iife.js",
+            lambda route: route.fulfill(
+                body=STAND_IN_THAT_FAILS, content_type="text/javascript"
+            ),
+        )
+        page.goto(live_server.url + reverse("navigation-tour"))
+        page.wait_for_load_state("load")
+
+        self.assert_page_still_works(page)
+
+    def test_a_failure_while_playing_ends_the_tour(self, page, live_server):
+        """A step that throws when Driver.js measures it ends the tour cleanly."""
+        page.goto(live_server.url + reverse("fragile"))
+        expect(page.locator(TITLE)).to_have_text("Step 1")
+
+        page.click(NEXT)
+
+        expect(page.locator(".driver-popover")).to_have_count(0)
+        self.assert_page_still_works(page)

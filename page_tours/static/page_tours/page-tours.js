@@ -37,5 +37,55 @@
     return;
   }
 
-  driver({ steps: steps, skipMissingElement: true }).drive();
+  var tour;
+
+  function endTour() {
+    try {
+      if (tour) {
+        tour.destroy();
+      }
+    } catch (error) {
+      // Cleaning up by hand below covers whatever destroy() could not.
+    }
+    window.removeEventListener("error", endTour);
+    document
+      .querySelectorAll(".driver-overlay, .driver-popover, #driver-dummy-element")
+      .forEach(function (el) {
+        el.remove();
+      });
+    [
+      "driver-active",
+      "driver-fade",
+      "driver-simple",
+      "driver-active-element",
+      "driver-active-element-parent",
+      "driver-active-element-parent-no-scroll",
+    ].forEach(function (name) {
+      document.querySelectorAll("." + name).forEach(function (el) {
+        el.classList.remove(name);
+      });
+    });
+    document
+      .querySelectorAll('[aria-controls="driver-popover-content"]')
+      .forEach(function (el) {
+        el.removeAttribute("aria-haspopup");
+        el.removeAttribute("aria-expanded");
+        el.removeAttribute("aria-controls");
+      });
+    document.body.style.removeProperty("--driver-animation-duration");
+  }
+
+  try {
+    tour = driver({
+      steps: steps,
+      skipMissingElement: true,
+      onDestroyed: function () {
+        window.removeEventListener("error", endTour);
+      },
+    });
+    window.addEventListener("error", endTour);
+    tour.drive();
+  } catch (error) {
+    endTour();
+  }
 })();
