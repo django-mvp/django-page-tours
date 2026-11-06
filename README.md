@@ -20,8 +20,9 @@ sentence about it. Building one by hand means wiring a JavaScript library into t
 the steps in JavaScript far from the view they describe, and remembering who has already seen it.
 django-page-tours moves the steps into Python, next to the page, and handles the rest.
 
-> **Status:** pre-release. The package installs and its test suite runs, but tours are not built
-> yet. Nothing is published to PyPI until the first usable version.
+> **Status:** pre-release. A tour can be declared for a page and plays when the page opens.
+> Visitors can step through it or close it, and a tour that fails leaves the page usable.
+> Nothing is published to PyPI until the first usable version.
 
 ## Scope & philosophy
 
@@ -45,6 +46,30 @@ it, their browser remembers and it does not play again unless they ask for it.
 1. Lean on Driver.js for anything it already does, rather than reimplementing it.
 2. A tour that fails must leave the page exactly as usable as it was without one.
 3. Fewer settings beat more. Each one has to earn its place.
+
+## Quickstart
+
+Add `page_tours` to `INSTALLED_APPS`, load the tag once in the `<head>` of your base template,
+and declare a tour on a view:
+
+```django
+{% load page_tours %}
+{% page_tour %}
+```
+
+```python
+from django.views.generic import TemplateView
+
+from page_tours import Tour, TourStep
+
+
+class DashboardView(TemplateView):
+    template_name = "dashboard.html"
+    tour = Tour(steps=[TourStep(title="Welcome", text="A quick look around.")])
+```
+
+The [documentation](https://django-mvp.github.io/django-page-tours/) covers function-based views,
+steps attached to elements, what a visitor sees, and translation.
 
 ## Requirements
 

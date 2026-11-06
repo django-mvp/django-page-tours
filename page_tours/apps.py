@@ -9,3 +9,7 @@ class PageToursConfig(AppConfig):
 
     name = "page_tours"
     verbose_name = _("Page tours")
+
+    def ready(self):
+        """Register the system checks."""
+        from page_tours import checks  # noqa: F401

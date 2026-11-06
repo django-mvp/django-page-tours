@@ -1,4 +1,4 @@
-<!doctype html>
+{% load page_tours %}<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8">
@@ -10,12 +10,14 @@
       header { border-bottom: 1px solid #ddd; }
       header a { margin-right: 1rem; }
     </style>
+    {% page_tour %}
     {% block head %}{% endblock head %}
   </head>
   <body>
     <header>
       <nav aria-label="Demo pages">
         <a href="{% url 'overview' %}">Overview</a>
+        <a href="{% url 'tour' %}">Tour</a>
       </nav>
     </header>
     <main>

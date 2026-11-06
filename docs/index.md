@@ -15,8 +15,8 @@ Python, next to the view that renders it, as a short list of steps that each poi
 the page. [Driver.js](https://driverjs.com/), shipped inside the package, shows the tour in the
 visitor's browser.
 
-The package is in early development and no tours can be declared yet. This site grows as each
-feature lands.
+The package is in early development. A tour can be declared for a page and plays when the page
+opens. This site grows as each feature lands.
 
 ## Requirements
 
@@ -38,11 +38,41 @@ INSTALLED_APPS = [
 ]
 ```
 
+Load the tag once in the `<head>` of your base template:
+
+```django
+{% load page_tours %}
+{% page_tour %}
+```
+
 [Installation](developer/installation.md) in the developer guide says what each step sets up.
+
+## Example
+
+Declare a tour on a class-based view:
+
+```python
+from django.views.generic import TemplateView
+
+from page_tours import Tour, TourStep
+
+
+class DashboardView(TemplateView):
+    template_name = "dashboard.html"
+    tour = Tour(
+        steps=[
+            TourStep(title="Welcome", text="A quick look around."),
+            TourStep(title="Projects", text="Your work is here.", element="#projects"),
+        ]
+    )
+```
+
+The page plays the tour when it opens. [Adding a tour to a page](developer/tours.md) covers
+function-based views, steps and translation.
 
 ## Next steps
 
-- [Developer guide](developer/index.md): installing the package and adding tours to your pages.
+- [Developer guide](developer/index.md): installing the package and [adding a tour to a page](developer/tours.md).
 - [Reference](reference/api/index): the Python API.
 
 ## About the project

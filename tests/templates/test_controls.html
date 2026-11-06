@@ -1,0 +1,19 @@
+{% extends "test_base.html" %}
+{% block content %}
+  <h1>Page</h1>
+  <button id="control" type="button">Control</button>
+  <output id="output"></output>
+  <p id="secret" hidden>Hidden</p>
+  <p class="twin" id="twin-first">Twin</p>
+  <p class="twin" id="twin-second">Twin</p>
+  <script>
+    document.getElementById("control").addEventListener("click", function () {
+      document.getElementById("output").textContent = "worked";
+    });
+    {% if fragile %}
+    document.getElementById("{{ fragile }}").getBoundingClientRect = function () {
+      throw new Error("cannot measure");
+    };
+    {% endif %}
+  </script>
+{% endblock content %}
