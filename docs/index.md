@@ -1,13 +1,14 @@
-# django-page-tours
+# Django Page Tours
 
 Guided tours of a page for Django sites, shown with [Driver.js](https://driverjs.com/).
 
 The package is in early development. This documentation grows as each part of it is built.
 
 ```{toctree}
-:maxdepth: 2
+:hidden:
 
-api/index
+Home <self>
+Reference <reference/api/index>
 ```
 
 ```{toctree}

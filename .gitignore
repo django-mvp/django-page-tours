@@ -17,7 +17,7 @@
 .DS_Store
 .vscode/
 .github/instructions/
-docs/api/
+docs/reference/api/
 
 # Unittest and coverage
 htmlcov
