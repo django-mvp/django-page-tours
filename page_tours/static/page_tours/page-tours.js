@@ -19,8 +19,9 @@
     return undefined;
   }
 
-  var parsed = JSON.parse(script.textContent).steps;
-  var steps = parsed.map(function (step) {
+  var payload = JSON.parse(script.textContent);
+  var seenKey = "page-tours:seen:" + payload.id;
+  var steps = payload.steps.map(function (step) {
     var driverStep = { popover: { title: step.title, description: step.text } };
     if (step.element) {
       driverStep.element = function () {
@@ -30,11 +31,26 @@
     return driverStep;
   });
 
-  var showable = parsed.some(function (step) {
-    return !step.element || visibleElement(step.element);
-  });
-  if (!showable) {
-    return;
+  function showable() {
+    return payload.steps.some(function (step) {
+      return !step.element || visibleElement(step.element);
+    });
+  }
+
+  function isSeen() {
+    try {
+      return window.localStorage.getItem(seenKey) !== null;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function markSeen() {
+    try {
+      window.localStorage.setItem(seenKey, "1");
+    } catch (error) {
+      // Storage that cannot be written means the tour plays on every visit.
+    }
   }
 
   var tour;
@@ -75,17 +91,30 @@
     document.body.style.removeProperty("--driver-animation-duration");
   }
 
-  try {
-    tour = driver({
-      steps: steps,
-      skipMissingElement: true,
-      onDestroyed: function () {
-        window.removeEventListener("error", endTour);
-      },
-    });
-    window.addEventListener("error", endTour);
-    tour.drive();
-  } catch (error) {
-    endTour();
+  function start() {
+    if (!showable()) {
+      return;
+    }
+    try {
+      if (tour) {
+        tour.destroy();
+      }
+      tour = driver({
+        steps: steps,
+        skipMissingElement: true,
+        onDestroyed: function () {
+          window.removeEventListener("error", endTour);
+        },
+      });
+      window.addEventListener("error", endTour);
+      tour.drive();
+      markSeen();
+    } catch (error) {
+      endTour();
+    }
+  }
+
+  if (payload.autoplay && !isSeen()) {
+    start();
   }
 })();

@@ -247,3 +247,126 @@ class TestTourWithoutJavaScript:
 
         assert with_tour == without_tour
         assert len(with_tour[1]) > 0
+
+
+STORAGE_BLOCKED = """
+Object.defineProperty(window, "localStorage", {
+  get() { throw new Error("blocked"); },
+});
+"""
+
+
+class TestSeenTour:
+    """A tour plays by itself once per browser and is then seen."""
+
+    def assert_does_not_play(self, page):
+        """Assert that the page has loaded and shows no tour."""
+        page.wait_for_load_state("load")
+        expect(page.locator(".driver-popover")).to_have_count(0)
+        assert_no_driver_markup(page)
+
+    def test_it_plays_the_first_time_a_browser_opens_the_page(self, page, live_server):
+        """A browser with nothing remembered is shown the first step."""
+        page.goto(live_server.url + reverse("navigation-tour"))
+
+        expect(page.locator(TITLE)).to_have_text("Step 1")
+
+    def test_it_does_not_play_again_after_the_last_step(self, page, live_server):
+        """Stepping to the end and reopening the page shows nothing."""
+        url = live_server.url + reverse("navigation-tour")
+        page.goto(url)
+        page.click(NEXT)
+        page.click(NEXT)
+        page.click(NEXT)
+        expect(page.locator(".driver-popover")).to_have_count(0)
+
+        page.goto(url)
+
+        self.assert_does_not_play(page)
+
+    def test_it_does_not_play_again_after_closing_it_midway(self, page, live_server):
+        """Closing at the second step and reopening the page shows nothing."""
+        url = live_server.url + reverse("navigation-tour")
+        page.goto(url)
+        page.click(NEXT)
+        page.click(CLOSE)
+
+        page.goto(url)
+
+        self.assert_does_not_play(page)
+
+    def test_it_does_not_play_again_after_leaving_it_midway(self, page, live_server):
+        """Navigating away while a step shows still counts the tour as seen."""
+        url = live_server.url + reverse("navigation-tour")
+        page.goto(url)
+        expect(page.locator(TITLE)).to_have_text("Step 1")
+        page.goto(live_server.url + reverse("no-tour"))
+
+        page.goto(url)
+
+        self.assert_does_not_play(page)
+
+    def test_a_page_with_a_different_tour_still_plays(self, page, live_server):
+        """Seeing one tour does not hide another."""
+        page.goto(live_server.url + reverse("navigation-tour"))
+        expect(page.locator(TITLE)).to_have_text("Step 1")
+
+        page.goto(live_server.url + reverse("missing-first"))
+
+        expect(page.locator(TITLE)).to_have_text("Step 2")
+
+    def test_one_view_on_two_addresses_is_seen_once(self, page, live_server):
+        """Seeing the tour at one address hides it at the other."""
+        page.goto(live_server.url + reverse("class-tour"))
+        expect(page.locator(TITLE)).to_have_text(CLASS_TOUR.steps[0].title)
+
+        page.goto(live_server.url + reverse("class-tour-again"))
+
+        self.assert_does_not_play(page)
+
+    def test_a_fresh_browser_plays_it_again(self, page, browser, live_server):
+        """What one browser has seen, another has not."""
+        url = live_server.url + reverse("navigation-tour")
+        page.goto(url)
+        expect(page.locator(TITLE)).to_have_text("Step 1")
+        other = browser.new_context()
+        try:
+            other_page = other.new_page()
+
+            other_page.goto(url)
+
+            expect(other_page.locator(TITLE)).to_have_text("Step 1")
+        finally:
+            other.close()
+
+    def test_blocked_storage_plays_the_tour_on_every_visit(self, page, live_server):
+        """With storage unreadable the tour plays each time, with no page error."""
+        errors = []
+        page.on("pageerror", lambda error: errors.append(str(error)))
+        page.add_init_script(STORAGE_BLOCKED)
+        url = live_server.url + reverse("navigation-tour")
+
+        page.goto(url)
+        expect(page.locator(TITLE)).to_have_text("Step 1")
+        page.goto(url)
+
+        expect(page.locator(TITLE)).to_have_text("Step 1")
+        assert errors == []
+
+    def test_a_tour_with_nothing_showable_is_not_marked_seen(self, page, live_server):
+        """The tour that could not play plays once its elements can show."""
+        page.goto(live_server.url + reverse("nothing"))
+        page.wait_for_load_state("load")
+
+        keys = page.evaluate("Object.keys(localStorage)")
+
+        assert keys == []
+
+    def test_the_seen_tour_is_remembered_under_the_views_name(self, page, live_server):
+        """The browser keeps one entry, named for the view that declares the tour."""
+        page.goto(live_server.url + reverse("navigation-tour"))
+        expect(page.locator(TITLE)).to_have_text("Step 1")
+
+        keys = page.evaluate("Object.keys(localStorage)")
+
+        assert keys == ["page-tours:seen:tests.views.NavigationTourView"]
