@@ -2,7 +2,7 @@
 
 A tour is a short list of steps that Driver.js shows over one page, each step pointing at a part
 of the page with a title and a sentence. You declare the tour in Python, next to the view that
-renders the page. The page plays it when it opens in the browser.
+renders the page. The page plays it by itself the first time a browser opens it.
 
 ## Set up the tour tag once
 
@@ -88,6 +88,22 @@ def dashboard(request):
 `with_tour` works the same on an `async def` view. The tag finds the tour through the request,
 so the request context processor from the setup above must be listed.
 
+## Seen tours
+
+A tour is seen from the moment it starts playing, however it ends: the visitor steps to the end,
+closes it at any step, or leaves the page while a step shows. A tour that is seen does not play
+by itself again in that browser.
+
+- **It is kept in the visitor's browser only.** The browser stores one entry in its local
+  storage for each seen tour. Nothing is stored on the server, and no cookie is set.
+- **The view that declares the tour identifies it.** A view shown on many addresses is one tour,
+  so seeing it at one address hides it at the others. Renaming or moving the view makes it a
+  different tour, so every visitor is shown it again. Tours set per address on one view class,
+  for example through `as_view(tour=...)`, share that class's seen state.
+- **A tour that could not play is not seen.** When no step can show, the tour does not start and
+  is not remembered.
+- **A browser that blocks storage sees the tour on every visit.** The page raises no error.
+
 ## Attach a step to an element, or to nothing
 
 A step with `element` points at the first element on the page matching that CSS selector. Driver.js
@@ -129,7 +145,8 @@ attached to an element that is not on the page, and a closing step attached to a
 
 This is what a visitor sees when a page with a tour opens in their browser.
 
-- **The tour plays every time the page opens.** Nothing is remembered between visits.
+- **The tour plays by itself the first time a browser opens the page,** and not again in
+  that browser. See [Seen tours](#seen-tours).
 - **Moving and closing.** A step offers next, back and close. Next on the last step ends the
   tour, and so does close. Nothing of the tour stays on the page afterwards.
 - **Only the highlighted element can be used while a step shows.** The rest of the page is dimmed.
