@@ -7,5 +7,10 @@
     package can be seen in a browser while it is written, and so every kind of tour step has a
     page that shows it. Each feature adds its page here and a link in the bar above.
   </p>
-  <p>The <a href="{% url 'tour' %}">tour page</a> plays a tour as soon as it opens.</p>
+  <p>The <a href="{% url 'tour' %}">tour page</a> plays a tour the first time you open it.</p>
+  <p>
+    The <a href="{% url 'plays-once' %}">plays-once page</a> plays its tour once and offers a
+    button to play it again. The <a href="{% url 'on-request' %}">on-request page</a> never plays
+    its tour by itself; its two buttons do.
+  </p>
 {% endblock content %}

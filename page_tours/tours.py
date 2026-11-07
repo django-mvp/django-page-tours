@@ -47,12 +47,15 @@ class Tour:
 
     Args:
         steps: The steps in the order they are shown. At least one.
+        autoplay: Whether the tour plays by itself the first time a browser opens
+            the page.
 
     Raises:
         ImproperlyConfigured: If ``steps`` is empty.
     """
 
     steps: Sequence[TourStep]
+    autoplay: bool = True
 
     def __post_init__(self):
         """Refuse a tour with no steps and freeze the steps as a tuple."""
@@ -101,11 +104,37 @@ class Tour:
         return driver_steps
 
 
+def tour_id(context: Any) -> str:
+    """Name the tour of the page being rendered, for remembering that it was seen.
+
+    A class-based view is named by the class that declares ``tour`` itself, so a
+    subclass that inherits the tour shares its parent's id. When no class declares
+    it, because it was set on the instance or through ``as_view``, the view's own
+    class gives the name. A function-based view is named by ``with_tour``.
+
+    Call it only for a page whose ``Tour.for_page(context)`` is not ``None``.
+
+    Args:
+        context: The template context, or any mapping with ``get``.
+
+    Returns:
+        The dotted path of the view that declares the tour.
+    """
+    view = context.get("view")
+    if isinstance(getattr(view, "tour", None), Tour):
+        for cls in type(view).__mro__:
+            if "tour" in cls.__dict__:
+                return f"{cls.__module__}.{cls.__qualname__}"
+        return f"{type(view).__module__}.{type(view).__qualname__}"
+    return str(getattr(context.get("request"), "page_tour_view", ""))
+
+
 def with_tour(tour: Tour) -> Callable[[F], F]:
     """Attach a tour to a function-based view, sync or async.
 
-    The tour is on ``request.page_tour`` while the view runs, and removed again if the
-    view raises, so the error page that follows does not play it.
+    The tour is on ``request.page_tour`` while the view runs, and the view's dotted
+    path on ``request.page_tour_view``. Both are removed again if the view raises, so
+    the error page that follows does not play the tour.
 
     Args:
         tour: The tour to show on the page the view renders.
@@ -115,15 +144,23 @@ def with_tour(tour: Tour) -> Callable[[F], F]:
     """
 
     def decorator(view: F) -> F:
+        # A view from as_view() is named by its class, and a callable with no name
+        # of its own, such as a functools.partial, by its type.
+        named = getattr(view, "view_class", view)
+        module = getattr(named, "__module__", None) or type(named).__module__
+        qualname = getattr(named, "__qualname__", None) or type(named).__qualname__
+        path = f"{module}.{qualname}"
+
         if iscoroutinefunction(view):
 
             @wraps(view)
             async def async_wrapper(request, *args, **kwargs):
                 request.page_tour = tour
+                request.page_tour_view = path
                 try:
                     return await view(request, *args, **kwargs)
                 except BaseException:
-                    del request.page_tour
+                    del request.page_tour, request.page_tour_view
                     raise
 
             return async_wrapper  # type: ignore[return-value]
@@ -131,10 +168,11 @@ def with_tour(tour: Tour) -> Callable[[F], F]:
         @wraps(view)
         def wrapper(request, *args, **kwargs):
             request.page_tour = tour
+            request.page_tour_view = path
             try:
                 return view(request, *args, **kwargs)
             except BaseException:
-                del request.page_tour
+                del request.page_tour, request.page_tour_view
                 raise
 
         return wrapper  # type: ignore[return-value]

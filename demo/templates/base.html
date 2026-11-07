@@ -9,6 +9,7 @@
       header, main { max-width: 48rem; margin: 0 auto; padding: 1rem 1.5rem; }
       header { border-bottom: 1px solid #ddd; }
       header a { margin-right: 1rem; }
+      .replay-inline { margin-left: 1rem; }
     </style>
     {% page_tour %}
     {% block head %}{% endblock head %}
@@ -18,6 +19,9 @@
       <nav aria-label="Demo pages">
         <a href="{% url 'overview' %}">Overview</a>
         <a href="{% url 'tour' %}">Tour</a>
+        <a href="{% url 'plays-once' %}">Plays once</a>
+        <a href="{% url 'on-request' %}">On request</a>
+        {% page_tour_replay %}Show the tour{% endpage_tour_replay %}
       </nav>
     </header>
     <main>

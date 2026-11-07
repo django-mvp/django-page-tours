@@ -140,8 +140,8 @@ action, and that every control the page offers works afterwards.
 - **FR-009**: With JavaScript off, or with the tour's script unable to load, a page with a tour
   MUST render as it would with no tour: nothing of the tour visible, nothing of the page hidden or
   moved. (US2)
-- **FR-010**: A tour MUST start playing from its first showable step when a visitor opens the
-  page. (US2)
+- **FR-010**: A tour MUST start playing from its first showable step by itself the first time a
+  browser opens the page, as the Seen tours and replay specification describes. (US2)
 - **FR-011**: The visitor MUST be able to move forward and back through the steps in the declared
   order, and close the tour at any step. Finishing the last step MUST end the tour. (US2)
 - **FR-012**: A step whose element is not on the page, or is hidden, MUST be skipped silently. A
@@ -185,9 +185,9 @@ action, and that every control the page offers works afterwards.
 - Q: What happens when a step's element is not on the page? → A: The step is skipped silently and
   the tour goes on. A hidden element counts as missing. If no step can be shown, no tour plays.
   (FR-012)
-- Q: How often does the tour play in this feature? → A: Every time the page opens. Playing once
-  per browser, remembering it was seen, a replay control and play-only-on-request are a separate
-  feature (#6). (FR-010)
+- Q: How often does the tour play? → A: By itself the first time a browser opens the page. The
+  browser remembers that it was seen, as the Seen tours and replay specification describes.
+  (FR-010)
 - Q: Can step text carry markup such as links or bold? → A: No. Titles and texts are text and
   reach the visitor escaped. (FR-006)
 - Q: Which views can have a tour? → A: Class-based and function-based views alike. (FR-002)

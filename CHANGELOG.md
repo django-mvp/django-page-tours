@@ -18,6 +18,15 @@ All notable changes to this project are documented in this file. The format foll
   and a tour that fails ends and leaves the page usable. With JavaScript off the page is
   unchanged.
 - A tour page in the demo project, at `/tour/`, showing each kind of step.
+- A tour plays by itself the first time a browser opens its page, and not again in that browser.
+  Which tours a browser has seen is kept in its local storage only, per declaring view; a
+  browser that blocks storage sees the tour on every visit.
+- A replay control: `{% page_tour_replay %}` places a button, with your own content and
+  attributes, that plays the page's tour again from its first step. It shows only on pages with
+  a tour and only with JavaScript on.
+- A tour declared with `autoplay=False` does not play by itself and plays only when a visitor
+  uses a replay control. The demo project has a page for a tour that plays once and a page for
+  one that plays only on request.
 - The system check `page_tours.W001` warns when the request context processor is missing.
 - Driver.js 1.10.2 is shipped as a static file, so nothing is loaded from a CDN. sha256 of
   `driver.js.iife.js`: `541520f33f84cc5cf6696b421f705cc9efe2d72656b3b5cd7f72c22e6d7e17c0`; of

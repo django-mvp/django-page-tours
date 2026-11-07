@@ -14,4 +14,5 @@ installation
 :maxdepth: 1
 
 tours
+replaying-a-tour
 ```

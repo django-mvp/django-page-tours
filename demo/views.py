@@ -38,3 +38,48 @@ class TourView(TemplateView):
             ),
         ]
     )
+
+
+class PlaysOnceView(TemplateView):
+    """A page whose tour plays by itself the first time a browser opens it."""
+
+    template_name = "demo/plays_once.html"
+    tour = Tour(
+        steps=[
+            TourStep(
+                title="Plays once",
+                text=(
+                    "This tour opened by itself. "
+                    "It will not open again in this browser."
+                ),
+            ),
+            TourStep(
+                title="Play it again",
+                text=(
+                    "The button in the page bar plays the tour again "
+                    "from its first step."
+                ),
+                element="[aria-label='Demo pages'] button",
+            ),
+        ]
+    )
+
+
+class OnRequestView(TemplateView):
+    """A page whose tour plays only when the replay control is used."""
+
+    template_name = "demo/on_request.html"
+    tour = Tour(
+        steps=[
+            TourStep(
+                title="Only on request",
+                text="This tour did not open by itself. A control started it.",
+            ),
+            TourStep(
+                title="The page's own control",
+                text="This button sits next to the heading and starts the same tour.",
+                element="#demo-replay",
+            ),
+        ],
+        autoplay=False,
+    )
