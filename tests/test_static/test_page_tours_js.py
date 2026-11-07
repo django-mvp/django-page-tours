@@ -556,6 +556,62 @@ class TestReplay:
         expect(page.locator(".driver-popover")).to_have_count(1)
 
 
+class TestTourWithTheKeyboard:
+    """Focus goes back to where it was when a tour ends, at any step."""
+
+    def press_next(self, page):
+        """Move to the next step from the keyboard, with Enter on the next button."""
+        page.focus(NEXT)
+        page.keyboard.press("Enter")
+
+    def start_from_the_control(self, page, live_server):
+        """Open the replay page, close its first play, and start it from the control."""
+        page.goto(live_server.url + reverse("replay"))
+        expect(page.locator(TITLE)).to_have_text("Step 1")
+        page.keyboard.press("Escape")
+        expect(page.locator(".driver-popover")).to_have_count(0)
+        page.focus(REPLAY)
+        page.keyboard.press("Enter")
+        expect(page.locator(TITLE)).to_have_text("Step 1")
+
+    def test_escape_on_a_later_step_returns_focus_to_the_control(
+        self, page, live_server
+    ):
+        """Moving on a step and then pressing Escape puts focus back on the control."""
+        self.start_from_the_control(page, live_server)
+        self.press_next(page)
+        expect(page.locator(TITLE)).to_have_text("Step 2")
+
+        page.keyboard.press("Escape")
+
+        expect(page.locator(".driver-popover")).to_have_count(0)
+        expect(page.locator(REPLAY)).to_be_focused()
+
+    def test_finishing_the_tour_returns_focus_to_the_control(self, page, live_server):
+        """Going past the last step puts focus back on the control."""
+        self.start_from_the_control(page, live_server)
+        self.press_next(page)
+        expect(page.locator(TITLE)).to_have_text("Step 2")
+
+        self.press_next(page)
+
+        expect(page.locator(".driver-popover")).to_have_count(0)
+        expect(page.locator(REPLAY)).to_be_focused()
+
+    def test_a_failure_on_a_later_step_returns_focus_to_the_control(
+        self, page, live_server
+    ):
+        """A tour ended by a page error still puts focus back on the control."""
+        self.start_from_the_control(page, live_server)
+        self.press_next(page)
+        expect(page.locator(TITLE)).to_have_text("Step 2")
+
+        page.evaluate("setTimeout(() => { throw new Error('boom'); })")
+
+        expect(page.locator(".driver-popover")).to_have_count(0)
+        expect(page.locator(REPLAY)).to_be_focused()
+
+
 class TestOnRequestTour:
     """A tour declared with ``autoplay=False`` plays only when asked."""
 

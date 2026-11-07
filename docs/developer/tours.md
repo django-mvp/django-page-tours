@@ -149,6 +149,12 @@ This is what a visitor sees when a page with a tour opens in their browser.
   that browser. See [Seen tours](#seen-tours).
 - **Moving and closing.** A step offers next, back and close. Next on the last step ends the
   tour, and so does close. Nothing of the tour stays on the page afterwards.
+- **The keyboard does everything.** The arrow keys move forward and back, Escape closes the
+  tour, and Tab moves between the step's buttons and its highlighted element. Focus moves into
+  each step as it shows. When the tour ends, at any step and however it ends, focus goes back to
+  where it was before the tour started, such as the replay control that started it.
+- **Screen readers announce each step.** A step is a dialog named by its title and described by
+  its text, so a screen reader reads both as the step opens.
 - **Only the highlighted element can be used while a step shows.** The rest of the page is dimmed.
   One click anywhere on the dimmed part closes the tour, so the rest of the page is one click away.
 - **Steps whose element cannot be shown are skipped,** going forward and going back. That covers

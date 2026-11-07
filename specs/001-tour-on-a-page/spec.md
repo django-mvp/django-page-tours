@@ -99,6 +99,11 @@ action, and that every control the page offers works afterwards.
 8. **Given** a page with a tour, **When** a visitor opens it with JavaScript turned off, **Then**
    the page renders as it would with no tour: nothing of the tour is visible and nothing on the
    page is hidden or moved.
+9. **Given** a tour that is playing, **When** a visitor uses only the keyboard, **Then** they can
+   move forward and back and close it, focus is inside each step as it shows, and when the tour
+   ends, at any step and however it ends, focus is back where it was before the tour started.
+10. **Given** a tour that is playing, **When** a step shows, **Then** a screen reader announces it
+    as a dialog named by the step's title and described by its text.
 
 ---
 
@@ -154,6 +159,9 @@ action, and that every control the page offers works afterwards.
 - **FR-015**: The feature MUST ship its documentation page and a page in the demo project whose
   tour shows each kind of step the package supports: a step attached to an element, a step
   attached to nothing, and a step whose element is missing. (US1, US2)
+- **FR-016**: A visitor MUST be able to start, follow and close a tour from the keyboard alone.
+  Focus MUST move into each step as it shows and, when the tour ends, MUST go back to where it
+  was before the tour started. A screen reader MUST announce each step's title and text. (US2)
 
 ### Key Entities
 
@@ -204,7 +212,6 @@ action, and that every control the page offers works afterwards.
 - The tour's own controls (next, back, close, the step count) are Driver.js's. Translating them,
   and shipping a translation catalogue, belongs to roadmap R4. Step titles and texts are
   translatable here because they are the developer's own strings.
-- Keyboard and screen-reader support beyond what Driver.js gives by default belongs to roadmap R3.
 - A tour belongs to one page. Tours across several pages are out of scope.
 - Tours shipped by reusable apps (R6) and tour versions (R7) are later features. This feature
   declares tours in a way that does not block either.
