@@ -25,7 +25,7 @@ Everything needed for a site to give one of its pages a working tour.
 
 ### R1 — A tour on a page
 
-*feature · advances G1, G3, G4*
+*delivered in [#5](https://github.com/django-mvp/django-page-tours/issues/5) · advances G1, G3, G4*
 
 The core of the package: a developer declares a tour for a page in Python, next to the view that renders the page, and the tour plays when the page opens. Each step has a title and a short text, and either points at one element of the page or stands on its own as a card in the middle, which suits a welcome. Driver.js draws the tour and arrives with the package, so a site needs no front-end tooling and loads nothing from another origin. Everything later in this roadmap builds on it.
 
@@ -41,7 +41,7 @@ Serves G1, G3 and G4. Out of scope: remembering who has seen a tour (R2), stylin
 
 ### R2 — Seen tours and replay
 
-*feature · advances G2*
+*delivered in [#6](https://github.com/django-mvp/django-page-tours/issues/6) · advances G2*
 
 A tour that plays on every visit becomes something people learn to close without reading. Once R1 can play a tour, the next need is for it to play once for each visitor and then stay quiet, while leaving a way to see it again. Whether a tour has been seen is kept in the visitor's browser, so the package still adds no database tables.
 
