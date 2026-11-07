@@ -92,6 +92,30 @@ class TestTourNavigation:
         assert_no_driver_markup(page)
 
 
+class TestTourControlsLanguage:
+    """The tour's own controls are in the language the page is served in."""
+
+    def test_the_buttons_show_the_translated_labels_as_text(self, page, live_server):
+        """Next, previous and done carry the page's language, markup shown as text."""
+        page.goto(live_server.url + reverse("german-navigation-tour"))
+        expect(page.locator(TITLE)).to_have_text("Step 1")
+
+        assert page.locator(NEXT).text_content() == "Weiter <i>»</i>"
+        page.click(NEXT)
+        assert page.locator(PREVIOUS).text_content() == "Zurück"
+        page.click(NEXT)
+        expect(page.locator(TITLE)).to_have_text("Step 3")
+        assert page.locator(NEXT).text_content() == "Fertig"
+
+    def test_the_close_button_is_named_in_the_pages_language(self, page, live_server):
+        """The close button's accessible name is the translated label, as written."""
+        page.goto(live_server.url + reverse("german-navigation-tour"))
+
+        expect(page.locator(CLOSE)).to_have_attribute(
+            "aria-label", "Schließen & beenden"
+        )
+
+
 class TestTourSkipsSteps:
     """A step whose element cannot be shown is passed over."""
 

@@ -76,6 +76,8 @@ AUTH_PASSWORD_VALIDATORS = [
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
 USE_I18N = True
+# A German catalogue for the tour's own controls, so tests can see them translated.
+LOCALE_PATHS = [os.path.join(BASE_DIR, "tests", "locale")]
 USE_TZ = True
 
 STATIC_URL = "/static/"

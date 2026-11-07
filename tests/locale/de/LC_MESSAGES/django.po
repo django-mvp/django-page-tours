@@ -1,0 +1,23 @@
+# German catalogue for the test suite only, giving the tour's own controls a
+# language other than English. The markup in "Next" checks that a translation
+# reaches the visitor as text.
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: de\n"
+
+msgctxt "page tour control"
+msgid "Next"
+msgstr "Weiter <i>»</i>"
+
+msgctxt "page tour control"
+msgid "Previous"
+msgstr "Zurück"
+
+msgctxt "page tour control"
+msgid "Done"
+msgstr "Fertig"
+
+msgctxt "page tour control"
+msgid "Close"
+msgstr "Schließen & beenden"

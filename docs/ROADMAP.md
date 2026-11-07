@@ -64,7 +64,7 @@ A tour can be started, followed and closed from the keyboard alone, focus moves 
 
 ### R4 — Tours in the visitor's language
 
-*feature · advances G6*
+*delivered in [#18](https://github.com/django-mvp/django-page-tours/issues/18) · advances G6*
 
 Step text and the tour's own controls (next, back, close, the step count) are shown in the language the page is served in, with a base English catalogue shipped for projects to translate. Serves G6.
 

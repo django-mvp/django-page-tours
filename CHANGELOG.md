@@ -29,6 +29,9 @@ All notable changes to this project are documented in this file. The format foll
   one that plays only on request.
 - Tours can be followed with the keyboard and a screen reader. When a tour ends, focus goes back
   to where it was before the tour started, at any step and however the tour ends.
+- A tour's own controls (next, previous, done and the close button's label) are shown in the
+  language the page is served in. The package ships an English catalogue for its strings in
+  `page_tours/locale/en/`, which a project translates like the rest of its site.
 - The system check `page_tours.W001` warns when the request context processor is missing.
 - Driver.js 1.10.2 is shipped as a static file, so nothing is loaded from a CDN. sha256 of
   `driver.js.iife.js`: `541520f33f84cc5cf6696b421f705cc9efe2d72656b3b5cd7f72c22e6d7e17c0`; of
