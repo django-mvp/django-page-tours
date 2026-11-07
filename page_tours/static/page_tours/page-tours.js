@@ -54,6 +54,18 @@
   }
 
   var tour;
+  var returnFocusTo;
+
+  // Driver.js 1.10.2 puts focus back on whatever had it when the current step
+  // opened, which after the first step is a button of a popover it has removed.
+  // Focus is put back here instead, on what had it before the tour started.
+  function restoreFocus() {
+    var target = returnFocusTo;
+    returnFocusTo = undefined;
+    if (target && target.isConnected && typeof target.focus === "function") {
+      target.focus();
+    }
+  }
 
   function endTour() {
     try {
@@ -89,6 +101,7 @@
         el.removeAttribute("aria-controls");
       });
     document.body.style.removeProperty("--driver-animation-duration");
+    restoreFocus();
   }
 
   function start() {
@@ -99,9 +112,17 @@
       if (tour && tour.isActive()) {
         tour.destroy();
       }
+      returnFocusTo = document.activeElement;
       tour = driver({
         steps: steps,
         skipMissingElement: true,
+        // Every way a visitor ends the tour arrives here, including a close
+        // pressed while a step is still opening, which skips onDestroyed.
+        onDestroyStarted: function () {
+          tour.destroy();
+          window.removeEventListener("error", endTour);
+          restoreFocus();
+        },
         onDestroyed: function () {
           window.removeEventListener("error", endTour);
         },

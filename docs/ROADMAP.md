@@ -58,7 +58,7 @@ What a complete, dependable tour package is expected to offer once the core work
 
 ### R3 — Tours for keyboard and screen-reader users
 
-*resolve · advances G5*
+*delivered in [#16](https://github.com/django-mvp/django-page-tours/issues/16) · advances G5*
 
 A tour can be started, followed and closed from the keyboard alone, focus moves into each step and back to where it was when the tour ends, and a screen reader announces each step's title and text. Serves G5.
 
