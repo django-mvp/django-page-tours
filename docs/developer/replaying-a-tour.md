@@ -6,49 +6,43 @@ visitor presses it.
 
 ## Place the replay control
 
-Load the tag library, then place the tag where the button should appear. A base template is the
-usual place, because the control then shows on every page that has a tour and on no other:
+Write your own button in the template of the page that has the tour, and give it the
+`data-page-tour-replay` attribute:
 
-```django
-{% load page_tours %}
-<nav>
-  <a href="{% url 'home' %}">Home</a>
-  {% page_tour_replay class="btn btn-ghost" %}
-    Show the tour
-  {% endpage_tour_replay %}
-</nav>
+```html
+<button type="button" class="btn btn-ghost" data-page-tour-replay>Show the tour</button>
 ```
 
-The control shows only where both of these are true:
-
-- **The page has a tour.** On a page with no tour the tag renders nothing, so a control placed once
-  in a base template appears only where there is something to replay.
-- **JavaScript is on.** The button does nothing without the starter script, so it is not shown
-  when JavaScript is off.
-
+The package's script makes every element marked `data-page-tour-replay` start the page's tour.
 Using the control plays the tour from its first step even when the browser has already seen it.
 Using it while the tour is playing starts the tour over from the first step.
 
+Write `type="button"` on the control, so that it never submits a form it sits in.
+
+The control does something only on a page with a tour, so place it in the templates of those
+pages. If the button sits in a template that pages without a tour share too, such as a base
+template, add `hidden` to it. The script removes `hidden` on a page with a tour, so the button
+stays hidden on the other pages and when JavaScript is off:
+
+```html
+<button type="button" class="btn btn-ghost" data-page-tour-replay hidden>Show the tour</button>
+```
+
 ## Give the control your own content and attributes
 
-The block between the tags is the content of the button. Put text, an icon or both in it. The
-package adds no class and no style of its own, so the button looks the way your stylesheet makes
+The control is your own element, so it holds what you put in it and carries the attributes you
+give it: text, an icon or both, your classes, an `id`. The script adds no class, no style and no
+attribute of its own, and removes only `hidden`. The button looks the way your stylesheet makes
 it.
-
-Every `name="value"` argument becomes an attribute of the button. An underscore in a name becomes
-a hyphen, so `data_role="replay"` renders `data-role="replay"`. Values are escaped. The button is
-always `type="button"`, and a `type` argument is ignored, so the control never submits a form.
-
-If you leave the block empty, the button holds a translated default text.
 
 ## Label an icon-only control
 
-A button that holds only an icon has no name for a screen reader. Give it one with `aria_label`:
+A button that holds only an icon has no name for a screen reader. Give it one with `aria-label`:
 
-```django
-{% page_tour_replay class="icon-button" aria_label="Show the tour" %}
+```html
+<button type="button" class="icon-button" aria-label="Show the tour" data-page-tour-replay>
   <svg aria-hidden="true" width="16" height="16"><!-- your icon --></svg>
-{% endpage_tour_replay %}
+</button>
 ```
 
 The control is a real button, so a visitor reaches it with the Tab key and presses it with Enter
@@ -56,11 +50,11 @@ or Space.
 
 ## Place the control more than once
 
-Place the tag as many times as you like. Each button replays the same tour.
+Place as many controls as you like. Each one replays the same tour.
 
 ## Point a step at the control
 
-The control is in the page before the tour starts, so a step can point at it with `element`:
+The script sets up the control before the tour starts, so a step can point at it with `element`:
 
 ```python
 TourStep(
@@ -70,7 +64,8 @@ TourStep(
 )
 ```
 
-Give the control that `id`: `{% page_tour_replay id="replay-tour" %}Show the tour{% endpage_tour_replay %}`.
+Give the control that `id`:
+`<button type="button" id="replay-tour" data-page-tour-replay>Show the tour</button>`.
 While a step shows, only the highlighted element can be used. Pressing the control during that
 step starts the tour over from its first step.
 
@@ -101,17 +96,15 @@ class ReportsView(TemplateView):
     )
 ```
 
-```django
-{% load page_tours %}
-{% page_tour_replay %}Show the tour{% endpage_tour_replay %}
+```html
+<button type="button" data-page-tour-replay>Show the tour</button>
 ```
 
 The tour does not open when a browser first visits the page, and a browser that has not seen it
 is not changed by that. Pressing the control plays it from its first step, every time.
 
-With no control on the page, a tour declared with `autoplay=False` never plays. Place the control
-in your base template, as in [Place the replay control](#place-the-replay-control), so it shows
-on every page that has a tour.
+With no control on the page, a tour declared with `autoplay=False` never plays, so place one on
+its page.
 
 ## Why a replay does not change what a browser has seen
 

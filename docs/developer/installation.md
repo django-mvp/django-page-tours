@@ -42,8 +42,8 @@ The tag draws nothing where it stands. On a page with a tour it adds the tour's 
 steps and the scripts that play it, the way `{{ form.media }}` adds a form's assets, and the tour
 then shows over the page. That is why it goes once in the base template and not where a tour is
 used: every page that extends the template is served by it, and a page with no tour gets nothing
-from it. The one tag a visitor sees is the [replay control](replaying-a-tour.md), which you place
-where its button should appear.
+from it. What a visitor sees besides the tour is the [replay control](replaying-a-tour.md), your
+own button, which you place where it should appear.
 
 The tag needs nothing else from your settings. [Adding a tour to a page](tours.md) shows how to
 declare a tour.

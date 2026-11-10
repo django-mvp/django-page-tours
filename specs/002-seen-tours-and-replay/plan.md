@@ -66,6 +66,10 @@ still emits nothing.
 
 ### The replay control (`page_tours/templatetags/page_tours.py`)
 
+*Superseded by decisions.md D19 (issue #32): the tag below is removed, and the starter script
+wires up each `[data-page-tour-replay]` element, removing `hidden` if it has it, instead of copying
+a button out of a `<template>`.*
+
 `{% page_tour_replay [name=value ...] %}content{% endpage_tour_replay %}`, declared with Django's
 `@register.simple_block_tag(takes_context=True)` as
 `def page_tour_replay(context, content, **attrs)` (Django 5.2 and later, the package's floor).

@@ -94,11 +94,11 @@ The tour plays the first time a browser opens the page, and not again in that br
 remembers it by its name. A function-based view passes its tour in the template context instead:
 `render(request, "dashboard.html", {"tour": DASHBOARD_TOUR})`.
 
-To let visitors play it again, place `{% page_tour_replay %}` where the button should appear. It
-shows only on pages that have a tour:
+To let visitors play it again, place a button of your own marked `data-page-tour-replay` on the
+page. The package's script makes it start the tour:
 
-```django
-{% page_tour_replay class="btn" %}Show the tour{% endpage_tour_replay %}
+```html
+<button type="button" class="btn" data-page-tour-replay>Show the tour</button>
 ```
 
 A project can replace the tour of an installed app, or turn it off, from its own settings with

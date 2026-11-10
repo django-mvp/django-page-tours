@@ -90,10 +90,11 @@ tour plays from its first step; open a page with no tour and confirm no control 
    page is as it was before the replay, and the control can start the tour again.
 3. **Given** the visitor has replayed a tour, **When** they open the page again, **Then** the tour
    does not play by itself.
-4. **Given** a page with no tour, **When** it is rendered with the replay control placed in its
-   template, **Then** no replay control is shown.
-5. **Given** JavaScript is off in the visitor's browser, **When** they open a page with a tour,
-   **Then** no replay control is shown, and the page is exactly as it would be without a tour.
+4. **Given** a page with no tour, **When** it is rendered with a replay control marked `hidden`
+   placed in its template, **Then** no replay control is shown.
+5. **Given** JavaScript is off in the visitor's browser, **When** they open a page with a tour and
+   a replay control marked `hidden`, **Then** no replay control is shown, and the page is exactly
+   as it would be without a tour.
 6. **Given** a page with a tour, **When** the visitor reaches the replay control with the keyboard
    alone, **Then** they can start the tour from it.
 7. **Given** a tour whose steps all point at elements missing from the page, **When** the visitor
@@ -118,9 +119,9 @@ control, open its page in a fresh browser, and confirm it waits for the control.
 
 **Acceptance Scenarios**:
 
-1. **Given** a developer places the replay control in a base template shared by every page,
-   **When** pages with and without tours are rendered, **Then** the control appears only on the
-   pages that have a tour.
+1. **Given** a developer places the replay control, marked `hidden`, in a base template shared by
+   every page, **When** pages with and without tours are rendered, **Then** the control appears
+   only on the pages that have a tour.
 2. **Given** a developer gives the replay control their own content and classes, **When** the page
    is rendered, **Then** the control carries that content and those classes, and the package adds
    no styling of its own to it.
@@ -202,10 +203,13 @@ confirm it stays quiet.
 - **FR-006**: When the browser cannot store or read whether a tour has been seen, the tour MUST
   play as it would without this feature, and the page MUST show no error and stay fully usable.
   (US1)
-- **FR-007**: The package MUST provide a replay control that a developer places in their own
-  templates, anywhere on the page, including in a base template shared by many pages. (US3)
-- **FR-008**: The replay control MUST be shown only on a page that has a tour, and MUST NOT be
-  shown when JavaScript is off. (US2, US3)
+- **FR-007**: The package MUST let a developer make an element of their own into a replay
+  control, placed anywhere in their templates, including in a base template shared by many
+  pages. (US3)
+- **FR-008**: A replay control the developer marks `hidden` MUST stay hidden on a page that has no
+  tour and when JavaScript is off, and MUST be shown on a page that has a tour. The developer
+  places the control on pages with a tour, and marks it `hidden` when it sits in a template shared
+  with pages that have none. (US2, US3)
 - **FR-009**: Using the replay control MUST play the page's tour from its first step, whether or
   not it has been seen, and whether or not the tour plays by itself. Using it while the tour is
   playing MUST restart the tour, not play a second copy. (US2, US3)
@@ -241,8 +245,9 @@ confirm it stays quiet.
   browser, with nothing on the server.
 - **Tour version**: a whole number the developer gives a tour, 1 unless they say otherwise. A new
   number marks a change that people who saw the tour should see.
-- **Replay control**: an element the developer places on the page that starts the page's tour on
-  request.
+- **Replay control**: a button the developer writes on a page with a tour, marked
+  `data-page-tour-replay`, that starts the page's tour on request. The package's script removes
+  `hidden` from it, so one in a shared template can stay hidden where there is no tour.
 
 ## Clarifications
 
@@ -270,6 +275,12 @@ confirm it stays quiet.
 - Q: A visitor saw version 1 and the tour is now at version 3: is it shown once or twice? → A:
   Once. The browser holds the version it last played, and any other number counts as not seen.
   Integrated into FR-017 and US4 scenarios 1 and 2.
+- Q: Does the package write the replay control's markup, or does the developer? → A: The
+  developer. A replay control is their own button with `data-page-tour-replay`, placed on the
+  pages that have a tour. The script attaches the click handler and removes `hidden` if the
+  button carries it, for a button in a shared template. The `{% page_tour_replay %}` tag is
+  removed (issue #32). Integrated into FR-007, FR-008, US2 scenarios 4 and 5, US3 scenario 1 and
+  the Replay control entity.
 
 ## Success Criteria *(mandatory)*
 

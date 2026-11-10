@@ -440,7 +440,7 @@ class TestReplay:
     def test_the_live_button_carries_only_the_developers_attributes(
         self, page, live_server
     ):
-        """The button the script builds has no class, style or attribute of its own."""
+        """The script adds no class, style or attribute to the developer's button."""
         page.goto(live_server.url + reverse("replay"))
         page.wait_for_load_state("load")
 
@@ -451,7 +451,9 @@ class TestReplay:
         classes = page.evaluate(
             '() => [...document.querySelector("#replay").classList]'
         )
-        assert names == sorted(["aria-label", "class", "data-x", "id", "title", "type"])
+        assert names == sorted(
+            ["aria-label", "class", "data-page-tour-replay", "data-x", "id", "type"]
+        )
         assert classes == ["mine"]
 
     def test_the_control_starts_the_tour_again_after_it_ends(self, page, live_server):
@@ -502,24 +504,38 @@ class TestReplay:
         expect(page.locator(".driver-popover")).to_have_count(0)
         assert_no_driver_markup(page)
 
-    def test_the_control_is_a_button_in_the_page_and_the_template_is_gone(
+    def test_a_hidden_control_in_a_base_template_shows_on_a_page_with_a_tour(
         self, page, live_server
     ):
-        """The script swaps the template for its button."""
-        page.goto(live_server.url + reverse("replay"))
+        """The script takes ``hidden`` off the control and it starts the tour."""
+        page.goto(live_server.url + reverse("control-in-base"))
+
+        expect(page.locator(REPLAY)).to_be_visible()
+        expect(page.locator(REPLAY)).not_to_have_attribute("hidden", "")
+        page.click(CLOSE)
+        page.click(REPLAY)
+        expect(page.locator(TITLE)).to_have_text("Step 1")
+
+    def test_a_hidden_control_stays_hidden_on_a_page_with_no_tour(
+        self, page, live_server
+    ):
+        """With no tour the script is not on the page, so nothing shows the button."""
+        page.goto(live_server.url + reverse("control-in-base-no-tour"))
+        page.wait_for_load_state("load")
 
         expect(page.locator(REPLAY)).to_have_count(1)
-        expect(page.locator("template[data-page-tour-replay]")).to_have_count(0)
+        expect(page.locator(REPLAY)).to_be_hidden()
 
-    def test_with_javascript_off_no_control_is_visible(self, browser, live_server):
-        """The control exists only where the script can make it work."""
+    def test_with_javascript_off_a_hidden_control_stays_hidden(
+        self, browser, live_server
+    ):
+        """A control written with ``hidden`` shows only where the script runs."""
         context = browser.new_context(java_script_enabled=False)
         try:
             page = context.new_page()
-            page.goto(live_server.url + reverse("replay"))
+            page.goto(live_server.url + reverse("control-in-base"))
 
-            expect(page.locator(REPLAY)).to_have_count(0)
-            expect(page.locator("button:visible")).to_have_count(1)
+            expect(page.locator(REPLAY)).to_be_hidden()
         finally:
             context.close()
 

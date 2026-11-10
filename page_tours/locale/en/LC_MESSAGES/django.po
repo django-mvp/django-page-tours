@@ -97,10 +97,6 @@ msgctxt "page tour control"
 msgid "Close"
 msgstr ""
 
-#: templatetags/page_tours.py:81
-msgid "Show the tour"
-msgstr ""
-
 #: tours.py:44
 #, python-format
 msgid "A tour step needs a %(name)s."
