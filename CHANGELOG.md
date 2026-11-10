@@ -6,6 +6,13 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+### Added
+
+- A tour can be given a version, `Tour(version=2)`. A browser that saw another version of the tour
+  plays it by itself once more, and is then quiet again. A tour without a version is at version 1,
+  and tours seen before this release count as seen at version 1. Editing a tour without changing
+  its version brings it back to nobody. The demo project has a page for a tour at a new version.
+
 ## [v0.1.0] - 2026-11-10
 
 ### Added

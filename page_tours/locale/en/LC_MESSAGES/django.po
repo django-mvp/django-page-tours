@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: django-page-tours\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-07 22:56+0100\n"
+"POT-Creation-Date: 2026-11-10 16:46+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -31,27 +31,27 @@ msgstr ""
 msgid "Add it to the 'context_processors' option of TEMPLATES."
 msgstr ""
 
-#: templatetags/page_tours.py:39
+#: templatetags/page_tours.py:40
 msgctxt "page tour control"
 msgid "Next"
 msgstr ""
 
-#: templatetags/page_tours.py:40
+#: templatetags/page_tours.py:41
 msgctxt "page tour control"
 msgid "Previous"
 msgstr ""
 
-#: templatetags/page_tours.py:41
+#: templatetags/page_tours.py:42
 msgctxt "page tour control"
 msgid "Done"
 msgstr ""
 
-#: templatetags/page_tours.py:42
+#: templatetags/page_tours.py:43
 msgctxt "page tour control"
 msgid "Close"
 msgstr ""
 
-#: templatetags/page_tours.py:77
+#: templatetags/page_tours.py:78
 msgid "Show the tour"
 msgstr ""
 
@@ -60,6 +60,10 @@ msgstr ""
 msgid "A tour step needs a %(name)s."
 msgstr ""
 
-#: tours.py:63
+#: tours.py:68
 msgid "A tour needs at least one step."
+msgstr ""
+
+#: tours.py:75
+msgid "A tour's version must be a whole number of 1 or more."
 msgstr ""

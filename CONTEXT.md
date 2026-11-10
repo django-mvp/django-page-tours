@@ -27,6 +27,15 @@ A tour has been seen in a browser once it has played there, whether the person f
 skipped it or closed it. A seen tour does not play again on its own. Seen is recorded in the
 browser, never in the database, so the same person on a new browser has not seen it.
 
+A tour is seen at a [version](#tour-version). A browser that saw another version of the tour has
+not seen this one.
+
+### Tour version
+
+A whole number the developer gives a tour, 1 unless they say otherwise. The developer raises it
+when the tour has changed enough that people who saw it should see it again. It is never worked
+out from the tour's steps, so a small edit keeps it.
+
 ### Replay
 
 Starting a tour again on request, whether or not it has been [seen](#seen).

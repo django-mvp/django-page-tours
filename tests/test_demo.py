@@ -66,9 +66,9 @@ class TestTourPage:
 
 
 class TestDemoTourPages:
-    """The two demo pages that show how a tour is started."""
+    """The demo pages that show how a tour is started and when it plays again."""
 
-    PAGES = ["plays-once", "on-request"]
+    PAGES = ["plays-once", "on-request", "changed-tour"]
 
     def payload(self, page):
         """Return the payload the page hands to the browser."""
@@ -103,16 +103,26 @@ class TestDemoTourPages:
 
         assert self.payload(page)["autoplay"] is False
 
+    def test_the_changed_tour_is_routed_at_two_versions_of_one_tour(self, client):
+        """Both addresses carry the same tour id, at versions 1 and 2."""
+        first = self.payload(client.get(reverse("changed-tour")).content.decode())
+        new = self.payload(
+            client.get(reverse("changed-tour-new-version")).content.decode()
+        )
+
+        assert (first["id"], first["version"]) == (new["id"], 1)
+        assert new["version"] == 2
+
     @pytest.mark.parametrize("name", PAGES)
     def test_the_page_bar_links_the_page(self, client, name):
-        """The bar every demo page shares links both pages."""
+        """The bar every demo page shares links each of them."""
         page = client.get(reverse("overview")).content.decode()
 
         assert f'href="{reverse(name)}"' in self.bar(page)
 
     @pytest.mark.parametrize("name", PAGES)
     def test_the_overview_links_the_page(self, client, name):
-        """The overview names both pages outside the page bar."""
+        """The overview names each of them outside the page bar."""
         page = client.get(reverse("overview")).content.decode()
 
         assert f'href="{reverse(name)}"' in page.split("</nav>", 1)[1]

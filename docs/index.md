@@ -78,7 +78,7 @@ function-based views, steps and translation.
 ## About the project
 
 - [Goals](https://github.com/django-mvp/django-page-tours/blob/main/GOALS.md): the standing directions the package works toward.
-- [Domain model](https://github.com/django-mvp/django-page-tours/blob/main/CONTEXT.md): what tour, tour step, seen and replay mean here.
+- [Domain model](https://github.com/django-mvp/django-page-tours/blob/main/CONTEXT.md): what tour, tour step, seen, tour version and replay mean here.
 - [Constitution](https://github.com/django-mvp/django-page-tours/blob/main/CONSTITUTION.md): the rules every change is reviewed against.
 - [Changelog](https://github.com/django-mvp/django-page-tours/blob/main/CHANGELOG.md): what changed in each release.
 

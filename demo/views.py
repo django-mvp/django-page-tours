@@ -83,3 +83,31 @@ class OnRequestView(TemplateView):
         ],
         autoplay=False,
     )
+
+
+CHANGED_TOUR_STEPS = [
+    TourStep(
+        title="A changed tour",
+        text="This browser has not seen this version of the tour, so it opened.",
+    ),
+    TourStep(
+        title="Its version",
+        text="The heading says which version of the tour this page is at.",
+        element="#demo-version",
+    ),
+]
+
+
+class ChangedTourView(TemplateView):
+    """A page whose tour is routed at two versions, so a new one can be seen once.
+
+    Both routes pass their tour to ``as_view``, so both are seen as this view's
+    tour and differ only in version.
+    """
+
+    template_name = "demo/changed_tour.html"
+    tour = None
+
+
+FIRST_VERSION = Tour(steps=CHANGED_TOUR_STEPS)
+NEW_VERSION = Tour(steps=CHANGED_TOUR_STEPS, version=2)
