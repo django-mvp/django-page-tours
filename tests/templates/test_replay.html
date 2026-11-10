@@ -1,7 +1,6 @@
 {% extends "test_base.html" %}
-{% load page_tours %}
 {% block content %}
   <h1>Page</h1>
   <button id="control" type="button">Control</button>
-  {% page_tour_replay id="replay" class="mine" aria_label="Again" data_x="1" title=hostile %}Replay{% endpage_tour_replay %}
+  <button id="replay" type="button" class="mine" aria-label="Again" data-x="1" data-page-tour-replay>Replay</button>
 {% endblock content %}

@@ -1,7 +1,6 @@
 {% extends "test_base.html" %}
-{% load page_tours %}
 {% block content %}
   <h1>Page</h1>
-  {% page_tour_replay class="replay-control" %}First{% endpage_tour_replay %}
-  {% page_tour_replay class="replay-control" %}Second{% endpage_tour_replay %}
+  <button type="button" class="replay-control" data-page-tour-replay>First</button>
+  <button type="button" class="replay-control" data-page-tour-replay>Second</button>
 {% endblock content %}

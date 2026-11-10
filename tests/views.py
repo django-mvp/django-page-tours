@@ -186,12 +186,6 @@ class ReplayView(TemplateView):
     template_name = "test_replay.html"
     tour = steps_for("tests.replay", "h1", "#control")
 
-    def get_context_data(self, **kwargs):
-        """Add an attribute value full of markup characters."""
-        context = super().get_context_data(**kwargs)
-        context["hostile"] = 'a "quoted" <b>&'
-        return context
-
 
 class ReplayNoTourView(ReplayView):
     """The same page with no tour."""

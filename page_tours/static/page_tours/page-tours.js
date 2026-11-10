@@ -220,15 +220,12 @@
     }
   }
 
-  var holders = document.querySelectorAll("template[data-page-tour-replay]");
-  holders.forEach(function (holder) {
-    var control = holder.content.firstElementChild;
-    if (control) {
-      var button = control.cloneNode(true);
-      button.addEventListener("click", start);
-      holder.before(button);
-    }
-    holder.remove();
+  // A replay control is the developer's own element. One written with `hidden`,
+  // as in a shared template, shows only where this script runs: on a page with a
+  // tour, with JavaScript on. This comes before autoplay, so a step can point at it.
+  document.querySelectorAll("[data-page-tour-replay]").forEach(function (control) {
+    control.addEventListener("click", start);
+    control.hidden = false;
   });
 
   if (payload.autoplay && !isSeen()) {

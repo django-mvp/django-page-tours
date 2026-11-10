@@ -133,18 +133,25 @@ class TestDemoTourPages:
 
         assert f'href="{reverse(name)}"' in page.split("</nav>", 1)[1]
 
-    @pytest.mark.parametrize("name", PAGES)
-    def test_the_page_bar_carries_the_replay_control_on_a_tour_page(self, client, name):
-        """The control placed once in the base template shows with a tour."""
+    @pytest.mark.parametrize("name", [*PAGES, "overview"])
+    def test_the_page_bar_carries_a_hidden_replay_control(self, client, name):
+        """The control placed once in the base template waits, hidden, for the script."""
         page = client.get(reverse(name)).content.decode()
 
-        assert "data-page-tour-replay" in self.bar(page)
+        assert "data-page-tour-replay hidden" in self.bar(page)
 
-    def test_the_page_bar_has_no_replay_control_on_the_overview(self, client):
-        """A page with no tour gets no control."""
+    @pytest.mark.parametrize("name", PAGES)
+    def test_a_tour_page_carries_the_script_that_shows_the_control(self, client, name):
+        """A page with a tour loads the script that takes ``hidden`` off the control."""
+        page = client.get(reverse(name)).content.decode()
+
+        assert "page-tours.js" in page
+
+    def test_the_overview_does_not_carry_the_script(self, client):
+        """A page with no tour never loads the script, so its control stays hidden."""
         page = client.get(reverse("overview")).content.decode()
 
-        assert "data-page-tour-replay" not in self.bar(page)
+        assert "page-tours.js" not in page
 
     def test_the_on_request_page_places_a_second_control_in_its_body(self, client):
         """The page carries two controls: the bar's and its own."""
@@ -204,11 +211,12 @@ class TestLibraryPages:
 
         assert 'id="page-tour-steps"' not in page
 
-    def test_the_loans_page_has_no_replay_control(self, client):
-        """With no tour there is nothing to replay."""
+    def test_the_loans_page_does_not_show_the_replay_control(self, client):
+        """With no tour the script is not loaded, so the bar's control stays hidden."""
         page = client.get(reverse("library-loans")).content.decode()
 
-        assert "data-page-tour-replay" not in self.bar(page)
+        assert "data-page-tour-replay hidden" in self.bar(page)
+        assert "page-tours.js" not in page
 
     @pytest.mark.parametrize("name", ["library-books", "library-book"])
     def test_every_step_with_an_element_points_at_the_page(self, client, name):

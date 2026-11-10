@@ -21,6 +21,15 @@ All notable changes to this project are documented in this file. The format foll
   replaces.
 - `page_tours.W002` now warns about an override key that names no declared tour, rather than one
   that no routed view declares a tour under.
+- **Breaking:** the `{% page_tour_replay %}` tag is removed. A replay control is now your own
+  button with the `data-page-tour-replay` attribute, such as
+  `<button type="button" class="btn" data-page-tour-replay>Show the tour</button>`, which the
+  package's script makes start the tour. You place it on the pages that have a tour. The script
+  also removes `hidden` from it, so a button in a template shared with pages that have no tour
+  can carry `hidden` and stay hidden on those pages and with JavaScript off. To upgrade, replace
+  each `{% page_tour_replay class="btn" %}Show the tour{% endpage_tour_replay %}` with that
+  button, adding `hidden` if it sits in a shared template, and writing `aria-label` where you
+  wrote `aria_label`.
 
 ### Added
 

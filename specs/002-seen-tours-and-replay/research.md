@@ -56,6 +56,9 @@ that starts by itself.
 
 ### The replay control: a block tag that renders an inert `<template>`
 
+*Superseded by decisions.md D19 (issue #32): the tag is removed, and a replay control is the
+developer's own button with `data-page-tour-replay`, which the starter script wires up.*
+
 `{% page_tour_replay class="…" %}…{% endpage_tour_replay %}`, placed anywhere in the developer's
 templates (FR-007).
 

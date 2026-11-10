@@ -119,6 +119,8 @@ FS-001 at the start of the build; not a change to the specification.
 
 ## D16 — The replay control is an inert `<template>` turned into a button by the script
 
+*Superseded by D19.*
+
 `<template>` content is never shown and never in the accessibility tree, whatever the site's CSS
 says, so with JavaScript off no control appears. The `hidden` attribute was turned down because
 a site class such as `display: inline-flex` overrides it.
@@ -126,6 +128,8 @@ a site class such as `display: inline-flex` overrides it.
 **ADR:** none — local to the control's markup, explained in research.md
 
 ## D17 — Argument names with `_` become attributes with `-`
+
+*Superseded by D19: there are no tag arguments left.*
 
 Template tag argument names cannot carry a hyphen, so `aria_label="…"` renders `aria-label` and
 `data_x` renders `data-x`. Found at the design review.
@@ -138,3 +142,19 @@ Its FR-010 and its clarification on how often a tour plays said a tour plays eve
 opens. This feature changes that, so both now read as they are.
 
 **ADR:** none — a documentation edit carried with the behaviour change
+
+## D19 — The replay control is the developer's own button
+
+Issue #32. The `{% page_tour_replay %}` tag is removed. A replay control is a button the
+developer writes with `data-page-tour-replay`, and placing it on the pages that have a tour is
+the developer's job. On a page with a tour, the starter script gives each one a click handler
+that calls `start()`, before autoplay, so a step can still point at it, and removes `hidden` if
+the button carries it. A button in a template shared with pages that have no tour is written with
+`hidden`: on those pages the script is not loaded, and with JavaScript off it does not run, so the
+button stays hidden. `hidden` is that optional convenience, not part of what the package
+requires. The package ships no CSS and writes no inline style for the control.
+
+Content, classes, `aria-label`, `id`, `type` and several controls on one page become plain HTML
+the developer writes, with nothing for the package to translate between.
+
+**ADR:** none — local to the control's markup, recorded on issue #32

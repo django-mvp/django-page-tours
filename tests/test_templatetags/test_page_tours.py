@@ -2,15 +2,12 @@
 
 import json
 import re
-from html.parser import HTMLParser
-from types import SimpleNamespace
 
 import pytest
-from django.template import Context, Template, TemplateSyntaxError
+from django.template import Context, Template
 from django.urls import reverse
 from django.utils import translation
 from django.utils.html import escape
-from django.utils.translation import gettext_lazy
 
 from page_tours.parts import TourParts
 from tests import views
@@ -271,162 +268,6 @@ class TestPageTourPayload:
         assert tour_payload(response)["parts"]["box"] == ["page-tour-box"]
 
 
-class ReplayMarkup(HTMLParser):
-    """Collect the elements of a page, remembering which sit inside a template."""
-
-    def __init__(self):
-        super().__init__()
-        self.templates = []
-        self.buttons = []
-        self.classes = []
-        self.text = ""
-        self.depth = 0
-        self.in_button = False
-
-    def handle_starttag(self, tag, attrs):
-        """Record templates, the buttons inside them and every class seen."""
-        attributes = dict(attrs)
-        if tag == "template":
-            self.templates.append(attributes)
-            self.depth += 1
-        elif tag == "button" and self.depth:
-            self.buttons.append(attributes)
-            self.in_button = True
-            self.text = ""
-        if self.depth and "class" in attributes:
-            self.classes.append(attributes["class"])
-
-    def handle_endtag(self, tag):
-        """Leave the template or the button."""
-        if tag == "template":
-            self.depth -= 1
-        elif tag == "button":
-            self.in_button = False
-
-    def handle_data(self, data):
-        """Gather the text of the button inside the template."""
-        if self.in_button:
-            self.text += data
-
-
-def replay_markup(html):
-    """Parse a page and return what its replay templates hold."""
-    markup = ReplayMarkup()
-    markup.feed(html)
-    return markup
-
-
-def render_replay(source, tour=CLASS_TOUR):
-    """Render a template string on a page whose view declares ``tour``."""
-    template = Template("{% load page_tours %}" + source)
-    return template.render(Context({"view": SimpleNamespace(tour=tour)}))
-
-
-class TestPageTourReplayTag:
-    """The tag that places a control replaying the page's tour."""
-
-    def test_a_page_with_no_tour_gets_nothing(self, client):
-        """No template, no button."""
-        response = client.get(reverse("replay-no-tour"))
-
-        markup = replay_markup(response.content.decode())
-        assert markup.templates == []
-        assert markup.buttons == []
-
-    def test_a_page_with_a_tour_gets_one_template_holding_one_button(self, client):
-        """The control waits in a template for the starter script."""
-        response = client.get(reverse("replay"))
-
-        markup = replay_markup(response.content.decode())
-        assert markup.templates == [{"data-page-tour-replay": None}]
-        assert len(markup.buttons) == 1
-        assert markup.buttons[0]["type"] == "button"
-
-    def test_a_control_placed_once_in_a_base_template_shows_only_with_a_tour(
-        self, client
-    ):
-        """Pages extending the base get the control only if they have a tour."""
-        with_tour = client.get(reverse("control-in-base")).content.decode()
-        without_tour = client.get(reverse("control-in-base-no-tour")).content.decode()
-
-        assert len(replay_markup(with_tour).templates) == 1
-        assert replay_markup(without_tour).templates == []
-
-    def test_the_button_holds_the_content_of_the_block(self):
-        """What sits between the tags is what the button holds."""
-        html = render_replay("{% page_tour_replay %}<i>Go</i>{% endpage_tour_replay %}")
-
-        assert replay_markup(html).text == "Go"
-
-    def test_a_page_placing_the_control_twice_gets_two_buttons(self, client):
-        """Each placement renders its own template."""
-        response = client.get(reverse("replay-twice"))
-
-        markup = replay_markup(response.content.decode())
-        assert len(markup.templates) == 2
-        assert len(markup.buttons) == 2
-
-    def test_the_developers_attributes_are_on_the_button(self, client):
-        """Class, id and data attributes arrive unchanged."""
-        response = client.get(reverse("replay"))
-
-        button = replay_markup(response.content.decode()).buttons[0]
-        assert button["class"] == "mine"
-        assert button["id"] == "replay"
-        assert button["data-x"] == "1"
-
-    def test_no_class_but_the_developers_is_added(self, client):
-        """Every class inside the template is the one the developer gave."""
-        response = client.get(reverse("replay"))
-
-        assert replay_markup(response.content.decode()).classes == ["mine"]
-
-    def test_the_button_carries_only_the_developers_attributes(self, client):
-        """No attribute but ``type`` and the developer's own reaches the button."""
-        response = client.get(reverse("replay"))
-
-        button = replay_markup(response.content.decode()).buttons[0]
-        assert set(button) == {"type", "id", "class", "aria-label", "data-x", "title"}
-
-    def test_attribute_values_are_escaped(self, client):
-        """A value with markup characters reaches the button as text."""
-        response = client.get(reverse("replay"))
-
-        button = replay_markup(response.content.decode()).buttons[0]
-        assert button["title"] == 'a "quoted" <b>&'
-        assert "<b>&" not in response.content.decode()
-
-    def test_aria_label_renders_as_aria_label(self, client):
-        """An underscore in an argument name becomes a hyphen."""
-        response = client.get(reverse("replay"))
-
-        button = replay_markup(response.content.decode()).buttons[0]
-        assert button["aria-label"] == "Again"
-        assert "aria_label" not in button
-
-    def test_an_empty_block_gets_the_translatable_fallback(self):
-        """The fallback is the text ``gettext`` supplies, and is not empty."""
-        html = render_replay("{% page_tour_replay %} {% endpage_tour_replay %}")
-
-        markup = replay_markup(html)
-        assert markup.text == str(gettext_lazy("Show the tour"))
-        assert markup.text.strip() != ""
-
-    def test_a_type_argument_does_not_change_the_button_type(self):
-        """The button never submits a form."""
-        html = render_replay(
-            '{% page_tour_replay type="submit" %}Go{% endpage_tour_replay %}'
-        )
-
-        buttons = replay_markup(html).buttons
-        assert [button["type"] for button in buttons] == ["button"]
-
-    def test_a_positional_argument_is_a_template_syntax_error(self):
-        """Only ``name=value`` arguments are taken."""
-        with pytest.raises(TemplateSyntaxError):
-            render_replay('{% page_tour_replay "first" %}Go{% endpage_tour_replay %}')
-
-
 OVERRIDDEN = views.APP_TOUR.name
 
 
@@ -472,17 +313,17 @@ class TestOverriddenTourPayload:
 
         assert tour_payload(response)["version"] == version
 
-    def test_a_tour_turned_off_has_no_payload_and_no_replay_control(
+    def test_a_tour_turned_off_has_no_payload_and_no_starter_script(
         self, client, settings
     ):
-        """Nothing about the tour reaches the page."""
+        """Nothing about the tour reaches the page, so a replay control stays hidden."""
         settings.PAGE_TOURS_OVERRIDES = {views.OFF_TOUR.name: None}
 
         response = client.get(reverse("overridden-off"))
 
         content = response.content.decode()
         assert "page-tour-steps" not in content
-        assert replay_markup(content).templates == []
+        assert "page-tours.js" not in content
 
     def test_every_url_of_the_view_carries_the_change(self, client, settings):
         """Two routes to the one view play the same replacement."""
