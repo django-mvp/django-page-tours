@@ -28,9 +28,7 @@ already tells developers that renaming or moving the view makes it a different t
 means the app author gives no name and the app needs no change (FR-007). The cost is that an app
 release that moves the view orphans the project's change, which is why FR-009 reports it.
 
-**ADR:** to be considered at planning. Naming a tour for a project's change makes ADR 0002's name
-part of the public contract between an app and the projects that install it, which ADR 0002 does
-not yet say.
+**ADR:** docs/adr/0004-a-project-changes-an-installed-apps-tour-by-its-name.md
 
 ## D4 — A replacement keeps the tour's identity
 
@@ -79,22 +77,23 @@ The issue requires no edit to the app's code. Whether the project's change is a 
 in its own code is left to planning, which weighs it against the README's "fewer settings beat
 more" (FR-002).
 
-**ADR:** to be decided at planning
+**ADR:** none — settled by D11, which graduated
 
 ## D9 — Meeting point with issue #22
 
 Issue #22 gives a site's tours its own look. A replacement is an ordinary tour, so it gets the
 site's look exactly as any other tour does. This feature changes nothing about how tours look.
 
-**ADR:** none
+**ADR:** none — a scope boundary, nothing is built for it
 
 ## D10 — Glossary
 
 `CONTEXT.md` has no word for the name a tour is known by, or for a project's change to an app's
 tour. The build adds the terms it ends up using; the specification uses "an app's tour" and "a
-project's change" in the meaning given under Key Entities.
+project's change" in the meaning given under Key Entities. The build added **Tour name** and
+**Tour override** to `CONTEXT.md`.
 
-**ADR:** none
+**ADR:** none — vocabulary, recorded in `CONTEXT.md`
 
 ## Sketch gate
 
@@ -110,7 +109,7 @@ it. The replacement is named by a path because a replacement that reuses the app
 the app's views, which settings cannot (`research.md`, "Where the project's change lives").
 Settles D8.
 
-**ADR:** to be considered at S5, with D3
+**ADR:** docs/adr/0004-a-project-changes-an-installed-apps-tour-by-its-name.md
 
 ## D12 — A replacement's version counts on from the app tour's
 
@@ -124,7 +123,7 @@ own replacement again, against FR-004. The cost is D4's starting reading: an app
 raises its own tour's version shows the project's replacement again once. The app's author said
 the page changed enough, so that is the safer side to err on. Settles D4's open question.
 
-**ADR:** to be considered at S5, with D3
+**ADR:** docs/adr/0004-a-project-changes-an-installed-apps-tour-by-its-name.md
 
 ## D15 — The naming rule is stated once
 
