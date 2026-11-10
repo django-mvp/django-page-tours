@@ -132,6 +132,14 @@ class TestPageTourTag:
 class TestPageTourPayload:
     """The object the tag hands to the starter script."""
 
+    def test_the_controls_are_in_the_active_language(self, client):
+        """The labels for the tour's own controls follow the language of the page."""
+        with translation.override("de"):
+            payload = tour_payload(client.get(reverse("navigation-tour")))
+
+        assert payload["controls"]["previous"] == "Zurück"
+        assert payload["controls"]["done"] == "Fertig"
+
     def test_the_payload_names_the_view_that_declares_the_tour(self, client):
         """The id is the dotted path of the view class."""
         payload = tour_payload(client.get(reverse("class-tour")))
@@ -156,11 +164,13 @@ class TestPageTourPayload:
 
         assert payload["autoplay"] is False
 
-    def test_the_payload_carries_exactly_an_id_autoplay_and_steps(self, client):
+    def test_the_payload_carries_exactly_an_id_autoplay_steps_and_controls(
+        self, client
+    ):
         """Nothing else reaches the browser."""
         payload = tour_payload(client.get(reverse("class-tour")))
 
-        assert set(payload) == {"id", "autoplay", "steps"}
+        assert set(payload) == {"id", "autoplay", "steps", "controls"}
 
     def test_both_urls_of_a_view_carry_the_same_id(self, client):
         """A view routed twice is one tour."""

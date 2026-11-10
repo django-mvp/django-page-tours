@@ -120,7 +120,10 @@ which suits a welcome or a closing step:
 TourStep(title="Welcome", text="A quick look around.")
 ```
 
-## Translate a step
+## Translate a tour
+
+A tour is shown in the language the page is served in: the steps you write and the tour's own
+controls alike.
 
 Titles and texts are plain text. Markup characters in them are escaped, so
 `<b>bold</b>` shows as those characters and not as bold text.
@@ -133,6 +136,33 @@ from django.utils.translation import gettext_lazy as _
 
 TourStep(title=_("Your projects"), text=_("Everything is listed here."))
 ```
+
+The tour's own controls are the next, previous and done buttons and the label a screen reader
+gives the close button. Their text comes from the package's catalogue, under the context
+`page tour control`. The package ships an English catalogue in
+`page_tours/locale/en/LC_MESSAGES/django.po`. To show the controls in another language, add the
+four entries to your project's catalogue for that language and compile it:
+
+```po
+msgctxt "page tour control"
+msgid "Next"
+msgstr "Weiter"
+
+msgctxt "page tour control"
+msgid "Previous"
+msgstr "Zurück"
+
+msgctxt "page tour control"
+msgid "Done"
+msgstr "Fertig"
+
+msgctxt "page tour control"
+msgid "Close"
+msgstr "Schließen"
+```
+
+A control with no translation in the page's language shows in English. Like step text, a
+translated label is shown as text, never as markup.
 
 ## See a tour in the demo project
 

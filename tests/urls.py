@@ -6,6 +6,11 @@ from tests import views
 
 urlpatterns = [
     path("navigation/", views.NavigationTourView.as_view(), name="navigation-tour"),
+    path(
+        "navigation-de/",
+        views.GermanNavigationTourView.as_view(),
+        name="german-navigation-tour",
+    ),
     path("missing-first/", views.MissingFirstTourView.as_view(), name="missing-first"),
     path(
         "missing-middle/", views.MissingMiddleTourView.as_view(), name="missing-middle"

@@ -104,6 +104,9 @@ action, and that every control the page offers works afterwards.
    ends, at any step and however it ends, focus is back where it was before the tour started.
 10. **Given** a tour that is playing, **When** a step shows, **Then** a screen reader announces it
     as a dialog named by the step's title and described by its text.
+11. **Given** a page served in a language the project has a translation for, **When** its tour
+    plays, **Then** the tour's own controls (next, previous, done and the close button's name)
+    are in that language and shown as text.
 
 ---
 
@@ -162,6 +165,9 @@ action, and that every control the page offers works afterwards.
 - **FR-016**: A visitor MUST be able to start, follow and close a tour from the keyboard alone.
   Focus MUST move into each step as it shows and, when the tour ends, MUST go back to where it
   was before the tour started. A screen reader MUST announce each step's title and text. (US2)
+- **FR-017**: The tour's own controls MUST be shown in the language the page is served in when a
+  translation exists, and in English otherwise, reaching the visitor as text. The package MUST
+  ship an English catalogue of its own strings. (US2)
 
 ### Key Entities
 
@@ -209,9 +215,8 @@ action, and that every control the page offers works afterwards.
   package's setup once in its base template. Tours themselves need nothing more than Python.
 - Tours look as Driver.js draws them by default (CONSTITUTION Article XIV). Giving tours a site's
   own look is a later feature (roadmap R5).
-- The tour's own controls (next, back, close, the step count) are Driver.js's. Translating them,
-  and shipping a translation catalogue, belongs to roadmap R4. Step titles and texts are
-  translatable here because they are the developer's own strings.
+- The tour's own controls are drawn by Driver.js, with labels from the package's own catalogue
+  (FR-017). Driver.js's step count is not shown.
 - A tour belongs to one page. Tours across several pages are out of scope.
 - Tours shipped by reusable apps (R6) and tour versions (R7) are later features. This feature
   declares tours in a way that does not block either.

@@ -2,8 +2,8 @@
 
 from django import template
 from django.forms.utils import flatatt
-from django.utils.html import format_html
-from django.utils.translation import gettext_lazy
+from django.utils.html import escape, format_html
+from django.utils.translation import gettext_lazy, pgettext
 
 from page_tours.tours import Tour, tour_id
 
@@ -21,8 +21,9 @@ def page_tour(context):
 
     Returns:
         The context for ``page_tours/page_tour.html``: the tour's id, whether it
-        plays by itself and its steps in the form Driver.js takes, or an empty
-        payload when the page has no tour.
+        plays by itself, its steps in the form Driver.js takes and the labels of
+        its controls in the active language, or an empty payload when the page has
+        no tour.
     """
     tour = Tour.for_page(context)
     if tour is None:
@@ -32,6 +33,14 @@ def page_tour(context):
             "id": tour_id(context),
             "autoplay": tour.autoplay,
             "steps": tour.as_driver_steps(),
+            # Driver.js writes the button labels as HTML and the close label as an
+            # attribute value, so only the button labels are escaped.
+            "controls": {
+                "next": escape(pgettext("page tour control", "Next")),
+                "previous": escape(pgettext("page tour control", "Previous")),
+                "done": escape(pgettext("page tour control", "Done")),
+                "close": pgettext("page tour control", "Close"),
+            },
         }
     }
 

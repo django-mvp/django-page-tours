@@ -2,6 +2,7 @@
 
 from django.http import Http404
 from django.shortcuts import render
+from django.utils import translation
 from django.utils.translation import gettext_lazy
 from django.views.generic import TemplateView
 
@@ -101,6 +102,17 @@ class NavigationTourView(ControlsTourView):
     """Three steps, each attached to an element."""
 
     tour = steps_for("h1", "#control", "#output")
+
+
+class GermanNavigationTourView(NavigationTourView):
+    """The three-step page, served in German."""
+
+    def get(self, request, *args, **kwargs):
+        """Render the page with German active."""
+        with translation.override("de"):
+            response = super().get(request, *args, **kwargs)
+            response.render()
+        return response
 
 
 class MissingFirstTourView(ControlsTourView):
