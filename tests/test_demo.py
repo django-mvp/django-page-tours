@@ -110,8 +110,8 @@ class TestDemoTourPages:
             client.get(reverse("changed-tour-new-version")).content.decode()
         )
 
-        assert (first["id"], first["version"]) == (new["id"], 1)
-        assert new["version"] == 2
+        assert first["id"] == new["id"]
+        assert (first["version"], new["version"]) == (1, 2)
 
     @pytest.mark.parametrize("name", PAGES)
     def test_the_page_bar_links_the_page(self, client, name):
