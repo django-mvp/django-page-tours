@@ -12,6 +12,7 @@ from django.utils import translation
 from django.utils.html import escape
 from django.utils.translation import gettext_lazy
 
+from tests import views
 from tests.views import CLASS_TOUR, FUNCTION_TOUR, MARKUP_TITLE
 
 STEPS_SCRIPT = re.compile(
@@ -352,3 +353,73 @@ class TestPageTourReplayTag:
         """Only ``name=value`` arguments are taken."""
         with pytest.raises(TemplateSyntaxError):
             render_replay('{% page_tour_replay "first" %}Go{% endpage_tour_replay %}')
+
+
+OVERRIDDEN = "tests.views.OverriddenTourView"
+
+
+class TestOverriddenTourPayload:
+    """The page of an app's tour carries what the project changed it to."""
+
+    def get(self, client, settings, replacement, name="overridden"):
+        """Open the page with the app's tour replaced by a module constant."""
+        settings.PAGE_TOURS_OVERRIDES = {OVERRIDDEN: f"tests.views.{replacement}"}
+        return client.get(reverse(name))
+
+    def test_the_steps_are_the_replacements_and_the_id_is_the_apps(
+        self, client, settings
+    ):
+        """The page plays the project's steps under the app's name for the tour."""
+        response = self.get(client, settings, "REPLACEMENT_TOUR")
+
+        payload = tour_payload(response)
+        assert payload["steps"] == views.REPLACEMENT_TOUR.as_driver_steps()
+        assert payload["id"] == OVERRIDDEN
+
+    def test_one_reworded_step_arrives_among_the_apps_in_order(self, client, settings):
+        """A replacement that rewords one step carries all three, in order."""
+        response = self.get(client, settings, "REWORDED_TOUR")
+
+        assert tour_steps(response) == views.REWORDED_TOUR.as_driver_steps()
+
+    def test_a_replacement_that_does_not_autoplay_carries_it(self, client, settings):
+        """The replacement's own autoplay reaches the page."""
+        response = self.get(client, settings, "QUIET_REPLACEMENT_TOUR")
+
+        assert tour_payload(response)["autoplay"] is False
+
+    @pytest.mark.parametrize(
+        ("replacement", "version"),
+        [("REPLACEMENT_TOUR", 2), ("REPLACEMENT_TOUR_VERSION_TWO", 3)],
+    )
+    def test_the_version_counts_on_from_the_apps(
+        self, client, settings, replacement, version
+    ):
+        """The app's tour is at version 2, so the replacement plays at 2 or 3."""
+        response = self.get(client, settings, replacement)
+
+        assert tour_payload(response)["version"] == version
+
+    def test_a_tour_turned_off_has_no_payload_and_no_replay_control(
+        self, client, settings
+    ):
+        """Nothing about the tour reaches the page."""
+        settings.PAGE_TOURS_OVERRIDES = {"tests.views.OffTourView": None}
+
+        response = client.get(reverse("overridden-off"))
+
+        content = response.content.decode()
+        assert "page-tour-steps" not in content
+        assert replay_markup(content).templates == []
+
+    def test_every_url_of_the_view_carries_the_change(self, client, settings):
+        """Two routes to the one view play the same replacement."""
+        settings.PAGE_TOURS_OVERRIDES = {OVERRIDDEN: "tests.views.REPLACEMENT_TOUR"}
+
+        payloads = [
+            tour_payload(client.get(reverse(name)))
+            for name in ("overridden", "overridden-again")
+        ]
+
+        assert payloads[0] == payloads[1]
+        assert payloads[0]["steps"] == views.REPLACEMENT_TOUR.as_driver_steps()

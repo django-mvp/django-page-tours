@@ -19,6 +19,7 @@ CSRF_COOKIE_SECURE = False
 
 INSTALLED_APPS = [
     "demo",
+    "demo.library",
     "page_tours",
     "django.contrib.admin",
     "django.contrib.auth",
@@ -80,3 +81,10 @@ USE_I18N = True
 LANGUAGE_CODE = "en-us"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# The library app stands for a reusable app. Its files are untouched: the project
+# replaces one of its tours and turns another off from here.
+PAGE_TOURS_OVERRIDES = {
+    "demo.library.views.BookDetailView": "demo.tours.book_tour",
+    "demo.library.views.LoansView": None,
+}

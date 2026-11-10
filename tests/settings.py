@@ -20,6 +20,7 @@ INSTALLED_APPS = [
     "page_tours",
     # The demo project, so its pages are tested as part of the suite.
     "demo",
+    "demo.library",
     "django_browser_reload",
 ]
 

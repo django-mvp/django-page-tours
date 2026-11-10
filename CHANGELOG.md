@@ -12,6 +12,11 @@ All notable changes to this project are documented in this file. The format foll
   plays it by itself once more, and is then quiet again. A tour without a version is at version 1,
   and tours seen before this release count as seen at version 1. Editing a tour without changing
   its version brings it back to nobody. The demo project has a page for a tour at a new version.
+- A project can replace the tour of an installed app, or turn it off, with the
+  `PAGE_TOURS_OVERRIDES` setting, which maps a tour's name to the dotted path of a `Tour` or to
+  `None`. A mistake in the setting is refused when the project starts, and `page_tours.W002`
+  warns about a key that names no tour. The demo project has a small library app whose tours
+  it changes.
 
 ## [v0.1.0] - 2026-11-10
 

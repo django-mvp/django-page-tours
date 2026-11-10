@@ -28,6 +28,8 @@ urlpatterns = [
         ChangedTourView.as_view(tour=NEW_VERSION),
         name="changed-tour-new-version",
     ),
+    # A reusable app ships its URLs and the project includes them.
+    path("library/", include("demo.library.urls")),
     path("admin/", admin.site.urls),
     # The endpoint an open page holds to hear that something on disk changed.
     path("__reload__/", include("django_browser_reload.urls")),

@@ -76,7 +76,7 @@ A site restyles its tours with its own CSS, and a design system built on Django 
 
 ### R6 — Tours shipped by reusable apps
 
-*feature · advances G8*
+*delivered in [#23](https://github.com/django-mvp/django-page-tours/issues/23) · advances G8*
 
 A reusable Django app declares tours for its own pages, and a project that installs it can change those tours or turn them off without editing the app. Serves G8.
 

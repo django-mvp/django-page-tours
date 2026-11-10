@@ -70,6 +70,9 @@ class DashboardView(TemplateView):
     tour = Tour(steps=[TourStep(title="Welcome", text="A quick look around.")])
 ```
 
+A project can replace the tour of an installed app, or turn it off, from its own settings with
+`PAGE_TOURS_OVERRIDES`, without editing the app.
+
 The [documentation](https://django-mvp.github.io/django-page-tours/) covers function-based views,
 steps attached to elements, what a visitor sees, and translation.
 

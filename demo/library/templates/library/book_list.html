@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1>Books</h1>
+  <ul id="library-books">
+    <li id="library-first-book"><a href="{% url 'library-book' %}">A book about tours</a></li>
+    <li>A book about pages</li>
+  </ul>
+{% endblock content %}

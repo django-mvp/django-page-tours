@@ -85,4 +85,32 @@ urlpatterns = [
         views.missing_function_tour_view,
         name="missing-function-tour",
     ),
+    path("overridden/", views.OverriddenTourView.as_view(), name="overridden"),
+    path(
+        "overridden-again/",
+        views.OverriddenTourView.as_view(),
+        name="overridden-again",
+    ),
+    path(
+        "overridden-subclass/",
+        views.OverriddenTourSubclassView.as_view(),
+        name="overridden-subclass",
+    ),
+    path(
+        "overridden-own/",
+        views.OverriddenTourOwnView.as_view(),
+        name="overridden-own",
+    ),
+    path(
+        "overridden-as-view/",
+        views.OverriddenTourView.as_view(tour=views.OWN_TOUR),
+        name="overridden-as-view",
+    ),
+    path("overridden-off/", views.OffTourView.as_view(), name="overridden-off"),
+    path("untouched/", views.UntouchedTourView.as_view(), name="untouched"),
+    path(
+        "overridden-function/",
+        views.overridden_function_view,
+        name="overridden-function",
+    ),
 ]

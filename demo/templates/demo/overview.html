@@ -18,4 +18,11 @@
     <a href="{% url 'changed-tour-new-version' %}">new version</a> plays once more for a browser
     that saw the first.
   </p>
+  <p>
+    The library pages stand for an installed app that ships its own tours. The
+    <a href="{% url 'library-books' %}">book list</a> plays the tour the app declared. The
+    <a href="{% url 'library-book' %}">book page</a> plays the tour this project put in its place.
+    The <a href="{% url 'library-loans' %}">loans page</a> has no tour, because this project turned
+    it off.
+  </p>
 {% endblock content %}
