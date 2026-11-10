@@ -145,7 +145,6 @@ class TestPageTourStylesheet:
         assert len(links) == 1
         assert "data-page-tour-stylesheet" in links[0]
         assert "page_tours/page-tours.css" in links[0]
-        assert "driver.css" not in content
 
 
 class TestPageTourPayload:

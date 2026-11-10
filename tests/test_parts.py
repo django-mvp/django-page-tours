@@ -219,7 +219,7 @@ class TestTourPartsAppDefaults:
         settings.PAGE_TOURS_CLASSES = {}
         installed(DESIGN_SYSTEM)
 
-        sources = [str(source) for source, _ in TourParts.sources()]
+        sources = [str(source) for source, mapping in TourParts.sources()]
 
         assert len(sources) == 2
         assert "design_system" in sources[1]

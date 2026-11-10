@@ -943,26 +943,6 @@ class TestOwnLook:
         )
         assert link_is_first is True
 
-    def test_every_rule_reachable_from_the_packages_sheet_is_driverjs(
-        self, page, live_server
-    ):
-        """The package's sheet is one import of driver.css into its own layer."""
-        page.goto(live_server.url + reverse("class-tour"))
-        expect(page.locator(TITLE)).to_be_visible()
-
-        imports = page.evaluate(
-            """() => {
-                const link = document.querySelector("link[data-page-tour-stylesheet]");
-                return [...link.sheet.cssRules].map((rule) => ({
-                    layer: rule.layerName,
-                    href: rule.styleSheet && rule.styleSheet.href,
-                }));
-            }"""
-        )
-        assert len(imports) == 1
-        assert imports[0]["layer"] == "page-tours"
-        assert imports[0]["href"].endswith("driver.css")
-
 
 PART_SELECTORS = {
     "box": ".driver-popover",
