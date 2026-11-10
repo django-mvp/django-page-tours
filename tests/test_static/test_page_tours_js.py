@@ -927,15 +927,21 @@ class TestOwnLook:
     def test_the_packages_link_is_first_in_the_head_once_the_tour_shows(
         self, page, live_server
     ):
-        """The page's own styles come after the package's link."""
-        page.goto(live_server.url + reverse("class-tour"))
+        """A style the site placed before the tag ends up after the package's link."""
+        page.goto(live_server.url + reverse("style-before"))
         expect(page.locator(TITLE)).to_be_visible()
 
-        first = page.evaluate(
-            """() => document.head.querySelector("link, style")
-                .hasAttribute("data-page-tour-stylesheet")"""
+        link_is_first = page.evaluate(
+            """() => {
+                const link = document.querySelector("link[data-page-tour-stylesheet]");
+                const style = document.head.querySelector("style");
+                return Boolean(
+                    link.compareDocumentPosition(style) &
+                        Node.DOCUMENT_POSITION_FOLLOWING
+                );
+            }"""
         )
-        assert first is True
+        assert link_is_first is True
 
     def test_every_rule_reachable_from_the_packages_sheet_is_driverjs(
         self, page, live_server
