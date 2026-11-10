@@ -9,6 +9,7 @@ from django.utils import translation
 from django.utils.html import escape
 from django.utils.translation import gettext, gettext_lazy
 
+from page_tours import tours as tours_module
 from page_tours.tours import (
     Tour,
     TourStep,
@@ -420,6 +421,14 @@ class TestDeclaredTours:
         gc.collect()
 
         assert "tests.forgotten" not in declared_tours()
+
+    def test_tours_made_and_dropped_leave_nothing_behind(self):
+        """A view that builds its tour on every request does not grow the record."""
+        for _ in range(3):
+            Tour(name="tests.per-request", steps=[STEP])
+        gc.collect()
+
+        assert "tests.per-request" not in tours_module._declared
 
     def test_the_tours_of_the_routed_views_are_declared(self):
         """A tour declared in a view module is recorded when the module is imported."""

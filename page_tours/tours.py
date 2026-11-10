@@ -4,6 +4,7 @@ import copy
 import weakref
 from collections.abc import Sequence
 from dataclasses import dataclass
+from functools import partial
 from typing import Any
 
 from django.conf import settings
@@ -13,9 +14,18 @@ from django.utils.html import escape
 from django.utils.module_loading import import_string
 from django.utils.translation import gettext_lazy as _
 
-# Every tour declared so far, by name. The references are weak, so a tour that
-# nothing refers to any more is no longer declared.
+# Every tour that exists, by name. The references are weak, and each removes
+# itself when its tour is collected, so a tour built per request leaves nothing.
 _declared: dict[str, list[weakref.ref["Tour"]]] = {}
+
+
+def _forget(name: str, ref: weakref.ref["Tour"]) -> None:
+    """Drop the record of a collected tour, and its name once no tour has it."""
+    refs = _declared.get(name, [])
+    if ref in refs:
+        refs.remove(ref)
+    if not refs:
+        _declared.pop(name, None)
 
 
 @dataclass(frozen=True)
@@ -90,7 +100,9 @@ class Tour:
                 _("A tour's version must be a whole number of 1 or more.")
             )
         object.__setattr__(self, "steps", tuple(self.steps))
-        _declared.setdefault(self.name, []).append(weakref.ref(self))
+        _declared.setdefault(self.name, []).append(
+            weakref.ref(self, partial(_forget, self.name))
+        )
 
     @classmethod
     def for_page(cls, context: Any) -> "Tour | None":
@@ -220,10 +232,7 @@ def declared_tours() -> dict[str, list[Tour]]:
     """
     tours: dict[str, list[Tour]] = {}
     for name, refs in list(_declared.items()):
-        alive = [tour for ref in refs if (tour := ref()) is not None]
+        alive = [tour for ref in list(refs) if (tour := ref()) is not None]
         if alive:
-            _declared[name] = [weakref.ref(tour) for tour in alive]
             tours[name] = alive
-        else:
-            del _declared[name]
     return tours

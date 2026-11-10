@@ -26,6 +26,8 @@ All notable changes to this project are documented in this file. The format foll
 
 - System check `page_tours.W005` warns when tours with different steps are declared with one
   name, since they would share what a browser remembers.
+- `page_tours.tours.declared_tours()` returns every tour that exists, by name, so a project can
+  find the names of an installed app's tours.
 - A demo page, "Function view", shows a tour passed in a function-based view's context.
 
 ### Removed
