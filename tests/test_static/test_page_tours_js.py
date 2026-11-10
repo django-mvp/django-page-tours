@@ -888,6 +888,42 @@ class TestOwnLook:
         )
         assert inline == ["", ""]
 
+    def test_the_highlight_never_shows_stronger_than_driverjs_dims_it(
+        self, page, live_server
+    ):
+        """Through the fade-in the overlay's opacity and the path's multiply."""
+        page.add_init_script(
+            """
+            window.dimming = { peak: 0, samples: 0, done: false };
+            const started = performance.now();
+            const sample = () => {
+                const svg = document.querySelector("svg.driver-overlay");
+                const path = svg && svg.querySelector("path");
+                if (path) {
+                    window.dimming.samples += 1;
+                    window.dimming.peak = Math.max(
+                        window.dimming.peak,
+                        getComputedStyle(svg).opacity *
+                            getComputedStyle(path).fillOpacity
+                    );
+                }
+                if (performance.now() - started < 1500) {
+                    requestAnimationFrame(sample);
+                } else {
+                    window.dimming.done = true;
+                }
+            };
+            requestAnimationFrame(sample);
+            """
+        )
+        page.goto(live_server.url + reverse("class-tour"))
+        expect(page.locator(TITLE)).to_be_visible()
+        page.wait_for_function("window.dimming.done")
+
+        dimming = page.evaluate("window.dimming")
+        assert dimming["samples"] > 0
+        assert dimming["peak"] <= 0.7 + 0.01
+
     def test_the_packages_link_is_first_in_the_head_once_the_tour_shows(
         self, page, live_server
     ):

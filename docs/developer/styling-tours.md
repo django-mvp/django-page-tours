@@ -52,19 +52,20 @@ page, and so do the layered classes of a framework. You never need `!important` 
 part. The same layer means a rule you wrote for the page can reach a part of the tour, such as
 `button { ... }` or a framework's layered reset. Style the documented names to settle any of it.
 
-### Style the highlight with fill and opacity
+### Style the highlight with fill and fill-opacity
 
 The highlight is an SVG shape drawn over the page, so it takes SVG properties and not the box
-properties. Style it with `fill` and `opacity`:
+properties. Style it with `fill` and `fill-opacity`, or put an alpha in the `fill` colour:
 
 ```css
 .page-tour-highlight {
   fill: #0f172a;
-  opacity: 0.8;
+  fill-opacity: 0.8;
 }
 ```
 
-A rule such as `background` or `border` does nothing to it.
+A `background` or `border` on the highlight is drawn across the whole page and washes over the
+highlighted element, so use `fill`.
 
 ## Give parts classes with `PAGE_TOURS_CLASSES`
 

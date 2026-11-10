@@ -86,6 +86,8 @@
 
   // Driver.js writes the overlay's fill and opacity as inline styles, which no
   // site rule can beat. As attributes of the svg they look the same and give way.
+  // The opacity becomes fill-opacity: the svg's own opacity is what the fade-in
+  // animates, and the dimming has to multiply into that rather than replace it.
   function nameOverlay() {
     var overlay = document.querySelector("svg.driver-overlay");
     if (!overlay) {
@@ -93,11 +95,14 @@
     }
     addClasses(overlay, "highlight");
     var path = overlay.querySelector("path");
-    ["fill", "opacity"].forEach(function (property) {
-      var value = path && path.style.getPropertyValue(property);
+    [
+      ["fill", "fill"],
+      ["opacity", "fill-opacity"],
+    ].forEach(function (pair) {
+      var value = path && path.style.getPropertyValue(pair[0]);
       if (value) {
-        overlay.setAttribute(property, value);
-        path.style.removeProperty(property);
+        overlay.setAttribute(pair[1], value);
+        path.style.removeProperty(pair[0]);
       }
     });
   }
