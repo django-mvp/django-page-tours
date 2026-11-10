@@ -85,6 +85,25 @@ class OnRequestView(TemplateView):
     )
 
 
+class OwnLookView(TemplateView):
+    """A page whose tour is styled by the page's own stylesheet."""
+
+    template_name = "demo/own_look.html"
+    tour = Tour(
+        steps=[
+            TourStep(
+                title="A look of its own",
+                text="This step points at nothing, so it shows mid-page.",
+            ),
+            TourStep(
+                title="An attached step",
+                text="The rest of the page is dimmed, and this paragraph is not.",
+                element="#demo-own-look-target",
+            ),
+        ]
+    )
+
+
 CHANGED_TOUR_STEPS = [
     TourStep(
         title="A changed tour",

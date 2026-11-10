@@ -9,6 +9,7 @@ from demo.views import (
     ChangedTourView,
     OnRequestView,
     OverviewView,
+    OwnLookView,
     PlaysOnceView,
     TourView,
 )
@@ -30,6 +31,7 @@ urlpatterns = [
     ),
     # A reusable app ships its URLs and the project includes them.
     path("library/", include("demo.library.urls")),
+    path("own-look/", OwnLookView.as_view(), name="own-look"),
     path("admin/", admin.site.urls),
     # The endpoint an open page holds to hear that something on disk changed.
     path("__reload__/", include("django_browser_reload.urls")),

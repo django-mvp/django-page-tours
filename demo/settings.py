@@ -76,6 +76,14 @@ AUTH_PASSWORD_VALIDATORS: list[dict] = []
 
 STATIC_URL = "/static/"
 
+# Classes for a few parts of a tour step, which the "Own look" page styles.
+PAGE_TOURS_CLASSES = {
+    "box": "demo-box",
+    "previous": "demo-previous",
+    "next": "demo-next",
+    "done": "demo-done",
+}
+
 USE_TZ = True
 USE_I18N = True
 LANGUAGE_CODE = "en-us"

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block head %}
+  <style>
+    /* Written against the documented names, outside any layer, so these rules win
+       over Driver.js's whatever their order. */
+    .page-tour-box {
+      background: #1e1b4b;
+      color: #eef2ff;
+      border: 2px solid #a5b4fc;
+      border-radius: 1rem;
+      box-shadow: 0 1rem 2rem rgb(30 27 75 / 0.4);
+      font-family: Georgia, serif;
+    }
+    .page-tour-title { color: #fde68a; font-size: 1.25rem; }
+    .page-tour-text { color: #c7d2fe; }
+    .page-tour-progress { color: #a5b4fc; }
+    .page-tour-close { color: #fde68a; }
+    .page-tour-highlight { fill: #1e1b4b; opacity: 0.75; }
+
+    /* The classes PAGE_TOURS_CLASSES gives the box and the controls in demo/settings.py. */
+    .demo-box { padding: 1.25rem; }
+    .demo-next, .demo-done {
+      background: #f59e0b;
+      color: #1e1b4b;
+      border: 0;
+      border-radius: 999px;
+      padding: 0.4rem 1rem;
+      text-shadow: none;
+    }
+    .demo-previous {
+      background: transparent;
+      color: #c7d2fe;
+      border: 1px solid #a5b4fc;
+      border-radius: 999px;
+      padding: 0.4rem 1rem;
+      text-shadow: none;
+    }
+  </style>
+{% endblock head %}
+{% block content %}
+  <h1>A tour with a look of its own</h1>
+  <p>
+    This page styles its tour from its own stylesheet. The rules are written against the names
+    every part of a step carries, and a few parts are given classes in the demo's settings.
+  </p>
+  <p id="demo-own-look-target">This paragraph is what the second step points at.</p>
+{% endblock content %}
