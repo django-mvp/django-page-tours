@@ -762,3 +762,56 @@ class TestOnRequestTour:
         page.goto(live_server.url + reverse("bare-with-tour"))
 
         expect(page.locator(TITLE)).to_have_text("Step 1")
+
+
+class TestOverriddenTourSeen:
+    """A project's replacement of a tour does not bring back a tour already seen."""
+
+    OVERRIDDEN = "tests.views.OverriddenTourView"
+
+    def replace_with(self, settings, replacement):
+        """Replace the app's tour with a module constant of the tests."""
+        settings.PAGE_TOURS_OVERRIDES = {self.OVERRIDDEN: f"tests.views.{replacement}"}
+
+    def see_the_app_tour(self, page, live_server):
+        """Open the page before the project changes its tour, so the app's is seen."""
+        page.goto(live_server.url + reverse("overridden"))
+        expect(page.locator(TITLE)).to_have_text("Step 1")
+
+    def test_a_replacement_at_version_one_does_not_play_by_itself(
+        self, page, live_server, settings
+    ):
+        """A browser that saw the app's version 2 is not shown the replacement."""
+        self.see_the_app_tour(page, live_server)
+        self.replace_with(settings, "REPLACEMENT_TOUR")
+
+        page.goto(live_server.url + reverse("overridden"))
+
+        page.wait_for_load_state("load")
+        expect(page.locator(".driver-popover")).to_have_count(0)
+
+    def test_the_replay_control_plays_the_replacement(
+        self, page, live_server, settings
+    ):
+        """What was not shown by itself is there when asked for."""
+        self.see_the_app_tour(page, live_server)
+        self.replace_with(settings, "REPLACEMENT_TOUR")
+        page.goto(live_server.url + reverse("overridden"))
+
+        page.click(REPLAY)
+
+        expect(page.locator(TITLE)).to_have_text("Ours 1")
+
+    def test_a_replacement_at_version_two_plays_by_itself_once(
+        self, page, live_server, settings
+    ):
+        """Raising the replacement's version shows it once more, and only once."""
+        self.see_the_app_tour(page, live_server)
+        self.replace_with(settings, "REPLACEMENT_TOUR_VERSION_TWO")
+        page.goto(live_server.url + reverse("overridden"))
+        expect(page.locator(TITLE)).to_have_text("Ours 1")
+
+        page.goto(live_server.url + reverse("overridden"))
+
+        page.wait_for_load_state("load")
+        expect(page.locator(".driver-popover")).to_have_count(0)

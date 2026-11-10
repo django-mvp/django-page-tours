@@ -257,7 +257,7 @@ class ControlInBaseNoTourView(TemplateView):
     template_name = "test_control_in_base_page.html"
 
 
-APP_TOUR = Tour(steps=steps_for("h1", "#control", "#output").steps, version=2)
+APP_TOUR = Tour(steps=steps_for("h1", "#control", "").steps, version=2)
 OWN_TOUR = steps_for("h1")
 REPLACEMENT_TOUR = Tour(
     steps=[
@@ -277,7 +277,7 @@ REPLACEMENT_TOUR_VERSION_TWO = Tour(steps=REPLACEMENT_TOUR.steps, version=2)
 NOT_A_TOUR = "not a tour"
 
 
-class OverriddenTourView(ControlsTourView):
+class OverriddenTourView(ReplayView):
     """A page of an installed app, whose tour a project changes."""
 
     tour = APP_TOUR
@@ -293,13 +293,13 @@ class OverriddenTourOwnView(OverriddenTourView):
     tour = OWN_TOUR
 
 
-class OffTourView(ControlsTourView):
+class OffTourView(ReplayView):
     """A page of an installed app, whose tour a project turns off."""
 
     tour = APP_TOUR
 
 
-class UntouchedTourView(ControlsTourView):
+class UntouchedTourView(ReplayView):
     """A page of an installed app whose tour a project leaves alone."""
 
     tour = APP_TOUR
