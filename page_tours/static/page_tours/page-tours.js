@@ -21,6 +21,9 @@
 
   var payload = JSON.parse(script.textContent);
   var seenKey = "page-tours:seen:" + payload.id;
+  // The entry holds the version that played. A browser that saw the tour before
+  // tours had versions holds "1", which is the version a tour has by default.
+  var seenVersion = String(payload.version);
   var steps = payload.steps.map(function (step) {
     var driverStep = { popover: { title: step.title, description: step.text } };
     if (step.element) {
@@ -39,7 +42,7 @@
 
   function isSeen() {
     try {
-      return window.localStorage.getItem(seenKey) !== null;
+      return window.localStorage.getItem(seenKey) === seenVersion;
     } catch (error) {
       return false;
     }
@@ -47,7 +50,7 @@
 
   function markSeen() {
     try {
-      window.localStorage.setItem(seenKey, "1");
+      window.localStorage.setItem(seenKey, seenVersion);
     } catch (error) {
       // Storage that cannot be written means the tour plays on every visit.
     }

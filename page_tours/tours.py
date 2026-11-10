@@ -49,18 +49,31 @@ class Tour:
         steps: The steps in the order they are shown. At least one.
         autoplay: Whether the tour plays by itself the first time a browser opens
             the page.
+        version: A whole number of 1 or more. Raise it when the tour has changed
+            enough that people who saw it should see it again: a browser that saw
+            another version plays it by itself once more.
 
     Raises:
-        ImproperlyConfigured: If ``steps`` is empty.
+        ImproperlyConfigured: If ``steps`` is empty or ``version`` is not a whole
+            number of 1 or more.
     """
 
     steps: Sequence[TourStep]
     autoplay: bool = True
+    version: int = 1
 
     def __post_init__(self):
-        """Refuse a tour with no steps and freeze the steps as a tuple."""
+        """Refuse a tour with no steps or a bad version, and freeze the steps."""
         if not self.steps:
             raise ImproperlyConfigured(_("A tour needs at least one step."))
+        if (
+            not isinstance(self.version, int)
+            or isinstance(self.version, bool)
+            or self.version < 1
+        ):
+            raise ImproperlyConfigured(
+                _("A tour's version must be a whole number of 1 or more.")
+            )
         object.__setattr__(self, "steps", tuple(self.steps))
 
     @classmethod

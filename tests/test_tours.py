@@ -67,6 +67,24 @@ class TestTour:
         """Autoplay is on by default."""
         assert Tour(steps=[TourStep(title="Title", text="Body")]).autoplay is True
 
+    def test_a_tour_is_at_version_one_unless_told_otherwise(self):
+        """A tour declared without a version has version 1."""
+        assert Tour(steps=[TourStep(title="Title", text="Body")]).version == 1
+
+    def test_a_tour_keeps_the_version_it_is_declared_with(self):
+        """The developer sets the version."""
+        tour = Tour(steps=[TourStep(title="Title", text="Body")], version=3)
+
+        assert tour.version == 3
+
+    @pytest.mark.parametrize("version", [0, -1, 1.5, "2", True, None])
+    def test_a_version_that_is_not_a_whole_number_of_one_or_more_is_an_error(
+        self, version
+    ):
+        """Only 1, 2, 3 and so on are versions."""
+        with pytest.raises(ImproperlyConfigured):
+            Tour(steps=[TourStep(title="Title", text="Body")], version=version)
+
 
 class TestTourAsDriverSteps:
     """Converting a tour to the steps Driver.js takes."""

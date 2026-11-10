@@ -104,6 +104,44 @@ by itself again in that browser.
   is not remembered.
 - **A browser that blocks storage sees the tour on every visit.** The page raises no error.
 
+## Show a changed tour again
+
+Editing a tour does not bring it back to people who have seen it. When a tour changes enough that
+they should see it again, for example because the page gained a section or a control moved, give
+it a new version:
+
+```python
+class DashboardView(TemplateView):
+    template_name = "dashboard.html"
+    tour = Tour(
+        steps=[
+            TourStep(title="Welcome", text="A quick look around."),
+            TourStep(
+                title="Reports",
+                text="Your reports are here now.",
+                element="#reports",
+            ),
+        ],
+        version=2,
+    )
+```
+
+A browser that saw any other version plays the tour by itself the next time it opens the page,
+once, and then it is seen again. A browser that has never seen the tour plays it once, as before.
+
+- **A tour without a version is at version 1.** Tours seen before you added a version count as
+  seen at version 1, so adding `version=1` changes nothing.
+- **Leave the version alone for a small edit.** A fixed typo or a reworded step keeps its version,
+  and nobody is shown the tour again for it. The package never works out a version from the
+  steps.
+- **A tour that plays only on request stays that way.** A new version of a tour declared with
+  `autoplay=False` still waits for the replay control.
+- **Any other number counts.** Lowering the version, after a revert for example, also plays the
+  tour once more.
+
+A version that is not a whole number of 1 or more raises `ImproperlyConfigured` when the tour is
+declared.
+
 ## Attach a step to an element, or to nothing
 
 A step with `element` points at the first element on the page matching that CSS selector. Driver.js
@@ -170,6 +208,10 @@ The demo project in `demo/` has a tour page at `/tour/`, linked from the bar at 
 demo page. Its tour has a step attached to nothing, a step attached to a disclosure, a step
 attached to an element that is not on the page, and a closing step attached to a text field. Run
 `python manage.py runserver` from the repository root and open the page to see all of them.
+
+The changed-tour page at `/changed-tour/` routes one tour at two versions, at `/changed-tour/`
+and `/changed-tour/new-version/`. Open one and then the other to see a new version play once
+more in a browser that saw the first.
 
 ## Why a visitor can always use the page
 

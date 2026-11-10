@@ -45,6 +45,22 @@ urlpatterns = [
         views.OnRequestNoControlView.as_view(),
         name="on-request-no-control",
     ),
+    path("versioned/", views.VersionedTourView.as_view(), name="versioned"),
+    path(
+        "versioned-two/",
+        views.VersionedTourView.as_view(tour=views.VERSION_TWO),
+        name="versioned-two",
+    ),
+    path(
+        "versioned-two-edited/",
+        views.VersionedTourView.as_view(tour=views.VERSION_TWO_EDITED),
+        name="versioned-two-edited",
+    ),
+    path(
+        "on-request-two/",
+        views.OnRequestView.as_view(tour=views.ON_REQUEST_VERSION_TWO),
+        name="on-request-two",
+    ),
     path("control-in-base/", views.ControlInBaseView.as_view(), name="control-in-base"),
     path(
         "control-in-base-no-tour/",

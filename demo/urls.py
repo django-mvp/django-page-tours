@@ -3,13 +3,31 @@
 from django.contrib import admin
 from django.urls import include, path
 
-from demo.views import OnRequestView, OverviewView, PlaysOnceView, TourView
+from demo.views import (
+    FIRST_VERSION,
+    NEW_VERSION,
+    ChangedTourView,
+    OnRequestView,
+    OverviewView,
+    PlaysOnceView,
+    TourView,
+)
 
 urlpatterns = [
     path("", OverviewView.as_view(), name="overview"),
     path("tour/", TourView.as_view(), name="tour"),
     path("plays-once/", PlaysOnceView.as_view(), name="plays-once"),
     path("on-request/", OnRequestView.as_view(), name="on-request"),
+    path(
+        "changed-tour/",
+        ChangedTourView.as_view(tour=FIRST_VERSION),
+        name="changed-tour",
+    ),
+    path(
+        "changed-tour/new-version/",
+        ChangedTourView.as_view(tour=NEW_VERSION),
+        name="changed-tour-new-version",
+    ),
     path("admin/", admin.site.urls),
     # The endpoint an open page holds to hear that something on disk changed.
     path("__reload__/", include("django_browser_reload.urls")),

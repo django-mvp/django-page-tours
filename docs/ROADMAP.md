@@ -82,6 +82,6 @@ A reusable Django app declares tours for its own pages, and a project that insta
 
 ### R7 — Showing a changed tour again
 
-*resolve · advances G9*
+*delivered in [#21](https://github.com/django-mvp/django-page-tours/issues/21) · advances G9*
 
-When a developer changes a tour enough that people should see it again, they mark it as a new version, and visitors who saw the old version see the new one once. Serves G9.
+A developer gives a changed tour a new version where they declare it, and a browser that saw another version plays it by itself once more. A small edit that keeps the version brings it back to nobody. Serves G9.

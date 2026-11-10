@@ -29,7 +29,9 @@ django-page-tours moves the steps into Python, next to the page, and handles the
 **What it is.** A tour belongs to one page. A developer declares its steps in Python, each one
 pointing at an element on the page with a title and a short text. The first time someone opens
 the page, the tour plays. They can step through it, skip it or close it, and once they have seen
-it, their browser remembers and it does not play again unless they ask for it.
+it, their browser remembers and it does not play again unless they ask for it. When the tour
+changes enough to matter, the developer gives it a new version, and people who saw the old one
+see the new one once.
 
 **What it deliberately is not.**
 

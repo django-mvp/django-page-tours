@@ -13,4 +13,9 @@
     button to play it again. The <a href="{% url 'on-request' %}">on-request page</a> never plays
     its tour by itself; its two buttons do.
   </p>
+  <p>
+    The <a href="{% url 'changed-tour' %}">changed-tour page</a> plays its tour once, and its
+    <a href="{% url 'changed-tour-new-version' %}">new version</a> plays once more for a browser
+    that saw the first.
+  </p>
 {% endblock content %}
