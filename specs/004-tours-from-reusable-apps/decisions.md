@@ -1,0 +1,102 @@
+# Decisions — FS-004 Tours shipped by reusable apps
+
+Readings taken where issue #23 was silent, while specifying. Each is integrated into `spec.md`
+and can be overruled.
+
+## D1 — An app author's side needs nothing new
+
+A reusable app already declares tours on its views the way a project does, and they play in any
+project that places the tour tag in the template the app's pages render through. That was run on
+this repository before specifying (`research.md`, "Assumptions checked"). So the feature has one
+story, for the developer of the installing project, and the app author's part is a requirement
+(FR-001, FR-007) and a documentation page (FR-011), not a story of its own.
+
+**ADR:** none — a reading of the issue, fixed by the specification
+
+## D2 — A project replaces a whole tour, never one step
+
+Steps have no names, and giving them names would be a setting every app author has to keep
+stable. A replacement may reuse the app's steps, which are ordinary Python values, so rewording
+one step costs one line more than a step-level change would (FR-004).
+
+**ADR:** none — a behaviour fixed by the specification
+
+## D3 — A project names an app's tour by the view that declares it
+
+That is already the tour's name for remembering that it was seen (ADR 0002), and the documentation
+already tells developers that renaming or moving the view makes it a different tour. Using it
+means the app author gives no name and the app needs no change (FR-007). The cost is that an app
+release that moves the view orphans the project's change, which is why FR-009 reports it.
+
+**ADR:** to be considered at planning. Naming a tour for a project's change makes ADR 0002's name
+part of the public contract between an app and the projects that install it, which ADR 0002 does
+not yet say.
+
+## D4 — A replacement keeps the tour's identity
+
+A visitor who has seen the app's tour does not see the project's replacement play by itself, and
+turning a tour off and on again does not reset anyone (FR-008). This matches an edited tour on the
+developer's own view, which also does not play again (ADR 0002). A project that wants its
+replacement shown again uses whatever the tour version feature provides.
+
+**Meeting point with issue #21.** Issue #21 lets a developer mark a tour as a new version so that
+people who saw the old one see it again, and is being built as a story in specification 002. This
+feature takes none of that scope. It requires only that a replacement can carry anything a tour on
+the developer's own view can carry (FR-004), so a version marker that #21 puts on a tour can be
+put on a replacement. How an app's version and the project's replacement interact (for example, an
+app release that marks its own tour as a new version while the project has replaced it) is settled
+when this feature is planned against what #21 delivers. The reading to start from: the project's
+replacement stands, and only a version on the replacement brings it back.
+
+**ADR:** none — the behaviour is fixed by the specification; the version interaction is planning
+
+## D5 — A change names one tour
+
+Turning off every tour of one app at once was considered and left out: it is a convenience over
+naming each tour, and the package keeps its settings few (README, "When a choice is close").
+Nothing here stops it being added later (FR-006).
+
+**ADR:** none — a scope decision
+
+## D6 — A stale change is reported by Django's `check`
+
+An app release that renames a view would otherwise turn the project's choice back into the app's
+tour with no sign. The package already reports a missing setup through `check`
+(`page_tours.W001`), so a stale change is reported the same way (FR-009).
+
+**ADR:** none — a behaviour fixed by the specification
+
+## D7 — A mistaken replacement fails at start-up
+
+A tour with no steps or a step with no title already raises when it is declared, so a mistake
+never reaches a visitor. A replacement is held to the same rule (FR-010).
+
+**ADR:** none — follows the existing rule
+
+## D8 — The change lives in the project, by code or settings
+
+The issue requires no edit to the app's code. Whether the project's change is a setting or a call
+in its own code is left to planning, which weighs it against the README's "fewer settings beat
+more" (FR-002).
+
+**ADR:** to be decided at planning
+
+## D9 — Meeting point with issue #22
+
+Issue #22 gives a site's tours its own look. A replacement is an ordinary tour, so it gets the
+site's look exactly as any other tour does. This feature changes nothing about how tours look.
+
+**ADR:** none
+
+## D10 — Glossary
+
+`CONTEXT.md` has no word for the name a tour is known by, or for a project's change to an app's
+tour. The build adds the terms it ends up using; the specification uses "an app's tour" and "a
+project's change" in the meaning given under Key Entities.
+
+**ADR:** none
+
+## Sketch gate
+
+`none`: the feature puts nothing new in front of a visitor. A replaced tour is drawn exactly as
+any tour is.
