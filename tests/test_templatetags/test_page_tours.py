@@ -158,19 +158,31 @@ class TestPageTourPayload:
 
         assert payload["autoplay"] is True
 
+    def test_a_tour_declared_without_a_version_is_at_version_one(self, client):
+        """``version`` is 1 for a tour that does not say."""
+        payload = tour_payload(client.get(reverse("versioned")))
+
+        assert payload["version"] == 1
+
+    def test_the_payload_carries_the_declared_version(self, client):
+        """``version`` is the one the tour is declared with."""
+        payload = tour_payload(client.get(reverse("versioned-two")))
+
+        assert payload["version"] == 2
+
     def test_a_tour_declared_to_play_only_on_request_says_so(self, client):
         """``autoplay`` is false for a tour declared with ``autoplay=False``."""
         payload = tour_payload(client.get(reverse("on-request")))
 
         assert payload["autoplay"] is False
 
-    def test_the_payload_carries_exactly_an_id_autoplay_steps_and_controls(
+    def test_the_payload_carries_exactly_its_id_version_autoplay_steps_and_controls(
         self, client
     ):
         """Nothing else reaches the browser."""
         payload = tour_payload(client.get(reverse("class-tour")))
 
-        assert set(payload) == {"id", "autoplay", "steps", "controls"}
+        assert set(payload) == {"id", "version", "autoplay", "steps", "controls"}
 
     def test_both_urls_of_a_view_carry_the_same_id(self, client):
         """A view routed twice is one tour."""

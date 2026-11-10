@@ -20,8 +20,8 @@ def page_tour(context):
         context: The template context, supplied by Django.
 
     Returns:
-        The context for ``page_tours/page_tour.html``: the tour's id, whether it
-        plays by itself, its steps in the form Driver.js takes and the labels of
+        The context for ``page_tours/page_tour.html``: the tour's id and
+        version, whether it plays by itself, its steps in the form Driver.js takes and the labels of
         its controls in the active language, or an empty payload when the page has
         no tour.
     """
@@ -31,6 +31,7 @@ def page_tour(context):
     return {
         "payload": {
             "id": tour_id(context),
+            "version": tour.version,
             "autoplay": tour.autoplay,
             "steps": tour.as_driver_steps(),
             # Driver.js writes the button labels as HTML and the close label as an

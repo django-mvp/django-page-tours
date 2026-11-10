@@ -636,6 +636,92 @@ class TestTourWithTheKeyboard:
         expect(page.locator(REPLAY)).to_be_focused()
 
 
+class TestTourVersion:
+    """A tour declared with a new version plays once more for a browser that saw it."""
+
+    SEEN_KEY = "page-tours:seen:tests.views.VersionedTourView"
+
+    def assert_does_not_play(self, page):
+        """Assert that the page has loaded and shows no tour."""
+        page.wait_for_load_state("load")
+        expect(page.locator(".driver-popover")).to_have_count(0)
+        assert_no_driver_markup(page)
+
+    def see(self, page, url):
+        """Open the page and wait for its tour to show, so the browser has seen it."""
+        page.goto(url)
+        expect(page.locator(TITLE)).to_have_text("Step 1")
+
+    def test_a_new_version_plays_for_a_browser_that_saw_the_old_one(
+        self, page, live_server
+    ):
+        """Seeing version 1 does not hide version 2."""
+        self.see(page, live_server.url + reverse("versioned"))
+
+        page.goto(live_server.url + reverse("versioned-two"))
+
+        expect(page.locator(TITLE)).to_have_text("Step 1")
+
+    def test_the_new_version_plays_only_once(self, page, live_server):
+        """Once version 2 has played, it stays quiet."""
+        self.see(page, live_server.url + reverse("versioned"))
+        self.see(page, live_server.url + reverse("versioned-two"))
+
+        page.goto(live_server.url + reverse("versioned-two"))
+
+        self.assert_does_not_play(page)
+
+    def test_an_edit_that_keeps_the_version_does_not_play_again(
+        self, page, live_server
+    ):
+        """Changing a step's text without a new version brings nobody the tour."""
+        self.see(page, live_server.url + reverse("versioned-two"))
+
+        page.goto(live_server.url + reverse("versioned-two-edited"))
+
+        self.assert_does_not_play(page)
+
+    def test_a_lower_version_plays_once_more(self, page, live_server):
+        """A browser that saw version 2 plays version 1 again, once."""
+        self.see(page, live_server.url + reverse("versioned-two"))
+
+        self.see(page, live_server.url + reverse("versioned"))
+        page.goto(live_server.url + reverse("versioned"))
+
+        self.assert_does_not_play(page)
+
+    def test_a_tour_seen_before_versions_counts_as_seen_at_version_one(
+        self, page, live_server
+    ):
+        """The entry a browser kept before tours had versions still hides version 1."""
+        page.goto(live_server.url + reverse("no-tour"))
+        page.evaluate(f"localStorage.setItem({self.SEEN_KEY!r}, '1')")
+
+        page.goto(live_server.url + reverse("versioned"))
+
+        self.assert_does_not_play(page)
+
+    def test_the_browser_remembers_the_version_it_played(self, page, live_server):
+        """The one entry for the tour holds the version that played."""
+        self.see(page, live_server.url + reverse("versioned-two"))
+
+        stored = page.evaluate("({...localStorage})")
+
+        assert stored == {self.SEEN_KEY: "2"}
+
+    def test_a_new_version_of_a_tour_on_request_still_waits_for_the_control(
+        self, page, live_server
+    ):
+        """A new version does not make a tour that plays only on request autoplay."""
+        page.goto(live_server.url + reverse("on-request"))
+        page.click(REPLAY)
+        expect(page.locator(TITLE)).to_have_text("Step 1")
+
+        page.goto(live_server.url + reverse("on-request-two"))
+
+        self.assert_does_not_play(page)
+
+
 class TestOnRequestTour:
     """A tour declared with ``autoplay=False`` plays only when asked."""
 
