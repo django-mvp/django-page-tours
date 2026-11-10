@@ -42,7 +42,7 @@ working, so no inline style or script is added. A tour never breaks its page (Ar
 | Article | How the plan meets it |
 |---|---|
 | I Testing | every behaviour task is test-first; the cascade is tested in a browser because a contract (FR-003) decides it |
-| II Simplicity, III Anti-abstraction | one module of plain functions, no registry or class hierarchy; the app defaults are an attribute Django's own registry already orders |
+| II Simplicity, III Anti-abstraction, X Cohesion | one class, `TourParts`, groups the parts and the lookup of their classes, with no base class, registry or hierarchy; the app defaults are an attribute Django's own registry already orders |
 | V Security | class values travel in the existing `json_script` payload and are added with `classList`, never written as HTML (FR-007) |
 | VI Documentation | a developer page, README public surface, CHANGELOG, glossary, all in this pull request |
 | VIII i18n | check messages are translatable, as `W001` is |
@@ -71,7 +71,7 @@ specs/003-a-sites-own-look/
 
 ```text
 page_tours/
-├── parts.py                         # new: the parts, their names, the classes resolved for each
+├── parts.py                         # new: TourParts, the parts, their names and their classes
 ├── checks.py                        # + W002, W003
 ├── templatetags/page_tours.py       # payload gains "parts"
 ├── templates/page_tours/page_tour.html   # links page-tours.css instead of driver.css
@@ -99,16 +99,19 @@ README.md, CHANGELOG.md, CONTEXT.md
 
 ### The parts
 
-`page_tours/parts.py` holds the one list of parts, in this order:
-`PARTS = ("box", "title", "text", "progress", "previous", "next", "done", "close", "highlight")`.
+`page_tours/parts.py` holds one class, `TourParts` (Article X: the parts, their names and the
+lookup of their classes share one subject). Its class attribute `parts` is the one list of parts,
+in this order: `("box", "title", "text", "progress", "previous", "next", "done", "close",
+"highlight")`. `TourParts.name(part)` gives the documented name.
 Each part's documented name is `page-tour-<part>`: `page-tour-box`, `page-tour-title`,
 `page-tour-text`, `page-tour-progress`, `page-tour-previous`, `page-tour-next`, `page-tour-done`,
 `page-tour-close`, `page-tour-highlight`. The names are built in Python only and sent to the
-browser, so the list exists once.
+browser, so the list exists once. The starter script holds only the mapping from each element
+Driver.js hands it to a part key, which is Driver.js's shape, not a second list of names.
 
 ### Classes for the parts
 
-`part_classes()` returns a dict with every part as a key and, as its value, the list of class
+`TourParts.classes()` returns a dict with every part as a key and, as its value, the list of class
 tokens that part carries: its documented name first, then its configured classes split on
 whitespace. For each part the classes come from the first source below that has a valid entry for
 it:
@@ -120,16 +123,16 @@ it:
 A valid entry is a known part whose value is a `str`. An empty string is valid and means "no
 classes": a project can clear an app's classes for one part. Anything else is skipped at render
 and reported by the checks: an unknown part, a value that is not a `str`, a setting or an
-attribute that is not a dict. `part_classes()` never raises.
+attribute that is not a dict. `TourParts.classes()` never raises.
 
-`class_sources()` yields `(source, mapping)` in that precedence order, where `source` names where
+`TourParts.sources()` yields `(source, mapping)` in that precedence order, where `source` names where
 the mapping came from for messages ("the PAGE_TOURS_CLASSES setting", "the app 'label'"). Both
-`part_classes()` and the checks read it, so the two can never disagree about precedence.
+`TourParts.classes()` and the checks read it, so the two can never disagree about precedence.
 Computed on every render, never cached, so `override_settings` and app changes in tests apply.
 
 ### The tag's payload
 
-`page_tour` adds `"parts": part_classes()` to the payload it already sends through
+`page_tour` adds `"parts": TourParts.classes()` to the payload it already sends through
 `json_script`. A page with no tour still carries nothing (US1-10).
 
 ### The stylesheet layer
@@ -169,7 +172,7 @@ removes everything Driver.js added and restores focus (edge case, Article XIII).
 
 ### System checks
 
-Two warnings in `page_tours/checks.py`, registered as `W001` is, both from `class_sources()`:
+Two warnings in `page_tours/checks.py`, registered as `W001` is, both from `TourParts.sources()`:
 
 - `page_tours.W002` — an entry names a part the package does not have. The message names the
   part and the source, and the hint lists the parts.
@@ -204,7 +207,8 @@ installed with `override_settings(INSTALLED_APPS=...)`.
   surface; a short "Styling" pointer to the page.
 - CHANGELOG `[Unreleased]`: Added (names, setting, app defaults, checks); Changed (Driver.js's
   stylesheet now sits in the `page-tours` cascade layer, so a site's element rules such as
-  `button { … }` now reach the tour's controls).
+  `button { … }`, and a framework's layered reset, now reach the tour's parts as they reach the
+  rest of the page; the site styles the documented names to settle any of it).
 - `CONTEXT.md`: "Part of a step" and "Highlight" under Tour step (D10).
 - Demo: `demo/settings.py` sets `PAGE_TOURS_CLASSES` for a few parts with `demo-` classes; a new
   "Own look" page (`demo/templates/demo/own_look.html`, view, URL, nav link) whose `head` block
@@ -212,6 +216,14 @@ installed with `override_settings(INSTALLED_APPS=...)`.
   unattached step. `tests/test_demo.py` covers the page as it covers the others.
 
 ## Watch items
+
+- If the cascade assertions are flaky on the first step, start the tour from the moved link's
+  `load` event when `prepend()` actually moved it, and at once when it was already first.
+- If ending the tour from inside the render hook raises a page error, end it from a
+  `queueMicrotask` in the `catch` instead.
+- The pull request description says, in one line, that the package now links a one-line
+  stylesheet whose only content is the import of Driver.js's (D11), so the merge gate sees the
+  reading of FR-006.
 
 - No leading-underscore names anywhere; line length 88; no compatibility aliases.
 - No test of wording or design preference. The cascade tests assert that a site's rule takes

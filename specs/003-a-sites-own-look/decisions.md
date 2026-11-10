@@ -127,3 +127,24 @@ One shape for configured classes keeps the setting simple. An empty string is th
 removes an app's classes from one part, which FR-010's part-by-part replacement implies.
 
 **ADR:** none — local to the setting's shape
+
+## D16 — The part lookup is one class, `TourParts`
+
+The plan first had two module-level functions over the same subject. Article X puts them on one
+class with classmethods, `TourParts.sources()` and `TourParts.classes()`, with the parts as its
+class attribute. No base class and no registry: one class grouping today's behaviour.
+
+**ADR:** none — Article X applied
+
+## D17 — Lesser points from the design review, carried as watch items
+
+- The existing test listing the payload's keys gains `"parts"`, the specified payload change.
+- `page-tours.css` is tested as found by the finders, not for its one line, which would only
+  record a decision.
+- The CHANGELOG and the styling page say that a framework's layered reset now reaches the tour as
+  it reaches the page, and that styling the documented names settles it.
+- If the first step's cascade assertions are flaky, the tour starts from the moved link's `load`
+  event. If ending the tour from inside the render hook raises, it ends from a microtask.
+- The pull request description names D11's reading of FR-006 for the merge gate.
+
+**ADR:** none — review record

@@ -22,9 +22,9 @@ take effect on the parts they name and on no other part.
 
 ### Group 1 — the parts, the setting and the checks
 
-- [ ] T001 [US1] `page_tours/parts.py`, as plan.md "The parts" and "Classes for the parts", with
-  the project setting as the only source for now (`class_sources()` yields the setting only;
-  US2 adds the apps). Tests in `tests/test_parts.py` (`TestPartClasses`): with no setting every
+- [ ] T001 [US1] `page_tours/parts.py` with `TourParts`, as plan.md "The parts" and "Classes for
+  the parts", with the project setting as the only source for now (`TourParts.sources()` yields
+  the setting only; US2 adds the apps). Tests in `tests/test_parts.py` (`TestTourParts`): with no setting every
   part carries only its documented name; a configured part carries its name then its classes,
   split on whitespace, and no other part carries them (US1-3); an empty string leaves the name
   only; an unknown part, a non-string value and a setting that is not a dict are skipped without
@@ -33,7 +33,9 @@ take effect on the parts they name and on no other part.
   `tests/test_templatetags/test_page_tours.py` (`TestPageTourPayload`): the payload carries every
   part with its name; a configured value is carried; a value holding `"><script>` and `</script>`
   stays inside the `json_script` element and adds no element to the page (US1-8, FR-007); a page
-  with no tour still emits nothing (US1-10); a page renders with a wrong setting (FR-008).
+  with no tour still emits nothing (US1-10); a page renders with a wrong setting (FR-008). The
+  existing test that lists the payload's keys gains `"parts"` in its expected set, as the
+  specified change to the payload, and nothing else in it changes.
 - [ ] T003 [US1] Checks `page_tours.W002` and `page_tours.W003` for the setting, as plan.md
   "System checks". Tests in `tests/test_checks.py` (`TestClassesCheck`): an unknown part gives
   `W002` naming the part and the setting; a non-string value and a non-dict setting give `W003`;
@@ -47,8 +49,7 @@ take effect on the parts they name and on no other part.
   `data-page-tour-stylesheet` in place of `driver.css`, and the starter script prepends that link
   to `<head>`. Tests: in `tests/test_templatetags/test_page_tours.py` the page links the
   package's one stylesheet; in `tests/test_static/test_vendor.py` `page-tours.css` is found by the
-  finders and its only rule is the `@import` of `driver.css` into layer `page-tours` (read the
-  file, assert its one statement); in the browser (`TestOwnLook`), the package's link is the
+  finders; in the browser (`TestOwnLook`), the package's link is the
   first stylesheet in the document once the tour shows, and the page's only package stylesheet
   rules are Driver.js's (US1-7, FR-006).
 - [ ] T005 [US1] Naming the parts and adding their classes, as plan.md "The starter script"
@@ -60,8 +61,8 @@ take effect on the parts they name and on no other part.
   class is on its part on every step and on no other part (US1-3); with classes on the controls
   their accessible names are unchanged, Tab reaches them, Enter activates them, and arrow keys and
   Escape work as without classes (US1-6, FR-005); a tour started from the replay control carries
-  the same names and classes (FR-011); with no setting no element carries a class outside
-  `driver-` and `page-tour-` (US1-7); with an init script that makes `classList.add` throw for one
+  the same names and classes (FR-011); with no setting no element of the tour (the box, the overlay and their
+  descendants) carries a class outside `driver-` and `page-tour-` (US1-7); with an init script that makes `classList.add` throw for one
   part, the tour ends, `assert_no_driver_markup` holds and no page error is raised (edge case).
 - [ ] T006 [US1] The highlight and the cascade, as plan.md "The starter script" item 3. Test
   templates placing a site `<style>` before and after `{% page_tour %}`. Browser tests
@@ -95,10 +96,10 @@ while the others keep the app's.
 
 ### Group 1 — app defaults
 
-- [ ] T009 [US2] `class_sources()` reads `AppConfig.page_tour_classes`, as plan.md "Classes for
+- [ ] T009 [US2] `TourParts.sources()` reads `AppConfig.page_tour_classes`, as plan.md "Classes for
   the parts" and "Design-system defaults". Test apps `tests/design_system/` and
   `tests/other_design_system/` (each `__init__.py`, `apps.py`; the first also a static stylesheet
-  against the documented names). Tests in `tests/test_parts.py` (`TestAppDefaults`), with
+  against the documented names). Tests in `tests/test_parts.py` (`TestTourPartsAppDefaults`), with
   `override_settings(INSTALLED_APPS=...)`: an installed app's classes apply with no setting
   (US2-1); a project setting for one part replaces the app's for that part only (US2-3); an empty
   string in the setting clears the app's classes for that part; the first of two apps wins per
