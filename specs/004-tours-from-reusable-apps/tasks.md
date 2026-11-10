@@ -38,3 +38,8 @@ replacement; set `None` and see no tour and no replay control; the app's files u
   plan.md "Demo project". Tests in `tests/test_demo.py` (FR-011).
 - [x] T006 [US1] The guide page, the tours guide sentence, README, CHANGELOG and `CONTEXT.md`, as
   plan.md "Documentation" (FR-011). The docs build passes with `-W`.
+
+### Review fixes
+
+- [x] T007 [US1] The guide's app-author setup step says what the app author does, and the
+  explanation section comes last, as the documentation standard orders a page.
