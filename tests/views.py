@@ -234,9 +234,7 @@ VERSION_TWO_EDITED = Tour(
     steps=[TourStep(title="Step 1", text="Text, with a typo fixed.", element="h1")],
     version=2,
 )
-ON_REQUEST_VERSION_TWO = Tour(
-    steps=on_request_tour().steps, autoplay=False, version=2
-)
+ON_REQUEST_VERSION_TWO = Tour(steps=on_request_tour().steps, autoplay=False, version=2)
 
 
 class OnRequestNoControlView(TemplateView):

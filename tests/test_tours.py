@@ -67,7 +67,6 @@ class TestTour:
         """Autoplay is on by default."""
         assert Tour(steps=[TourStep(title="Title", text="Body")]).autoplay is True
 
-
     def test_a_tour_is_at_version_one_unless_told_otherwise(self):
         """A tour declared without a version has version 1."""
         assert Tour(steps=[TourStep(title="Title", text="Body")]).version == 1
