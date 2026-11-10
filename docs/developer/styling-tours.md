@@ -89,16 +89,54 @@ project. Things to know:
 - **A part you leave out** carries only its documented name.
 - **The setting is read each time a page renders,** so a change applies on the next request.
 
+## Style tours from a design system
+
+A design system that ships as a Django app can style the tour for every project that installs it.
+It needs two things: rules against the documented names, and classes for the parts.
+
+1. Put the rules against the documented names in the design system's own stylesheet. Its base
+   template already loads that stylesheet, so the tour is styled wherever the base template is
+   used.
+2. Supply classes for the parts on the app's `AppConfig` as `page_tour_classes`. It is a dict from
+   a part to a string of class names, the same shape as `PAGE_TOURS_CLASSES`:
+
+   ```python
+   from django.apps import AppConfig
+
+
+   class DesignSystemConfig(AppConfig):
+       name = "design_system"
+       page_tour_classes = {
+           "box": "card shadow-lg",
+           "next": "btn btn-primary",
+           "done": "btn btn-primary",
+       }
+   ```
+
+A project that installs the app gets these classes with no settings of its own. Where they
+conflict:
+
+- **The project wins.** An entry in `PAGE_TOURS_CLASSES` replaces the app's classes for that part
+  and for that part only. The app's classes for the other parts stay. An empty string clears a
+  part, so `"close": ""` gives the close control only its documented name.
+- **Between apps, the first in `INSTALLED_APPS` wins,** part by part. A part the first app leaves
+  out takes the classes of the next app that names it.
+
+`page_tour_classes` is part of the public surface of the package. Both warnings below name the app
+an entry came from, so a design system's mistake is easy to find.
+
 ## Check the setting
 
-Django's `check` command warns about an entry that cannot work:
+Django's `check` command warns about an entry that cannot work, in the setting or in an app's
+`page_tour_classes`:
 
-- `page_tours.W002` says the setting names something that is not a part. The message lists the
+- `page_tours.W002` says the entry names something that is not a part. The message lists the
   nine parts.
-- `page_tours.W003` says a value is not a string of class names, or that the setting itself is not
-  a dict.
+- `page_tours.W003` says a value is not a string of class names, or that the setting or the app's
+  attribute is not a dict.
 
-Both messages name the part, where there is one, and say where the entry came from. A wrong entry
+Both messages name the part, where there is one, and say where the entry came from: the setting,
+or the app by its label. A wrong entry
 is ignored when the page renders. It is never an error, so a mistake here cannot take a page
 down.
 

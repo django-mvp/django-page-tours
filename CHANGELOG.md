@@ -23,6 +23,10 @@ All notable changes to this project are documented in this file. The format foll
   An empty string gives a part none.
 - System checks `page_tours.W002`, for a part that does not exist, and `page_tours.W003`, for a
   value that is not a string of class names. A wrong entry is ignored when the page renders.
+- A design system installed as an app can supply classes for the parts as defaults, with
+  `page_tour_classes` on its `AppConfig`. The project's `PAGE_TOURS_CLASSES` replaces them part by
+  part, and between apps the first in `INSTALLED_APPS` wins. The checks name the app an entry came
+  from.
 - A demo page, "Own look", shows a tour with a look of its own.
 
 ### Changed

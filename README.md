@@ -81,8 +81,9 @@ steps attached to elements, what a visitor sees, and translation.
 Every part of a shown tour step has a documented class name: `page-tour-box`, `page-tour-title`,
 `page-tour-text`, `page-tour-progress`, `page-tour-previous`, `page-tour-next`, `page-tour-done`,
 `page-tour-close` and `page-tour-highlight`. Style them from your own stylesheet, or give parts
-classes of your own with the `PAGE_TOURS_CLASSES` setting. Django's `check` command reports a
-wrong entry with `page_tours.W002` or `page_tours.W003`. The
+classes of your own with the `PAGE_TOURS_CLASSES` setting. A design system installed as an app
+can supply classes for the parts as defaults with `AppConfig.page_tour_classes`, and the project's
+setting replaces them part by part. Django's `check` command reports a wrong entry with `page_tours.W002` or `page_tours.W003`. The
 [styling page](https://django-mvp.github.io/django-page-tours/developer/styling-tours.html)
 has the details.
 
