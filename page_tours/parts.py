@@ -1,5 +1,6 @@
 """The parts of a tour step a site can style, and the classes each one carries."""
 
+from django.apps import apps
 from django.conf import settings
 from django.utils.translation import gettext_lazy
 
@@ -39,7 +40,9 @@ class TourParts:
     def sources(cls):
         """Yield where configured classes come from, most important first.
 
-        Computed on every call, so a changed setting applies at once.
+        The project's setting comes first, then each installed app that declares
+        ``page_tour_classes``, in the order the apps are installed. Computed on
+        every call, so a changed setting applies at once.
 
         Yields:
             A ``(source, mapping)`` pair: a translatable description of where
@@ -49,6 +52,12 @@ class TourParts:
             gettext_lazy("the PAGE_TOURS_CLASSES setting"),
             getattr(settings, "PAGE_TOURS_CLASSES", {}),
         )
+        for config in apps.get_app_configs():
+            if hasattr(config, "page_tour_classes"):
+                yield (
+                    gettext_lazy("the app '%(label)s'") % {"label": config.label},
+                    config.page_tour_classes,
+                )
 
     @classmethod
     def classes(cls):
