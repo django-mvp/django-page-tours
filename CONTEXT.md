@@ -21,6 +21,16 @@ as a card in the middle of the page, which suits an opening welcome.
 
 _Avoid:_ slide, popover (the popover is how a step is drawn, not the step itself).
 
+### Part of a step
+
+One named piece of a [step](#tour-step) as it is shown: the box, the title, the text, the
+progress, a control (previous, next, done or close), or the [highlight](#highlight). Each has a
+documented class name that a site styles.
+
+### Highlight
+
+What marks the step's element while the step shows.
+
 ### Seen
 
 A tour has been seen in a browser once it has played there, whether the person finished it,

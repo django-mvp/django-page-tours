@@ -17,6 +17,20 @@ All notable changes to this project are documented in this file. The format foll
   `None`. A mistake in the setting is refused when the project starts, and `page_tours.W002`
   warns about a key that names no tour. The demo project has a small library app whose tours
   it changes.
+- Every part of a shown tour step has a documented class name, from `page-tour-box` to
+  `page-tour-highlight`, so a site can style the tour from its own stylesheet.
+- The `PAGE_TOURS_CLASSES` setting gives parts classes of your own, for every step of every tour.
+  An empty string gives a part none.
+- System checks `page_tours.W002`, for a part that does not exist, and `page_tours.W003`, for a
+  value that is not a string of class names. A wrong entry is ignored when the page renders.
+- A demo page, "Own look", shows a tour with a look of its own.
+
+### Changed
+
+- Driver.js's stylesheet is now imported into a cascade layer named `page-tours`, the lowest on
+  the page. A site's rules outside any layer win over it whatever their order. A site's element
+  rules, such as `button { ... }`, and a framework's layered reset now reach the tour's parts as
+  they reach the rest of the page. Style the documented names to settle any of it.
 
 ## [v0.1.0] - 2026-11-10
 

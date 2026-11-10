@@ -16,4 +16,5 @@ installation
 tours
 replaying-a-tour
 tours-from-reusable-apps
+styling-tours
 ```
