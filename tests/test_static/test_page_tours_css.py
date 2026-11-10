@@ -1,4 +1,4 @@
-"""Tests for the package's own stylesheet, page_tours/static/page_tours/page-tours.css."""
+"""Tests for the package's stylesheet, page_tours/static/page_tours/page-tours.css."""
 
 from django.contrib.staticfiles import finders
 

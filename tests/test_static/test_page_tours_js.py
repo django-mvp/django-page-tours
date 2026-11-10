@@ -1085,7 +1085,7 @@ class TestPartNames:
         self.assert_parts_named(page)
 
     def test_with_no_setting_no_class_of_the_sites_appears(self, page, live_server):
-        """Without configuration, every class in the tour is the package's or Driver's."""
+        """With no setting, every class in the tour is the package's or Driver.js's."""
         page.goto(live_server.url + reverse("parts-tour"))
         for number in (1, 2, 3):
             expect(page.locator(TITLE)).to_have_text(f"Step {number}")
