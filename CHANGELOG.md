@@ -6,6 +6,8 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+## [v0.2.0] - 2026-11-10
+
 ### Added
 
 - A tour can be given a version, `Tour(version=2)`. A browser that saw another version of the tour
