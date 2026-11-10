@@ -2,6 +2,7 @@
 
 import re
 
+import pytest
 from django.urls import reverse
 from playwright.sync_api import expect
 
@@ -815,3 +816,358 @@ class TestOverriddenTourSeen:
 
         page.wait_for_load_state("load")
         expect(page.locator(".driver-popover")).to_have_count(0)
+
+
+OVERLAY_PATH = "svg.driver-overlay path"
+
+
+def computed(page, selector, prop):
+    """Return a computed style value of the first element matching a selector."""
+    return page.evaluate(
+        "([selector, prop]) => "
+        "getComputedStyle(document.querySelector(selector))[prop]",
+        [selector, prop],
+    )
+
+
+class TestOwnLook:
+    """The tour's stylesheet sits where a site's own rules can override it."""
+
+    @pytest.mark.parametrize("name", ["style-before", "style-after"])
+    def test_a_site_rule_on_the_box_wins_wherever_its_style_sits(
+        self, page, live_server, name
+    ):
+        """The site's background reaches the box, before or after the tag."""
+        page.goto(live_server.url + reverse(name))
+        expect(page.locator(TITLE)).to_be_visible()
+
+        assert computed(page, ".driver-popover", "backgroundColor") == "rgb(1, 2, 3)"
+
+    @pytest.mark.parametrize("name", ["style-before", "style-after"])
+    def test_a_site_rule_on_the_highlight_sets_the_overlays_fill(
+        self, page, live_server, name
+    ):
+        """The overlay's fill is the site's colour, not Driver.js's inline one."""
+        page.goto(live_server.url + reverse(name))
+        expect(page.locator(TITLE)).to_be_visible()
+
+        assert computed(page, OVERLAY_PATH, "fill") == "rgb(4, 5, 6)"
+
+    @pytest.mark.parametrize("steps", [1, 2])
+    def test_the_highlight_carries_its_name_on_an_attached_and_an_unattached_step(
+        self, page, live_server, steps
+    ):
+        """The overlay is named on a step attached to an element and one that is not."""
+        page.goto(live_server.url + reverse("style-before"))
+        for _ in range(steps - 1):
+            page.click(NEXT)
+        expect(page.locator(TITLE)).to_have_text(f"Step {steps}")
+
+        assert "page-tour-highlight" in classes_of(page, "svg.driver-overlay")
+
+    def test_a_class_in_a_site_layer_beats_driverjs(self, page, live_server, settings):
+        """A configured class whose rule sits in a layer of the site's takes effect."""
+        settings.PAGE_TOURS_CLASSES = {"box": "site-box"}
+        page.goto(live_server.url + reverse("layer-before"))
+        expect(page.locator(TITLE)).to_be_visible()
+
+        assert computed(page, ".driver-popover", "backgroundColor") == "rgb(7, 8, 9)"
+
+    def test_the_overlays_fill_and_opacity_are_not_inline_on_its_path(
+        self, page, live_server
+    ):
+        """Both values moved to the overlay's attributes, where a rule can win."""
+        page.goto(live_server.url + reverse("class-tour"))
+        expect(page.locator(TITLE)).to_be_visible()
+
+        inline = page.evaluate(
+            """() => {
+                const path = document.querySelector("svg.driver-overlay path");
+                return [path.style.fill, path.style.opacity];
+            }"""
+        )
+        assert inline == ["", ""]
+
+    def test_the_highlight_never_shows_stronger_than_driverjs_dims_it(
+        self, page, live_server
+    ):
+        """Through the fade-in the overlay's opacity and the path's multiply."""
+        page.add_init_script(
+            """
+            window.dimming = { peak: 0, samples: 0, done: false };
+            const started = performance.now();
+            const sample = () => {
+                const svg = document.querySelector("svg.driver-overlay");
+                const path = svg && svg.querySelector("path");
+                if (path) {
+                    window.dimming.samples += 1;
+                    window.dimming.peak = Math.max(
+                        window.dimming.peak,
+                        getComputedStyle(svg).opacity *
+                            getComputedStyle(path).fillOpacity
+                    );
+                }
+                if (performance.now() - started < 1500) {
+                    requestAnimationFrame(sample);
+                } else {
+                    window.dimming.done = true;
+                }
+            };
+            requestAnimationFrame(sample);
+            """
+        )
+        page.goto(live_server.url + reverse("class-tour"))
+        expect(page.locator(TITLE)).to_be_visible()
+        page.wait_for_function("window.dimming.done")
+
+        dimming = page.evaluate("window.dimming")
+        assert dimming["samples"] > 0
+        assert dimming["peak"] <= 0.7 + 0.01
+
+    def test_the_packages_link_is_first_in_the_head_once_the_tour_shows(
+        self, page, live_server
+    ):
+        """A style the site placed before the tag ends up after the package's link."""
+        page.goto(live_server.url + reverse("style-before"))
+        expect(page.locator(TITLE)).to_be_visible()
+
+        link_is_first = page.evaluate(
+            """() => {
+                const link = document.querySelector("link[data-page-tour-stylesheet]");
+                const style = document.head.querySelector("style");
+                return Boolean(
+                    link.compareDocumentPosition(style) &
+                        Node.DOCUMENT_POSITION_FOLLOWING
+                );
+            }"""
+        )
+        assert link_is_first is True
+
+
+PART_SELECTORS = {
+    "box": ".driver-popover",
+    "title": ".driver-popover-title",
+    "text": ".driver-popover-description",
+    "progress": ".driver-popover-progress-text",
+    "previous": ".driver-popover-prev-btn",
+    "next": ".driver-popover-next-btn",
+    "close": ".driver-popover-close-btn",
+    "highlight": "svg.driver-overlay",
+}
+SITE_CLASSES = {part: f"site-{part}" for part in [*PART_SELECTORS, "done"]}
+
+
+def classes_of(page, selector):
+    """Return the class tokens of the first element matching a selector."""
+    return page.evaluate(
+        "(selector) => [...document.querySelector(selector).classList]", selector
+    )
+
+
+def press_until_titled(page, key, title):
+    """Press a key until the step with the given title shows.
+
+    Driver.js ignores the arrow keys while a step is still moving in, so the
+    press is repeated until the step arrives.
+    """
+    for _ in range(20):
+        page.keyboard.press(key)
+        try:
+            expect(page.locator(TITLE)).to_have_text(title, timeout=250)
+        except AssertionError:
+            continue
+        return
+    expect(page.locator(TITLE)).to_have_text(title)
+
+
+class TestPartNames:
+    """Every part of a shown step carries its documented name and its classes."""
+
+    @pytest.fixture
+    def site_classes(self, settings):
+        """Configure a class of the site's own for every part."""
+        settings.PAGE_TOURS_CLASSES = SITE_CLASSES
+
+    def assert_parts_named(self, page):
+        """Assert every part on the page carries its name and configured class."""
+        # Driver.js adds the overlay a moment after the step's box.
+        expect(page.locator(PART_SELECTORS["highlight"])).to_have_count(1)
+        for part, selector in PART_SELECTORS.items():
+            tokens = classes_of(page, selector)
+            assert f"page-tour-{part}" in tokens, part
+            assert f"site-{part}" in tokens, part
+
+    @pytest.mark.usefixtures("site_classes")
+    def test_each_part_of_an_attached_step_carries_its_name(self, page, live_server):
+        """On a step attached to an element, every part is named and classed."""
+        page.goto(live_server.url + reverse("parts-tour"))
+        expect(page.locator(TITLE)).to_have_text("Step 1")
+
+        self.assert_parts_named(page)
+
+    @pytest.mark.usefixtures("site_classes")
+    def test_an_unattached_step_carries_the_same_names(self, page, live_server):
+        """A step attached to nothing names and classes its parts the same way."""
+        page.goto(live_server.url + reverse("parts-tour"))
+        page.click(NEXT)
+        expect(page.locator(TITLE)).to_have_text("Step 2")
+
+        self.assert_parts_named(page)
+
+    @pytest.mark.usefixtures("site_classes")
+    def test_the_controls_carry_their_names_on_every_step(self, page, live_server):
+        """Previous is named while disabled, next in the middle, done at the end."""
+        page.goto(live_server.url + reverse("parts-tour"))
+        expect(page.locator(PREVIOUS)).to_be_disabled()
+        assert "page-tour-previous" in classes_of(page, PREVIOUS)
+        assert "site-previous" in classes_of(page, PREVIOUS)
+
+        page.click(NEXT)
+        expect(page.locator(TITLE)).to_have_text("Step 2")
+        assert "page-tour-next" in classes_of(page, NEXT)
+        assert "site-next" in classes_of(page, NEXT)
+
+        page.click(NEXT)
+        expect(page.locator(TITLE)).to_have_text("Step 3")
+        last = classes_of(page, NEXT)
+        assert "page-tour-done" in last
+        assert "site-done" in last
+        assert "page-tour-next" not in last
+        assert "site-next" not in last
+
+    @pytest.mark.usefixtures("site_classes")
+    def test_a_configured_class_is_on_exactly_its_part_on_every_step(
+        self, page, live_server
+    ):
+        """One element carries each configured class, on each of the three steps."""
+        page.goto(live_server.url + reverse("parts-tour"))
+        for number in (1, 2, 3):
+            expect(page.locator(TITLE)).to_have_text(f"Step {number}")
+            for part in ("box", "title", "text", "close", "highlight"):
+                assert page.locator(f".site-{part}").count() == 1, (number, part)
+            page.click(NEXT)
+
+    @pytest.mark.usefixtures("site_classes")
+    def test_classes_on_the_controls_leave_the_keyboard_alone(self, page, live_server):
+        """Names stay, Tab reaches next, Enter and the arrows move, Escape ends."""
+        page.goto(live_server.url + reverse("parts-tour"))
+        title = page.locator(TITLE)
+        expect(title).to_have_text("Step 1")
+        label = page.evaluate(
+            """() => JSON.parse(
+                document.getElementById("page-tour-steps").textContent
+            ).controls.close"""
+        )
+        expect(page.locator(CLOSE)).to_have_attribute("aria-label", label)
+
+        page.focus(CLOSE)
+        page.keyboard.press("Tab")
+        expect(page.locator(NEXT)).to_be_focused()
+        page.keyboard.press("Enter")
+        expect(title).to_have_text("Step 2")
+        press_until_titled(page, "ArrowRight", "Step 3")
+        press_until_titled(page, "ArrowLeft", "Step 2")
+        page.keyboard.press("Escape")
+
+        expect(page.locator(".driver-popover")).to_have_count(0)
+
+    @pytest.mark.usefixtures("site_classes")
+    def test_a_replayed_tour_carries_the_same_names(self, page, live_server):
+        """Closing the tour and starting it from the replay control names its parts."""
+        page.goto(live_server.url + reverse("replay"))
+        expect(page.locator(TITLE)).to_have_text("Step 1")
+        page.click(CLOSE)
+        expect(page.locator(".driver-popover")).to_have_count(0)
+
+        page.click("#replay")
+
+        expect(page.locator(TITLE)).to_have_text("Step 1")
+        self.assert_parts_named(page)
+
+    def test_with_no_setting_no_class_of_the_sites_appears(self, page, live_server):
+        """With no setting, every class in the tour is the package's or Driver.js's."""
+        page.goto(live_server.url + reverse("parts-tour"))
+        for number in (1, 2, 3):
+            expect(page.locator(TITLE)).to_have_text(f"Step {number}")
+            foreign = page.evaluate(
+                """() => [
+                    ...document.querySelectorAll(
+                        ".driver-popover, .driver-popover *, svg.driver-overlay, "
+                        + "svg.driver-overlay *"
+                    ),
+                ].flatMap((el) => [...el.classList]).filter(
+                    (name) => !name.startsWith("driver-")
+                        && !name.startsWith("page-tour-")
+                )"""
+            )
+            assert foreign == []
+            page.click(NEXT)
+
+    @pytest.mark.usefixtures("site_classes")
+    @pytest.mark.parametrize("token", ["page-tour-title", "page-tour-highlight"])
+    def test_a_failure_while_naming_a_part_ends_the_tour(
+        self, page, live_server, token
+    ):
+        """When adding a class throws, the tour ends without a page error."""
+        errors = []
+        page.on("pageerror", lambda error: errors.append(str(error)))
+        page.add_init_script(
+            """
+            const token = "TOKEN";
+            const add = DOMTokenList.prototype.add;
+            DOMTokenList.prototype.add = function (...tokens) {
+              if (tokens.includes(token)) {
+                throw new Error("cannot add");
+              }
+              return add.apply(this, tokens);
+            };
+            """.replace("TOKEN", token)
+        )
+        page.goto(live_server.url + reverse("parts-tour"))
+        page.wait_for_load_state("load")
+
+        expect(page.locator(".driver-popover")).to_have_count(0)
+        assert_no_driver_markup(page)
+        assert errors == []
+
+
+class TestAppDefaults:
+    """A design system installed as an app styles the tour without any setting."""
+
+    @pytest.fixture(autouse=True)
+    def design_system(self, settings):
+        """Install the test design system, whose stylesheet the finders then find."""
+        settings.PAGE_TOURS_CLASSES = {}
+        settings.INSTALLED_APPS = [*settings.INSTALLED_APPS, "tests.design_system"]
+
+    def test_the_parts_carry_the_apps_classes(self, page, live_server):
+        """The box and the controls the app names carry its classes."""
+        page.goto(live_server.url + reverse("design-system"))
+        expect(page.locator(TITLE)).to_be_visible()
+
+        assert {"page-tour-box", "ds-box", "ds-raised"} <= set(
+            classes_of(page, PART_SELECTORS["box"])
+        )
+        assert "ds-button" in classes_of(page, NEXT)
+
+    def test_the_apps_rule_against_a_documented_name_takes_effect(
+        self, page, live_server
+    ):
+        """The stylesheet its own base template loads reaches the box."""
+        page.goto(live_server.url + reverse("design-system"))
+        expect(page.locator(TITLE)).to_be_visible()
+
+        assert computed(page, ".driver-popover", "backgroundColor") == "rgb(7, 8, 9)"
+
+    def test_a_part_the_project_configures_carries_its_classes_and_not_the_apps(
+        self, page, live_server, settings
+    ):
+        """The setting replaces the app for that part, and the app keeps the rest."""
+        settings.PAGE_TOURS_CLASSES = {"box": "site-box"}
+        page.goto(live_server.url + reverse("design-system"))
+        expect(page.locator(TITLE)).to_be_visible()
+
+        box = classes_of(page, PART_SELECTORS["box"])
+        assert "site-box" in box
+        assert "ds-box" not in box
+        assert "ds-button" in classes_of(page, NEXT)

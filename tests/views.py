@@ -309,3 +309,36 @@ class UntouchedTourView(ReplayView):
 def overridden_function_view(request):
     """Render a function-based page of an installed app, whose tour is changed."""
     return render(request, "test_controls.html")
+
+
+class PartsTourView(TemplateView):
+    """A tour whose first and last steps are attached and whose middle one is not."""
+
+    template_name = "test_page.html"
+    tour = steps_for("h1", "", "#control")
+
+
+class StyleBeforeView(TemplateView):
+    """A page whose own style sits before the tag."""
+
+    template_name = "test_style_before.html"
+    tour = steps_for("h1", "", "#control")
+
+
+class StyleAfterView(StyleBeforeView):
+    """A page whose own style sits after the tag."""
+
+    template_name = "test_style_after.html"
+
+
+class LayerBeforeView(StyleBeforeView):
+    """A page whose own layered style sits before the tag."""
+
+    template_name = "test_layer_before.html"
+
+
+class DesignSystemView(TemplateView):
+    """A page whose base template loads a design system's stylesheet."""
+
+    template_name = "test_design_system_page.html"
+    tour = steps_for("h1", "#control")

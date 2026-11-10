@@ -12,6 +12,7 @@ from playwright.sync_api import expect
 from demo import settings as demo_settings
 from demo.library.views import BookDetailView, BookListView
 from demo.tours import book_tour
+from page_tours.parts import TourParts
 
 pytestmark = pytest.mark.urls("demo.urls")
 
@@ -294,3 +295,67 @@ class TestSeedDemo:
         settings.DEBUG = False
         with pytest.raises(Exception, match="only runs with DEBUG on"):
             call_command("seed_demo")
+
+
+class TestOwnLookPage:
+    """The demo page that shows a tour with a look of its own."""
+
+    def payload(self, page):
+        """Return the payload the page hands to the browser."""
+        match = re.search(
+            r'<script id="page-tour-steps" type="application/json">(.*?)</script>',
+            page,
+            re.DOTALL,
+        )
+        return json.loads(match.group(1))
+
+    def test_it_responds_and_carries_a_tour(self, client):
+        """The page renders for an anonymous visitor with a tour on it."""
+        response = client.get(reverse("own-look"))
+
+        assert response.status_code == 200
+        assert 'id="page-tour-steps"' in response.content.decode()
+
+    def test_its_tour_has_a_step_attached_to_nothing(self, client):
+        """A step carries no element key."""
+        page = client.get(reverse("own-look")).content.decode()
+
+        assert any("element" not in s for s in self.payload(page)["steps"])
+
+    def test_its_tour_has_a_step_attached_to_an_element_on_the_page(self, client):
+        """A step names an element that is in the page's HTML."""
+        page = client.get(reverse("own-look")).content.decode()
+        selectors = [
+            s["element"] for s in self.payload(page)["steps"] if "element" in s
+        ]
+
+        assert any(f'id="{s.removeprefix("#")}"' in page for s in selectors)
+
+    def test_its_payload_carries_the_classes_for_the_parts(self, client):
+        """The payload has a list of class tokens for every part."""
+        page = client.get(reverse("own-look")).content.decode()
+
+        assert set(self.payload(page)["parts"]) == set(TourParts.parts)
+
+    def test_the_demos_configured_classes_reach_the_payload(self, client, settings):
+        """The classes the demo settings configure are on their parts in the payload."""
+        settings.PAGE_TOURS_CLASSES = demo_settings.PAGE_TOURS_CLASSES
+
+        page = client.get(reverse("own-look")).content.decode()
+
+        parts = self.payload(page)["parts"]
+        assert "demo-next" in parts["next"]
+        assert "demo-box" in parts["box"]
+
+    def test_the_page_bar_links_the_page(self, client):
+        """The bar every demo page shares links it."""
+        page = client.get(reverse("overview")).content.decode()
+        bar = page.split('aria-label="Demo pages"', 1)[1].split("</nav>", 1)[0]
+
+        assert f'href="{reverse("own-look")}"' in bar
+
+    def test_the_overview_links_the_page(self, client):
+        """The overview names it outside the page bar."""
+        page = client.get(reverse("overview")).content.decode()
+
+        assert f'href="{reverse("own-look")}"' in page.split("</nav>", 1)[1]

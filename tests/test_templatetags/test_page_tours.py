@@ -12,6 +12,7 @@ from django.utils import translation
 from django.utils.html import escape
 from django.utils.translation import gettext_lazy
 
+from page_tours.parts import TourParts
 from tests import views
 from tests.views import CLASS_TOUR, FUNCTION_TOUR, MARKUP_TITLE
 
@@ -130,6 +131,22 @@ class TestPageTourTag:
         assert expected != "Yes"
 
 
+class TestPageTourStylesheet:
+    """The stylesheet the tag links."""
+
+    def test_the_page_links_the_packages_stylesheet_and_not_driverjs_directly(
+        self, client
+    ):
+        """The one link is to page-tours.css, marked for the starter script."""
+        response = client.get(reverse("class-tour"))
+
+        content = response.content.decode()
+        links = re.findall(r"<link\b[^>]*>", content)
+        assert len(links) == 1
+        assert "data-page-tour-stylesheet" in links[0]
+        assert "page_tours/page-tours.css" in links[0]
+
+
 class TestPageTourPayload:
     """The object the tag hands to the starter script."""
 
@@ -183,7 +200,14 @@ class TestPageTourPayload:
         """Nothing else reaches the browser."""
         payload = tour_payload(client.get(reverse("class-tour")))
 
-        assert set(payload) == {"id", "version", "autoplay", "steps", "controls"}
+        assert set(payload) == {
+            "id",
+            "version",
+            "autoplay",
+            "steps",
+            "controls",
+            "parts",
+        }
 
     def test_both_urls_of_a_view_carry_the_same_id(self, client):
         """A view routed twice is one tour."""
@@ -197,6 +221,49 @@ class TestPageTourPayload:
         response = client.get(reverse("no-tour"))
 
         assert STEPS_SCRIPT.search(response.content.decode()) is None
+
+    def test_the_payload_carries_every_part_with_its_name(self, client):
+        """Each part is a key, and its documented name is the first class."""
+        payload = tour_payload(client.get(reverse("class-tour")))
+
+        assert payload["parts"] == {
+            part: [f"page-tour-{part}"] for part in TourParts.parts
+        }
+
+    def test_a_configured_value_is_carried_after_the_name(self, client, settings):
+        """The classes a site sets for a part reach the browser."""
+        settings.PAGE_TOURS_CLASSES = {"box": "card shadow"}
+
+        payload = tour_payload(client.get(reverse("class-tour")))
+
+        assert payload["parts"]["box"] == ["page-tour-box", "card", "shadow"]
+
+    def test_a_value_holding_markup_stays_inside_the_script_element(
+        self, client, settings
+    ):
+        """A value cannot close the element or add one to the page."""
+        value = '"><script>alert(1)</script>'
+        settings.PAGE_TOURS_CLASSES = {"box": value}
+
+        response = client.get(reverse("class-tour"))
+
+        content = response.content.decode()
+        assert len(STEPS_SCRIPT.findall(content)) == 1
+        assert "<script>alert(1)</script>" not in content
+        assert tour_payload(response)["parts"]["box"] == [
+            "page-tour-box",
+            *value.split(),
+        ]
+
+    @pytest.mark.parametrize("value", [None, "box", 3, {"box": 3, "footer": "x"}])
+    def test_a_page_renders_with_a_wrong_setting(self, client, settings, value):
+        """A styling mistake never stops a tour from rendering."""
+        settings.PAGE_TOURS_CLASSES = value
+
+        response = client.get(reverse("class-tour"))
+
+        assert response.status_code == 200
+        assert tour_payload(response)["parts"]["box"] == ["page-tour-box"]
 
 
 class ReplayMarkup(HTMLParser):

@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: django-page-tours\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 16:46+0100\n"
+"POT-Creation-Date: 2026-11-10 10:56-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -20,50 +20,112 @@ msgstr ""
 msgid "Page tours"
 msgstr ""
 
-#: checks.py:31
+#: checks.py:35
 msgid ""
 "Tours on function-based views are not shown because "
 "'django.template.context_processors.request' is not in the "
 "context_processors of any DjangoTemplates backend."
 msgstr ""
 
-#: checks.py:35
+#: checks.py:39
 msgid "Add it to the 'context_processors' option of TEMPLATES."
 msgstr ""
 
-#: templatetags/page_tours.py:40
-msgctxt "page tour control"
-msgid "Next"
+#: checks.py:101
+#, python-format
+msgid ""
+"No routed view declares the tour %(name)s, so its entry in "
+"PAGE_TOURS_OVERRIDES changes nothing."
 msgstr ""
 
-#: templatetags/page_tours.py:41
-msgctxt "page tour control"
-msgid "Previous"
+#: checks.py:106
+msgid ""
+"A view that was renamed or moved gives its tour a new name. Update the key "
+"to match."
+msgstr ""
+
+#: checks.py:137
+#, python-format
+msgid "%(source)s must be a dict from part to a string of class names."
+msgstr ""
+
+#: checks.py:147
+#, python-format
+msgid "%(source)s names '%(part)s', which is not a part of a tour."
+msgstr ""
+
+#: checks.py:149
+#, python-format
+msgid "The parts are: %(parts)s."
+msgstr ""
+
+#: checks.py:157
+#, python-format
+msgid "%(source)s gives '%(part)s' a value that is not a string."
+msgstr ""
+
+#: checks.py:159
+msgid "Write the class names as one string."
+msgstr ""
+
+#: parts.py:52
+msgid "the PAGE_TOURS_CLASSES setting"
+msgstr ""
+
+#: parts.py:58
+#, python-format
+msgid "the app '%(label)s'"
 msgstr ""
 
 #: templatetags/page_tours.py:42
 msgctxt "page tour control"
-msgid "Done"
+msgid "Next"
 msgstr ""
 
 #: templatetags/page_tours.py:43
 msgctxt "page tour control"
+msgid "Previous"
+msgstr ""
+
+#: templatetags/page_tours.py:44
+msgctxt "page tour control"
+msgid "Done"
+msgstr ""
+
+#: templatetags/page_tours.py:45
+msgctxt "page tour control"
 msgid "Close"
 msgstr ""
 
-#: templatetags/page_tours.py:78
+#: templatetags/page_tours.py:81
 msgid "Show the tour"
 msgstr ""
 
-#: tours.py:40
+#: tours.py:42
 #, python-format
 msgid "A tour step needs a %(name)s."
 msgstr ""
 
-#: tours.py:68
+#: tours.py:70
 msgid "A tour needs at least one step."
 msgstr ""
 
-#: tours.py:75
+#: tours.py:77
 msgid "A tour's version must be a whole number of 1 or more."
+msgstr ""
+
+#: tours.py:182
+#, python-format
+msgid ""
+"PAGE_TOURS_OVERRIDES[%(name)s] must be the dotted path of a Tour or None."
+msgstr ""
+
+#: tours.py:191
+#, python-format
+msgid "PAGE_TOURS_OVERRIDES[%(name)s]: %(path)s cannot be imported."
+msgstr ""
+
+#: tours.py:196
+#, python-format
+msgid "PAGE_TOURS_OVERRIDES[%(name)s]: %(path)s is not a Tour."
 msgstr ""
