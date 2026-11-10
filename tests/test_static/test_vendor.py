@@ -13,3 +13,11 @@ class TestVendoredDriverJs:
     def test_the_staticfiles_finders_find_the_vendored_file(self, name):
         """The script, the stylesheet and the licence are found by the finders."""
         assert finders.find(f"{VENDOR_DIR}/{name}") is not None
+
+
+class TestPackageStylesheet:
+    """The stylesheet that puts Driver.js's rules in a cascade layer."""
+
+    def test_the_staticfiles_finders_find_it(self):
+        """The layer file is found beside the starter script."""
+        assert finders.find("page_tours/page-tours.css") is not None

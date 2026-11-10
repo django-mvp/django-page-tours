@@ -7,6 +7,12 @@
     return;
   }
 
+  // Declared first, the page-tours cascade layer is the lowest of the page's.
+  var stylesheet = document.querySelector("link[data-page-tour-stylesheet]");
+  if (stylesheet && document.head.firstElementChild !== stylesheet) {
+    document.head.prepend(stylesheet);
+  }
+
   function visibleElement(selector) {
     try {
       var el = document.querySelector(selector);

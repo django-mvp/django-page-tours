@@ -815,3 +815,40 @@ class TestOverriddenTourSeen:
 
         page.wait_for_load_state("load")
         expect(page.locator(".driver-popover")).to_have_count(0)
+
+
+class TestOwnLook:
+    """The tour's stylesheet sits where a site's own rules can override it."""
+
+    def test_the_packages_link_is_first_in_the_head_once_the_tour_shows(
+        self, page, live_server
+    ):
+        """The page's own styles come after the package's link."""
+        page.goto(live_server.url + reverse("class-tour"))
+        expect(page.locator(TITLE)).to_be_visible()
+
+        first = page.evaluate(
+            """() => document.head.querySelector("link, style")
+                .hasAttribute("data-page-tour-stylesheet")"""
+        )
+        assert first is True
+
+    def test_every_rule_reachable_from_the_packages_sheet_is_driverjs(
+        self, page, live_server
+    ):
+        """The package's sheet is one import of driver.css into its own layer."""
+        page.goto(live_server.url + reverse("class-tour"))
+        expect(page.locator(TITLE)).to_be_visible()
+
+        imports = page.evaluate(
+            """() => {
+                const link = document.querySelector("link[data-page-tour-stylesheet]");
+                return [...link.sheet.cssRules].map((rule) => ({
+                    layer: rule.layerName,
+                    href: rule.styleSheet && rule.styleSheet.href,
+                }));
+            }"""
+        )
+        assert len(imports) == 1
+        assert imports[0]["layer"] == "page-tours"
+        assert imports[0]["href"].endswith("driver.css")

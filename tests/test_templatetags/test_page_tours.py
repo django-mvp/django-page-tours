@@ -131,6 +131,23 @@ class TestPageTourTag:
         assert expected != "Yes"
 
 
+class TestPageTourStylesheet:
+    """The stylesheet the tag links."""
+
+    def test_the_page_links_the_packages_stylesheet_and_not_driverjs_directly(
+        self, client
+    ):
+        """The one link is to page-tours.css, marked for the starter script."""
+        response = client.get(reverse("class-tour"))
+
+        content = response.content.decode()
+        links = re.findall(r"<link\b[^>]*>", content)
+        assert len(links) == 1
+        assert "data-page-tour-stylesheet" in links[0]
+        assert "page_tours/page-tours.css" in links[0]
+        assert "driver.css" not in content
+
+
 class TestPageTourPayload:
     """The object the tag hands to the starter script."""
 
