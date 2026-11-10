@@ -9,9 +9,8 @@ If you write an app that other projects install, declare its tours on the app's 
 a project does. See [Adding a tour to a page](tours.md).
 
 1. Declare `tour` on a class-based view, or decorate a function-based view with `with_tour`.
-2. Render the app's pages through a template that loads the tour tag. The tag belongs in the
-   project's base template, so the app's templates extend the project's base template and the
-   project places `{% page_tour %}` in it once.
+2. Have the app's templates extend the project's base template. That is where a project
+   places `{% page_tour %}` once, so the app's tours play with no setup of their own.
 3. Treat a change to a tour's name as a change the installing projects see. A tour's name is the
    dotted path of the view that declares it, so renaming or moving that view gives the tour a
    new name: every visitor sees it again, and any override a project set for the old name stops
@@ -100,16 +99,16 @@ browser remembers the tour by its name and version, so this decides who sees the
 - **When the app releases a new version of its own tour,** every visitor sees the replacement
   once more, because the version it counts on from has moved.
 
-## Why a tour's name is a view's path
-
-The view that declares a tour is the one thing both the app author and the project can name
-without the package keeping a list. It is also what remembers that a tour was seen in a
-visitor's browser, so the same name serves both purposes: renaming a view makes a different tour
-for visitors and for overrides alike.
-
 ## See it in the demo project
 
 The demo project has a small app in `demo/library/` that stands for an installed app. Its
 three pages are linked from the bar as Library. The book list plays the tour the app declared.
 The book page plays the project's replacement, and the loans page has no tour. The project's
 settings show the two entries, and the library app's own files are untouched.
+
+## Why a tour's name is a view's path
+
+The view that declares a tour is the one thing both the app author and the project can name
+without the package keeping a list. It is also what remembers that a tour was seen in a
+visitor's browser, so the same name serves both purposes: renaming a view makes a different tour
+for visitors and for overrides alike.
