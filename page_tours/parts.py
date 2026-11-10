@@ -72,7 +72,7 @@ class TourParts:
             A dict from every part to its list of class tokens.
         """
         mappings = [
-            mapping for _, mapping in cls.sources() if isinstance(mapping, dict)
+            mapping for source, mapping in cls.sources() if isinstance(mapping, dict)
         ]
         result = {}
         for part in cls.parts:

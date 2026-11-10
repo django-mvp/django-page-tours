@@ -93,8 +93,7 @@ the strict content security policy the README promises, so the package links
 `page-tours.css`, which holds one `@import` of `driver.css` into layer `page-tours` and no rule of
 its own. FR-006 is read as the package adding no style rules: Driver.js's are still the only ones.
 
-**ADR:** pending — graduates at converge if it holds: it fixes how every future Driver.js release
-is loaded.
+**ADR:** docs/adr/0004-driver-js-styles-sit-in-the-lowest-cascade-layer.md
 
 ## D12 — The layer is kept first in the document by the starter script
 
@@ -103,7 +102,7 @@ in layers (Tailwind v4) would lose to Driver.js's defaults whenever `{% page_tou
 its stylesheet. The starter script moves the package's link to the start of `<head>`, so the
 `page-tours` layer is always the lowest, and no rule about where the tag sits is needed.
 
-**ADR:** none — part of D11's mechanism
+**ADR:** docs/adr/0004-driver-js-styles-sit-in-the-lowest-cascade-layer.md, with D11
 
 ## D13 — The highlight's fill and opacity become presentation attributes
 

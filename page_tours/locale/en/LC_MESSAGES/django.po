@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: django-page-tours\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 16:46+0100\n"
+"POT-Creation-Date: 2026-11-10 10:33-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -20,38 +20,71 @@ msgstr ""
 msgid "Page tours"
 msgstr ""
 
-#: checks.py:31
+#: checks.py:33
 msgid ""
 "Tours on function-based views are not shown because "
 "'django.template.context_processors.request' is not in the "
 "context_processors of any DjangoTemplates backend."
 msgstr ""
 
-#: checks.py:35
+#: checks.py:37
 msgid "Add it to the 'context_processors' option of TEMPLATES."
 msgstr ""
 
-#: templatetags/page_tours.py:40
-msgctxt "page tour control"
-msgid "Next"
+#: checks.py:63
+#, python-format
+msgid "%(source)s must be a dict from part to a string of class names."
 msgstr ""
 
-#: templatetags/page_tours.py:41
-msgctxt "page tour control"
-msgid "Previous"
+#: checks.py:73
+#, python-format
+msgid "%(source)s names '%(part)s', which is not a part of a tour."
+msgstr ""
+
+#: checks.py:75
+#, python-format
+msgid "The parts are: %(parts)s."
+msgstr ""
+
+#: checks.py:83
+#, python-format
+msgid "%(source)s gives '%(part)s' a value that is not a string."
+msgstr ""
+
+#: checks.py:85
+msgid "Write the class names as one string."
+msgstr ""
+
+#: parts.py:52
+msgid "the PAGE_TOURS_CLASSES setting"
+msgstr ""
+
+#: parts.py:58
+#, python-format
+msgid "the app '%(label)s'"
 msgstr ""
 
 #: templatetags/page_tours.py:42
 msgctxt "page tour control"
-msgid "Done"
+msgid "Next"
 msgstr ""
 
 #: templatetags/page_tours.py:43
 msgctxt "page tour control"
+msgid "Previous"
+msgstr ""
+
+#: templatetags/page_tours.py:44
+msgctxt "page tour control"
+msgid "Done"
+msgstr ""
+
+#: templatetags/page_tours.py:45
+msgctxt "page tour control"
 msgid "Close"
 msgstr ""
 
-#: templatetags/page_tours.py:78
+#: templatetags/page_tours.py:81
 msgid "Show the tour"
 msgstr ""
 
