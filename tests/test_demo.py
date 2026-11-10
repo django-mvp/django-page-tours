@@ -337,6 +337,16 @@ class TestOwnLookPage:
 
         assert set(self.payload(page)["parts"]) == set(TourParts.parts)
 
+    def test_the_demos_configured_classes_reach_the_payload(self, client, settings):
+        """The classes the demo settings configure are on their parts in the payload."""
+        settings.PAGE_TOURS_CLASSES = demo_settings.PAGE_TOURS_CLASSES
+
+        page = client.get(reverse("own-look")).content.decode()
+
+        parts = self.payload(page)["parts"]
+        assert "demo-next" in parts["next"]
+        assert "demo-box" in parts["box"]
+
     def test_the_page_bar_links_the_page(self, client):
         """The bar every demo page shares links it."""
         page = client.get(reverse("overview")).content.decode()
@@ -349,3 +359,5 @@ class TestOwnLookPage:
         page = client.get(reverse("overview")).content.decode()
 
         assert f'href="{reverse("own-look")}"' in page.split("</nav>", 1)[1]
+
+
