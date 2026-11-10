@@ -19,7 +19,10 @@ should be able to change or turn off a tour shipped by an installed app without 
 app's code.
 
 **Builds on**: issue #5 (a tour declared in Python on the view that renders its page) and issue #6
-(a tour is seen once per browser, remembered under the view that declares it).
+(a tour is seen once per browser, remembered under its name).
+
+**Amended**: issue #33 replaced the view-based name with a name the developer gives each tour
+(ADR 0006). This specification reads as it stands after that change.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -76,10 +79,14 @@ files are unchanged throughout.
 
 ### Edge Cases
 
-- The app renames or moves the view that declares a tour. The tour has a new name, so the
-  project's change no longer applies to it, the app's tour plays again once to everyone who saw
-  it (as ADR 0002 already records for a renamed view), and the check in scenario 10 reports the
-  stale change.
+- The app renames or moves the view that declares a tour. The tour keeps its name, so the
+  project's change still applies and nobody sees the tour again.
+- The app renames a tour. It is a different tour, so the project's change no longer applies to
+  it, the app's tour plays again once to everyone who saw it, and the check in scenario 10
+  reports the stale change.
+- Two tours with different steps are declared under one name, by the app and the project or by
+  two apps. Django's `check` command reports the name, since the tours would share what a browser
+  remembers and one change. A reusable app avoids this by naming its tours `"<app_label>.<tour>"`.
 - The project subclasses the app's view and sets a tour on the subclass. That tour is the
   project's own, declared on the project's own view, and a change to the app's tour does not
   touch it.
@@ -109,8 +116,7 @@ files are unchanged throughout.
 - **FR-006**: A change MUST apply to one tour only, named by the project. Every other tour MUST
   play as declared. (US1)
 - **FR-007**: The app MUST need no change to have its tours changed or turned off: the project
-  names a tour without the app author having given it any name beyond the view that declares it.
-  (US1)
+  names a tour by the name its app gave it where it was declared. (US1)
 - **FR-008**: A replacement MUST keep the identity of the tour it replaces, so a visitor who has
   seen the app's tour does not see the replacement play by itself, and turning a tour off and on
   again does not make it play again for anyone. (US1)
@@ -124,8 +130,9 @@ files are unchanged throughout.
 
 ### Key Entities
 
-- **An app's tour**: a tour declared on a view of an installed reusable app. Named by the view
-  that declares it, as every tour already is for remembering that it was seen.
+- **An app's tour**: a tour declared on a view of an installed reusable app. Named by the app,
+  `"<app_label>.<tour>"`, as every tour is named by its developer for remembering that it was
+  seen.
 - **A project's change**: the installing project's replacement for an app's tour, or its choice to
   turn that tour off. Made in the project, applied wherever the app's tour would play.
 
@@ -143,9 +150,10 @@ files are unchanged throughout.
   again on purpose belongs to tour versions (issue #21). Integrated into FR-008 and scenario 9.
 - Q: Can a project turn off all of one app's tours at once? → A: No. A change names one tour.
   Turning off several is one change each. Integrated into FR-006.
-- Q: What happens to a project's change when an app release renames the view it names? → A: The
+- Q: What happens to a project's change when an app release renames the tour it names? → A: The
   change stops applying and Django's `check` reports it, so it does not go unnoticed. Integrated
-  into FR-009, scenario 10 and the edge cases.
+  into FR-009, scenario 10 and the edge cases. (Asked of a renamed view before issue #33; a
+  renamed view now changes nothing.)
 - Q: Does a mistaken replacement fail on a visitor's page? → A: No, it is refused when the project
   starts, as a mistaken tour on the developer's own view already is. Integrated into FR-010.
 
@@ -167,8 +175,8 @@ files are unchanged throughout.
 ## Assumptions
 
 - A page has at most one tour, and a tour belongs to the view that declares it (ADR 0001).
-- A tour is named by the view that declares it (ADR 0002). This feature uses that name for a
-  project's change and adds no other.
+- A tour is named by its developer where it is declared (ADR 0006). This feature uses that name
+  for a project's change and adds no other.
 - The project has placed the tour tag in the template the app's pages render through. The app's
   tours depend on the same setup as the project's own.
 - Showing a changed tour again to people who saw the old one is issue #21 and out of scope.

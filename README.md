@@ -54,9 +54,7 @@ see the new one once.
 pip install django-page-tours
 ```
 
-Add `page_tours` to `INSTALLED_APPS`, and check that
-`django.template.context_processors.request` is in the `context_processors` of your `TEMPLATES`
-setting.
+Add `page_tours` to `INSTALLED_APPS`.
 
 Place `{% page_tour %}` once in the `<head>` of your base template:
 
@@ -84,14 +82,17 @@ from page_tours import Tour, TourStep
 class DashboardView(TemplateView):
     template_name = "dashboard.html"
     tour = Tour(
+        name="dashboard",
         steps=[
             TourStep(title="Welcome", text="A quick look around."),
             TourStep(title="Projects", text="Your work is here.", element="#projects"),
-        ]
+        ],
     )
 ```
 
-The tour plays the first time a browser opens the page, and not again in that browser.
+The tour plays the first time a browser opens the page, and not again in that browser, which
+remembers it by its name. A function-based view passes its tour in the template context instead:
+`render(request, "dashboard.html", {"tour": DASHBOARD_TOUR})`.
 
 To let visitors play it again, place `{% page_tour_replay %}` where the button should appear. It
 shows only on pages that have a tour:
@@ -101,9 +102,9 @@ shows only on pages that have a tour:
 ```
 
 A project can replace the tour of an installed app, or turn it off, from its own settings with
-`PAGE_TOURS_OVERRIDES`, without editing the app.
+`PAGE_TOURS_OVERRIDES`, keyed by the tour's name, without editing the app.
 
-The [documentation](https://django-mvp.github.io/django-page-tours/) covers function-based views,
+The [documentation](https://django-mvp.github.io/django-page-tours/) covers naming a tour, function-based views,
 steps attached to elements, tour versions, replaying a tour and tours that play only on request,
 tours from reusable apps, styling, and translation.
 

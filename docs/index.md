@@ -31,8 +31,7 @@ tours of the apps it installs without editing them.
 pip install django-page-tours
 ```
 
-Add the app to `INSTALLED_APPS`, and check that `django.template.context_processors.request` is
-in the `context_processors` of your `TEMPLATES` setting:
+Add the app to `INSTALLED_APPS`:
 
 ```python
 INSTALLED_APPS = [
@@ -69,15 +68,17 @@ from page_tours import Tour, TourStep
 class DashboardView(TemplateView):
     template_name = "dashboard.html"
     tour = Tour(
+        name="dashboard",
         steps=[
             TourStep(title="Welcome", text="A quick look around."),
             TourStep(title="Projects", text="Your work is here.", element="#projects"),
-        ]
+        ],
     )
 ```
 
-The page plays the tour when it opens. [Adding a tour to a page](developer/tours.md) covers
-function-based views, steps and translation.
+The page plays the tour when it opens, and the browser remembers it by its name, `dashboard`.
+[Adding a tour to a page](developer/tours.md) covers naming a tour, function-based views, steps
+and translation.
 
 ## Next steps
 

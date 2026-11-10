@@ -6,6 +6,38 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking:** a tour is named where it is declared, and the name is required:
+  `Tour(name="dashboard", steps=[...])`. The name is what a browser remembers a seen tour by and
+  what `PAGE_TOURS_OVERRIDES` is keyed by, in place of the dotted path of the view that declared
+  the tour. Renaming or moving a view no longer brings its tour back, and the view's path is no
+  longer in the page source. A reusable app names its tours `"<app_label>.<tour>"`.
+- **Breaking:** every tour plays once more after upgrading, in every browser that had seen it,
+  because what a browser remembered was stored under the old, view-based names.
+- **Breaking:** the keys of `PAGE_TOURS_OVERRIDES` are tour names now. Replace each view path
+  with the name the app gives its tour, such as `{"library.book": "myproject.tours.book_tour"}`.
+  A replacement tour needs a name of its own too, and still plays under the name of the tour it
+  replaces.
+- `page_tours.W002` now warns about an override key that names no declared tour, rather than one
+  that no routed view declares a tour under.
+
+### Added
+
+- System check `page_tours.W005` warns when tours with different steps are declared with one
+  name, since they would share what a browser remembers.
+- A demo page, "Function view", shows a tour passed in a function-based view's context.
+
+### Removed
+
+- **Breaking:** `with_tour`. A function-based view passes its tour in the template context
+  instead: `render(request, "dashboard.html", {"tour": DASHBOARD_TOUR})`.
+- **Breaking:** `page_tours.tours.tour_id` and `page_tours.tours.declaring_view_name`, along with
+  the rule that named a tour after the first class along a view's method resolution order to set
+  `tour`.
+- The system check `page_tours.W001`. The package no longer needs
+  `django.template.context_processors.request`.
+
 ## [v0.2.0] - 2026-11-10
 
 ### Added

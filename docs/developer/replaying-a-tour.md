@@ -88,6 +88,7 @@ from page_tours import Tour, TourStep
 class ReportsView(TemplateView):
     template_name = "reports.html"
     tour = Tour(
+        name="reports",
         steps=[
             TourStep(title="Reports", text="Everything you have filed, in one place."),
             TourStep(

@@ -6,44 +6,48 @@ renders the page. The page plays it by itself the first time a browser opens it.
 
 ## Set up the tour tag once
 
-Every page that can carry a tour needs two things in its base template and its settings. You do
-this once for the whole project.
+Load the tag library and place the tag in the `<head>` of your base template. You do this once
+for the whole project:
 
-1. Load the tag library and place the tag in the `<head>` of your base template:
-
-   ```django
-   {% load page_tours %}
-   <head>
-     ...
-     {% page_tour %}
-   </head>
-   ```
-
-2. Check that `django.template.context_processors.request` is listed in the
-   `context_processors` option of your `DjangoTemplates` backend in `TEMPLATES`:
-
-   ```python
-   TEMPLATES = [
-       {
-           "BACKEND": "django.template.backends.django.DjangoTemplates",
-           "OPTIONS": {
-               "context_processors": [
-                   "django.template.context_processors.request",
-                   # ...
-               ],
-           },
-           # ...
-       },
-   ]
-   ```
+```django
+{% load page_tours %}
+<head>
+  ...
+  {% page_tour %}
+</head>
+```
 
 The tag draws nothing where it stands, so its place in the `<head>` does not decide where the
 tour shows. A page with no tour gets nothing from the tag: no script, no stylesheet, no reference to
 Driver.js. A page with a tour gets the Driver.js stylesheet and script from your own static
 files, and the page's steps.
 
-Django's `check` command warns with `page_tours.W001` when no `DjangoTemplates` backend lists
-the request context processor. Without it a tour on a function-based view is never found.
+## Name the tour
+
+Every tour has a name, given where you declare it:
+
+```python
+Tour(name="dashboard", steps=[...])
+```
+
+The name is how the tour is known. A browser remembers that it has seen the tour by its name, and
+a project changes an installed app's tour by its name (see
+[Tours from reusable apps](tours-from-reusable-apps.md)). Pick one that stays put:
+
+- **Keep the name when you change the tour.** Renaming it makes it a different tour, so every
+  visitor sees it again. To show a changed tour again on purpose, raise its version instead (see
+  [Show a changed tour again](#show-a-changed-tour-again)).
+- **Give each tour its own name.** Two tours with one name share one seen state, so seeing one
+  hides the other. Django's `check` command warns with `page_tours.W005` when tours with different
+  steps are declared with the same name. One tour used on several views is still one tour, and so
+  is one tour declared at two versions.
+- **In a reusable app, start the name with the app label:** `"<app_label>.<tour>"`, such as
+  `"library.book"`. That keeps it apart from the tours of the project and of every other app.
+- **The name is in the page's source,** sent to the browser with the steps. Do not put anything
+  in it you would not show a visitor.
+
+A name that is not a string with something in it raises `ImproperlyConfigured` when the tour is
+declared.
 
 ## Add a tour to a class-based view
 
@@ -58,6 +62,7 @@ from page_tours import Tour, TourStep
 class DashboardView(TemplateView):
     template_name = "dashboard.html"
     tour = Tour(
+        name="dashboard",
         steps=[
             TourStep(title="Welcome", text="A quick look around."),
             TourStep(
@@ -69,25 +74,34 @@ class DashboardView(TemplateView):
     )
 ```
 
-The tour is on every URL that routes to the view.
+The tour is on every URL that routes to the view, and on every subclass of the view that does not
+set a `tour` of its own. A tour given through `as_view(tour=...)` is on that one URL.
 
 ## Add a tour to a function-based view
 
-Decorate the view with `with_tour`. The page the view renders carries the tour:
+Pass the tour in the template context under `tour`, like any other value. The page the view
+renders carries it:
 
 ```python
 from django.shortcuts import render
 
-from page_tours import Tour, TourStep, with_tour
+from page_tours import Tour, TourStep
+
+DASHBOARD_TOUR = Tour(
+    name="dashboard",
+    steps=[TourStep(title="Welcome", text="A quick look around.")],
+)
 
 
-@with_tour(Tour(steps=[TourStep(title="Welcome", text="A quick look around.")]))
 def dashboard(request):
-    return render(request, "dashboard.html")
+    return render(request, "dashboard.html", {"tour": DASHBOARD_TOUR})
 ```
 
-`with_tour` works the same on an `async def` view. The tag finds the tour through the request,
-so the request context processor from the setup above must be listed.
+Declare the tour at module level, as above, rather than inside the view. It is then checked when
+the module is imported, and the system checks know its name.
+
+Only a `Tour` counts, so a `tour` of your own in the context, such as a model instance, is left
+alone. A class-based view can pass its tour this way too, but its `tour` attribute comes first.
 
 ## Seen tours
 
@@ -97,12 +111,10 @@ by itself again in that browser.
 
 - **It is kept in the visitor's browser only.** The browser stores one entry in its local
   storage for each seen tour. Nothing is stored on the server, and no cookie is set.
-- **The view that declares the tour identifies it.** A view shown on many addresses is one tour,
-  so seeing it at one address hides it at the others. Renaming or moving the view makes it a
-  different tour, so every visitor is shown it again. Tours set per address on one view class,
-  for example through `as_view(tour=...)`, share that class's seen state. The same name is how a
-  project changes the tour of an installed app; see
-  [Tours from reusable apps](tours-from-reusable-apps.md).
+- **The tour's name identifies it.** A tour shown on many addresses is one tour, so seeing it at
+  one address hides it at the others. Renaming or moving the view changes nothing, and renaming
+  the tour makes it a different tour, so every visitor is shown it again. See
+  [Name the tour](#name-the-tour).
 - **A tour that could not play is not seen.** When no step can show, the tour does not start and
   is not remembered.
 - **A browser that blocks storage sees the tour on every visit.** The page raises no error.
@@ -117,6 +129,7 @@ it a new version:
 class DashboardView(TemplateView):
     template_name = "dashboard.html"
     tour = Tour(
+        name="dashboard",
         steps=[
             TourStep(title="Welcome", text="A quick look around."),
             TourStep(
@@ -217,6 +230,9 @@ The changed-tour page at `/changed-tour/` routes one tour at two versions, at `/
 and `/changed-tour/new-version/`. Open one and then the other to see a new version play once
 more in a browser that saw the first.
 
+The function-view page at `/function-view/` is rendered by a function-based view that passes its
+tour in the template context.
+
 ## Why a visitor can always use the page
 
 This is what a visitor sees when a page with a tour opens in their browser.
@@ -247,11 +263,14 @@ This is what a visitor sees when a page with a tour opens in their browser.
 
 A tour is checked as the module that declares it is imported: at start-up for the development
 server and `manage.py check`, and at the latest on the first request a production server handles.
-A mistake raises an error there instead of being shown to a visitor. A tour with no steps, and a step with an empty title or
-empty text (whitespace counts as empty), raise `ImproperlyConfigured`.
+A mistake raises an error there instead of being shown to a visitor. A tour with no name or no
+steps, and a step with an empty title or empty text (whitespace counts as empty), raise
+`ImproperlyConfigured`.
 
 ## Why a tour never shows on an error page
 
-A tour is found only from the page its own view renders. When a view raises, such as `Http404`,
-Django renders the error page instead, and the tour is not on it, even when the error page
-extends the same base template.
+A tour is found only from the page its own view renders: the `tour` attribute of the class-based
+view in the template context, or the `tour` a view passes in its context. When a view raises,
+such as `Http404`, Django renders the error page instead, with a context of its own. Neither is
+in it, so the tour is not on the error page, even when the error page extends the same base
+template.

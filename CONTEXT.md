@@ -9,7 +9,8 @@ terms as defined here.
 
 A short, guided walk through one page of a site, made of an ordered list of
 [steps](#tour-step). A tour belongs to exactly one page. It is declared in Python by the
-developer, next to the view that renders the page, and shown in the browser by Driver.js.
+developer, next to the view that renders the page, with a [name](#tour-name), and shown in the
+browser by Driver.js.
 
 _Avoid:_ walkthrough, guide, onboarding (onboarding is the wider experience a tour may be part of).
 
@@ -48,19 +49,20 @@ out from the tour's steps, so a small edit keeps it.
 
 ### Tour name
 
-The dotted path of the view that declares a [tour](#tour): for a class-based view, the class whose
-own body sets `tour`, and for a function-based view, the function `with_tour` decorates. A browser
-remembers that a tour was [seen](#seen) by its name, and a project changes an installed app's tour
-by naming it in [`PAGE_TOURS_OVERRIDES`](#tour-override). Renaming or moving the view gives the
-tour a new name.
+The name the developer gives a [tour](#tour) where they declare it, `Tour(name="dashboard", ...)`.
+Every tour has one. A browser remembers that a tour was [seen](#seen) by its name, and a project
+changes an installed app's tour by naming it in [`PAGE_TOURS_OVERRIDES`](#tour-override).
+Renaming the tour makes it a different tour; renaming or moving the view that shows it does not.
+A reusable app names its tours `"<app_label>.<tour>"`.
 
-_Avoid:_ tour id, slug.
+_Avoid:_ tour id, slug, the view's path.
 
 ### Tour override
 
 A project's replacement for the [tour](#tour) of an installed app, or its choice to turn that tour
-off, set in `PAGE_TOURS_OVERRIDES` against the [tour name](#tour-name). A replacement is seen at
-the app tour's [version](#tour-version) plus its own, less one.
+off, set in `PAGE_TOURS_OVERRIDES` against the [tour name](#tour-name). A replacement plays under
+the app tour's name and is seen at the app tour's [version](#tour-version) plus its own, less
+one.
 
 _Avoid:_ customisation, patch.
 
