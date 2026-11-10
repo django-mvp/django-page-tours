@@ -36,6 +36,24 @@ A whole number the developer gives a tour, 1 unless they say otherwise. The deve
 when the tour has changed enough that people who saw it should see it again. It is never worked
 out from the tour's steps, so a small edit keeps it.
 
+### Tour name
+
+The dotted path of the view that declares a [tour](#tour): for a class-based view, the class whose
+own body sets `tour`, and for a function-based view, the function `with_tour` decorates. A browser
+remembers that a tour was [seen](#seen) by its name, and a project changes an installed app's tour
+by naming it in [`PAGE_TOURS_OVERRIDES`](#tour-override). Renaming or moving the view gives the
+tour a new name.
+
+_Avoid:_ tour id, slug.
+
+### Tour override
+
+A project's replacement for the [tour](#tour) of an installed app, or its choice to turn that tour
+off, set in `PAGE_TOURS_OVERRIDES` against the [tour name](#tour-name). A replacement is seen at
+the app tour's [version](#tour-version) plus its own, less one.
+
+_Avoid:_ customisation, patch.
+
 ### Replay
 
 Starting a tour again on request, whether or not it has been [seen](#seen).

@@ -99,7 +99,9 @@ by itself again in that browser.
 - **The view that declares the tour identifies it.** A view shown on many addresses is one tour,
   so seeing it at one address hides it at the others. Renaming or moving the view makes it a
   different tour, so every visitor is shown it again. Tours set per address on one view class,
-  for example through `as_view(tour=...)`, share that class's seen state.
+  for example through `as_view(tour=...)`, share that class's seen state. The same name is how a
+  project changes the tour of an installed app; see
+  [Tours from reusable apps](tours-from-reusable-apps.md).
 - **A tour that could not play is not seen.** When no step can show, the tour does not start and
   is not remembered.
 - **A browser that blocks storage sees the tour on every visit.** The page raises no error.
