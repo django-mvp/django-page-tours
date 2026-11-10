@@ -1,10 +1,10 @@
 """Declarations of a tour and its steps."""
 
-from collections.abc import Callable, Sequence
-from dataclasses import dataclass, replace
-from functools import wraps
-from inspect import iscoroutinefunction
-from typing import Any, TypeVar
+import copy
+import weakref
+from collections.abc import Sequence
+from dataclasses import dataclass
+from typing import Any
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -13,7 +13,9 @@ from django.utils.html import escape
 from django.utils.module_loading import import_string
 from django.utils.translation import gettext_lazy as _
 
-F = TypeVar("F", bound=Callable[..., Any])
+# Every tour declared so far, by name. The references are weak, so a tour that
+# nothing refers to any more is no longer declared.
+_declared: dict[str, list[weakref.ref["Tour"]]] = {}
 
 
 @dataclass(frozen=True)
@@ -47,7 +49,15 @@ class TourStep:
 class Tour:
     """A guided tour of one page.
 
+    Every tour is recorded under its name when it is made, so the system checks
+    can report a name declared twice or a ``PAGE_TOURS_OVERRIDES`` key that names
+    no tour.
+
     Args:
+        name: The name the tour is known by: a browser remembers that it has seen
+            the tour under it, and ``PAGE_TOURS_OVERRIDES`` changes the tour by it.
+            Plain text, never empty. A reusable app names its tours
+            ``"<app_label>.<tour>"``.
         steps: The steps in the order they are shown. At least one.
         autoplay: Whether the tour plays by itself the first time a browser opens
             the page.
@@ -56,16 +66,19 @@ class Tour:
             another version plays it by itself once more.
 
     Raises:
-        ImproperlyConfigured: If ``steps`` is empty or ``version`` is not a whole
-            number of 1 or more.
+        ImproperlyConfigured: If ``name`` is not a string with something in it,
+            ``steps`` is empty or ``version`` is not a whole number of 1 or more.
     """
 
+    name: str
     steps: Sequence[TourStep]
     autoplay: bool = True
     version: int = 1
 
     def __post_init__(self):
-        """Refuse a tour with no steps or a bad version, and freeze the steps."""
+        """Refuse a bad tour, freeze its steps and record it under its name."""
+        if not isinstance(self.name, str) or not self.name.strip():
+            raise ImproperlyConfigured(_("A tour needs a name."))
         if not self.steps:
             raise ImproperlyConfigured(_("A tour needs at least one step."))
         if (
@@ -77,21 +90,22 @@ class Tour:
                 _("A tour's version must be a whole number of 1 or more.")
             )
         object.__setattr__(self, "steps", tuple(self.steps))
+        _declared.setdefault(self.name, []).append(weakref.ref(self))
 
     @classmethod
     def for_page(cls, context: Any) -> "Tour | None":
         """Find the tour of the page whose own view is being rendered.
 
         A class-based view supplies its ``tour`` attribute through ``context["view"]``.
-        A function-based view supplies the tour that ``with_tour`` put on the request.
-        An error page has neither, so it has no tour.
+        A function-based view passes the tour in its context under ``tour``. An
+        error page has neither, so it has no tour.
 
         When the ``PAGE_TOURS_OVERRIDES`` setting names the tour, the replacement
         is returned in its place, or ``None`` when the setting turns it off. The
-        replacement plays at the declared tour's version plus its own, less one,
-        so a browser that saw the declared tour does not see the replacement by
-        itself until the replacement's own version is raised. The setting is read
-        on every call.
+        replacement keeps the declared tour's name, and plays at the declared
+        tour's version plus its own, less one, so a browser that saw the declared
+        tour does not see the replacement by itself until the replacement's own
+        version is raised. The setting is read on every call.
 
         Args:
             context: The template context, or any mapping with ``get``.
@@ -104,17 +118,21 @@ class Tour:
         """
         tour = getattr(context.get("view"), "tour", None)
         if not isinstance(tour, cls):
-            tour = getattr(context.get("request"), "page_tour", None)
+            tour = context.get("tour")
         if not isinstance(tour, cls):
             return None
         overrides = getattr(settings, "PAGE_TOURS_OVERRIDES", {})
-        name = tour_id(context)
-        if name not in overrides:
+        if tour.name not in overrides:
             return tour
-        replacement = resolve_override(name, overrides[name])
+        replacement = resolve_override(tour.name, overrides[tour.name])
         if replacement is None:
             return None
-        return replace(replacement, version=tour.version + replacement.version - 1)
+        # A copy is not made through __init__, so the tour a page plays is not
+        # recorded as a second tour declared under the declared tour's name.
+        played = copy.copy(replacement)
+        object.__setattr__(played, "name", tour.name)
+        object.__setattr__(played, "version", tour.version + replacement.version - 1)
+        return played
 
     def as_driver_steps(self) -> list[dict[str, str]]:
         """Convert the steps to the form Driver.js takes.
@@ -136,27 +154,6 @@ class Tour:
                 driver_step["element"] = step.element
             driver_steps.append(driver_step)
         return driver_steps
-
-
-def declaring_view_name(view_class: type) -> str:
-    """Name a class-based view for the tour it declares or inherits.
-
-    The name is the dotted path of the first class along the view's method
-    resolution order whose own body declares ``tour``, so a subclass that
-    inherits the tour shares its parent's name. When no class declares it,
-    because it was set on the instance or through ``as_view``, it is the view
-    class's own path.
-
-    Args:
-        view_class: The class of a class-based view.
-
-    Returns:
-        The dotted path of the class that names the view's tour.
-    """
-    for cls in view_class.__mro__:
-        if "tour" in cls.__dict__:
-            return f"{cls.__module__}.{cls.__qualname__}"
-    return f"{view_class.__module__}.{view_class.__qualname__}"
 
 
 def resolve_override(name: str, value: Any) -> Tour | None:
@@ -212,78 +209,21 @@ def tour_overrides() -> dict[str, Tour | None]:
     return {name: resolve_override(name, value) for name, value in overrides.items()}
 
 
-def tour_id(context: Any) -> str:
-    """Name the tour of the page being rendered, for remembering that it was seen.
+def declared_tours() -> dict[str, list[Tour]]:
+    """Return every tour that exists, by its name.
 
-    A class-based view is named by the class that declares ``tour`` itself, so a
-    subclass that inherits the tour shares its parent's id. When no class declares
-    it, because it was set on the instance or through ``as_view``, the view's own
-    class gives the name. A function-based view is named by ``with_tour``.
-
-    Call it only for a page whose ``Tour.for_page(context)`` is not ``None``.
-
-    Args:
-        context: The template context, or any mapping with ``get``.
+    A tour is declared when it is made, which for a tour in a module is when the
+    module is imported. A tour that nothing refers to any more is left out.
 
     Returns:
-        The dotted path of the view that declares the tour.
+        The tours declared under each name, in the order they were made.
     """
-    view = context.get("view")
-    if isinstance(getattr(view, "tour", None), Tour):
-        return declaring_view_name(type(view))
-    return str(getattr(context.get("request"), "page_tour_view", ""))
-
-
-def with_tour(tour: Tour) -> Callable[[F], F]:
-    """Attach a tour to a function-based view, sync or async.
-
-    The tour is on ``request.page_tour`` while the view runs, and the view's dotted
-    path on ``request.page_tour_view``. Both are removed again if the view raises, so
-    the error page that follows does not play the tour. The returned view carries
-    the same path as ``page_tour_view``, so the system checks can name its tour
-    without calling it.
-
-    Args:
-        tour: The tour to show on the page the view renders.
-
-    Returns:
-        A decorator for the view.
-    """
-
-    def decorator(view: F) -> F:
-        # A view from as_view() is named by its class, and a callable with no name
-        # of its own, such as a functools.partial, by its type.
-        named = getattr(view, "view_class", view)
-        module = getattr(named, "__module__", None) or type(named).__module__
-        qualname = getattr(named, "__qualname__", None) or type(named).__qualname__
-        path = f"{module}.{qualname}"
-
-        if iscoroutinefunction(view):
-
-            @wraps(view)
-            async def async_wrapper(request, *args, **kwargs):
-                request.page_tour = tour
-                request.page_tour_view = path
-                try:
-                    return await view(request, *args, **kwargs)
-                except BaseException:
-                    del request.page_tour, request.page_tour_view
-                    raise
-
-            async_wrapper.page_tour_view = path  # type: ignore[attr-defined]
-            return async_wrapper  # type: ignore[return-value]
-
-        @wraps(view)
-        def wrapper(request, *args, **kwargs):
-            request.page_tour = tour
-            request.page_tour_view = path
-            try:
-                return view(request, *args, **kwargs)
-            except BaseException:
-                del request.page_tour, request.page_tour_view
-                raise
-
-        wrapper.page_tour_view = path  # type: ignore[attr-defined]
-        return wrapper  # type: ignore[return-value]
-
-    return decorator
+    tours: dict[str, list[Tour]] = {}
+    for name, refs in list(_declared.items()):
+        alive = [tour for ref in refs if (tour := ref()) is not None]
+        if alive:
+            _declared[name] = [weakref.ref(tour) for tour in alive]
+            tours[name] = alive
+        else:
+            del _declared[name]
+    return tours

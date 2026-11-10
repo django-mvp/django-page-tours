@@ -6,7 +6,7 @@ from django.utils.html import escape, format_html
 from django.utils.translation import gettext_lazy, pgettext
 
 from page_tours.parts import TourParts
-from page_tours.tours import Tour, tour_id
+from page_tours.tours import Tour
 
 register = template.Library()
 
@@ -21,7 +21,7 @@ def page_tour(context):
         context: The template context, supplied by Django.
 
     Returns:
-        The context for ``page_tours/page_tour.html``: the tour's id and
+        The context for ``page_tours/page_tour.html``: the tour's name and
         version, whether it plays by itself, its steps in the form Driver.js
         takes, the labels of its controls in the active language and the classes
         each part of a shown step carries, or an empty payload when the page has
@@ -32,7 +32,7 @@ def page_tour(context):
         return {"payload": None}
     return {
         "payload": {
-            "id": tour_id(context),
+            "id": tour.name,
             "version": tour.version,
             "autoplay": tour.autoplay,
             "steps": tour.as_driver_steps(),

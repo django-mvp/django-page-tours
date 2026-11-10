@@ -1,5 +1,6 @@
 """The demo project's pages."""
 
+from django.shortcuts import render
 from django.views.generic import TemplateView
 
 from page_tours import Tour, TourStep
@@ -16,6 +17,7 @@ class TourView(TemplateView):
 
     template_name = "demo/tour.html"
     tour = Tour(
+        name="demo.tour",
         steps=[
             TourStep(
                 title="Welcome",
@@ -36,7 +38,7 @@ class TourView(TemplateView):
                 text="Type here and press Enter. The page reloads with your text.",
                 element="#demo-field",
             ),
-        ]
+        ],
     )
 
 
@@ -45,6 +47,7 @@ class PlaysOnceView(TemplateView):
 
     template_name = "demo/plays_once.html"
     tour = Tour(
+        name="demo.plays-once",
         steps=[
             TourStep(
                 title="Plays once",
@@ -61,7 +64,7 @@ class PlaysOnceView(TemplateView):
                 ),
                 element="[aria-label='Demo pages'] button",
             ),
-        ]
+        ],
     )
 
 
@@ -70,6 +73,7 @@ class OnRequestView(TemplateView):
 
     template_name = "demo/on_request.html"
     tour = Tour(
+        name="demo.on-request",
         steps=[
             TourStep(
                 title="Only on request",
@@ -90,6 +94,7 @@ class OwnLookView(TemplateView):
 
     template_name = "demo/own_look.html"
     tour = Tour(
+        name="demo.own-look",
         steps=[
             TourStep(
                 title="A look of its own",
@@ -100,7 +105,7 @@ class OwnLookView(TemplateView):
                 text="The rest of the page is dimmed, and this paragraph is not.",
                 element="#demo-own-look-target",
             ),
-        ]
+        ],
     )
 
 
@@ -120,13 +125,33 @@ CHANGED_TOUR_STEPS = [
 class ChangedTourView(TemplateView):
     """A page whose tour is routed at two versions, so a new one can be seen once.
 
-    Both routes pass their tour to ``as_view``, so both are seen as this view's
-    tour and differ only in version.
+    Both routes pass their tour to ``as_view``. The two tours have one name, so
+    they are seen as one tour and differ only in version.
     """
 
     template_name = "demo/changed_tour.html"
     tour = None
 
 
-FIRST_VERSION = Tour(steps=CHANGED_TOUR_STEPS)
-NEW_VERSION = Tour(steps=CHANGED_TOUR_STEPS, version=2)
+FIRST_VERSION = Tour(name="demo.changed-tour", steps=CHANGED_TOUR_STEPS)
+NEW_VERSION = Tour(name="demo.changed-tour", steps=CHANGED_TOUR_STEPS, version=2)
+
+FUNCTION_VIEW_TOUR = Tour(
+    name="demo.function-view",
+    steps=[
+        TourStep(
+            title="From a function",
+            text="A function-based view rendered this page and passed this tour in its context.",
+        ),
+        TourStep(
+            title="The same tag",
+            text="The base template's tag found it there, as it finds a class's tour.",
+            element="#demo-function-view",
+        ),
+    ],
+)
+
+
+def function_view(request):
+    """Render a page whose tour a function-based view passes in its context."""
+    return render(request, "demo/function_view.html", {"tour": FUNCTION_VIEW_TOUR})

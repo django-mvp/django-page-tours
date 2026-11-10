@@ -2,4 +2,4 @@
 
 from page_tours import Tour
 
-BROKEN_TOUR = Tour(steps=[])
+BROKEN_TOUR = Tour(name="tests.broken", steps=[])

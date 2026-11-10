@@ -1,39 +1,24 @@
 """Tests for page_tours.tours."""
 
-import asyncio
-from concurrent.futures import ThreadPoolExecutor
+import gc
 from dataclasses import replace
-from functools import partial
 
 import pytest
-from asgiref.sync import iscoroutinefunction
-from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ImproperlyConfigured
-from django.http import HttpResponse
 from django.utils import translation
 from django.utils.html import escape
 from django.utils.translation import gettext, gettext_lazy
-from django.views import View
 
 from page_tours.tours import (
     Tour,
     TourStep,
+    declared_tours,
     resolve_override,
-    tour_id,
     tour_overrides,
-    with_tour,
 )
 from tests import views
 
-
-def run_in_own_loop(coroutine):
-    """Run a coroutine to completion on a fresh event loop in its own thread.
-
-    The browser tests leave an event loop running in the test thread, so the
-    coroutine cannot be run there.
-    """
-    with ThreadPoolExecutor(max_workers=1) as pool:
-        return pool.submit(asyncio.run, coroutine).result()
+STEP = TourStep(title="Title", text="Body")
 
 
 class TestTourStep:
@@ -59,30 +44,52 @@ class TestTourStep:
 class TestTour:
     """Declaring a tour."""
 
+    def test_a_tour_keeps_the_name_it_is_declared_with(self):
+        """The developer names the tour."""
+        assert Tour(name="app.book", steps=[STEP]).name == "app.book"
+
+    def test_a_tour_without_a_name_is_an_error(self):
+        """The name is required."""
+        with pytest.raises(TypeError):
+            Tour(steps=[STEP])  # type: ignore[call-arg]
+
+    @pytest.mark.parametrize("name", ["", "   ", "\n\t", None, 3, gettext_lazy("x")])
+    def test_a_name_that_is_not_a_non_blank_string_is_an_error(self, name):
+        """A name is plain text with something in it."""
+        with pytest.raises(ImproperlyConfigured):
+            Tour(name=name, steps=[STEP])
+
     def test_a_tour_without_steps_is_an_error(self):
         """A tour needs at least one step."""
         with pytest.raises(ImproperlyConfigured):
-            Tour(steps=[])
+            Tour(name="test", steps=[])
 
     def test_steps_are_stored_as_a_tuple(self):
         """A declared tour cannot change later."""
         step = TourStep(title="Title", text="Body")
 
-        tour = Tour(steps=[step])
+        tour = Tour(name="test", steps=[step])
 
         assert tour.steps == (step,)
 
     def test_a_tour_plays_by_itself_unless_told_otherwise(self):
         """Autoplay is on by default."""
-        assert Tour(steps=[TourStep(title="Title", text="Body")]).autoplay is True
+        assert (
+            Tour(name="test", steps=[TourStep(title="Title", text="Body")]).autoplay
+            is True
+        )
 
     def test_a_tour_is_at_version_one_unless_told_otherwise(self):
         """A tour declared without a version has version 1."""
-        assert Tour(steps=[TourStep(title="Title", text="Body")]).version == 1
+        assert (
+            Tour(name="test", steps=[TourStep(title="Title", text="Body")]).version == 1
+        )
 
     def test_a_tour_keeps_the_version_it_is_declared_with(self):
         """The developer sets the version."""
-        tour = Tour(steps=[TourStep(title="Title", text="Body")], version=3)
+        tour = Tour(
+            name="test", steps=[TourStep(title="Title", text="Body")], version=3
+        )
 
         assert tour.version == 3
 
@@ -92,7 +99,11 @@ class TestTour:
     ):
         """Only 1, 2, 3 and so on are versions."""
         with pytest.raises(ImproperlyConfigured):
-            Tour(steps=[TourStep(title="Title", text="Body")], version=version)
+            Tour(
+                name="test",
+                steps=[TourStep(title="Title", text="Body")],
+                version=version,
+            )
 
 
 class TestTourAsDriverSteps:
@@ -101,11 +112,12 @@ class TestTourAsDriverSteps:
     def test_steps_come_out_in_the_declared_order(self):
         """One dict per step, in the order declared."""
         tour = Tour(
+            name="test",
             steps=[
                 TourStep(title="First", text="One"),
                 TourStep(title="Second", text="Two"),
                 TourStep(title="Third", text="Three"),
-            ]
+            ],
         )
 
         steps = tour.as_driver_steps()
@@ -115,10 +127,11 @@ class TestTourAsDriverSteps:
     def test_the_element_key_is_present_only_for_a_step_that_names_one(self):
         """A step with no element has no element key."""
         tour = Tour(
+            name="test",
             steps=[
                 TourStep(title="Attached", text="One", element="#menu"),
                 TourStep(title="Floating", text="Two"),
-            ]
+            ],
         )
 
         attached, floating = tour.as_driver_steps()
@@ -129,7 +142,7 @@ class TestTourAsDriverSteps:
     def test_title_and_text_are_escaped(self):
         """Markup characters come out as text, not as markup."""
         raw = "<b>&\"'"
-        tour = Tour(steps=[TourStep(title=raw, text=raw)])
+        tour = Tour(name="test", steps=[TourStep(title=raw, text=raw)])
 
         (step,) = tour.as_driver_steps()
 
@@ -138,7 +151,9 @@ class TestTourAsDriverSteps:
 
     def test_a_lazy_title_is_translated_into_the_active_language(self):
         """The language active when the steps are built decides the text."""
-        tour = Tour(steps=[TourStep(title=gettext_lazy("Yes"), text="Body")])
+        tour = Tour(
+            name="test", steps=[TourStep(title=gettext_lazy("Yes"), text="Body")]
+        )
 
         with translation.override("de"):
             (step,) = tour.as_driver_steps()
@@ -150,256 +165,7 @@ class TestTourAsDriverSteps:
 @pytest.fixture
 def tour():
     """Return a valid one-step tour."""
-    return Tour(steps=[TourStep(title="Title", text="Body")])
-
-
-class TestWithTour:
-    """Attaching a tour to a function-based view."""
-
-    def test_the_tour_is_on_the_request_while_the_view_runs(self, rf, tour):
-        """The view can reach the tour through the request."""
-        seen = []
-
-        @with_tour(tour)
-        def view(request):
-            seen.append(request.page_tour)
-            return HttpResponse()
-
-        view(rf.get("/"))
-
-        assert seen == [tour]
-
-    def test_the_tour_is_removed_if_the_view_raises(self, rf, tour):
-        """An error page rendered afterwards does not carry the tour."""
-
-        @with_tour(tour)
-        def view(request):
-            raise PermissionError
-
-        request = rf.get("/")
-        with pytest.raises(PermissionError):
-            view(request)
-
-        assert not hasattr(request, "page_tour")
-
-    @pytest.mark.parametrize("login_required_is_outer", [True, False])
-    def test_the_tour_reaches_the_request_through_login_required(
-        self, rf, tour, login_required_is_outer
-    ):
-        """The order of with_tour and login_required does not matter."""
-        seen = []
-
-        def view(request):
-            seen.append(getattr(request, "page_tour", None))
-            return HttpResponse()
-
-        if login_required_is_outer:
-            decorated = login_required(with_tour(tour)(view))
-        else:
-            decorated = with_tour(tour)(login_required(view))
-        request = rf.get("/")
-        request.user = type("User", (), {"is_authenticated": True})()
-
-        decorated(request)
-
-        assert seen == [tour]
-
-    def test_an_async_view_gets_the_tour_on_the_request(self, rf, tour):
-        """An async function-based view stays async and sees the tour."""
-        seen = []
-
-        @with_tour(tour)
-        async def view(request):
-            seen.append(request.page_tour)
-            return HttpResponse()
-
-        run_in_own_loop(view(rf.get("/")))
-
-        assert seen == [tour]
-
-    def test_an_async_view_stays_async(self, tour):
-        """Django still recognises the decorated view as async."""
-
-        @with_tour(tour)
-        async def view(request):
-            return HttpResponse()
-
-        assert iscoroutinefunction(view)
-
-    def test_an_async_view_that_raises_loses_the_tour(self, rf, tour):
-        """An async view's error page does not carry the tour either."""
-
-        @with_tour(tour)
-        async def view(request):
-            raise PermissionError
-
-        request = rf.get("/")
-        with pytest.raises(PermissionError):
-            run_in_own_loop(view(request))
-
-        assert not hasattr(request, "page_tour")
-
-    def test_the_view_is_recorded_on_the_request(self, rf, tour):
-        """The request names the decorated view by its dotted path."""
-        seen = []
-
-        @with_tour(tour)
-        def view(request):
-            seen.append(request.page_tour_view)
-            return HttpResponse()
-
-        view(rf.get("/"))
-
-        assert seen == [f"{view.__module__}.{view.__wrapped__.__qualname__}"]
-
-    def test_an_async_view_is_recorded_on_the_request(self, rf, tour):
-        """An async view is named on the request too."""
-        seen = []
-
-        @with_tour(tour)
-        async def view(request):
-            seen.append(request.page_tour_view)
-            return HttpResponse()
-
-        run_in_own_loop(view(rf.get("/")))
-
-        assert seen == [f"{view.__module__}.{view.__wrapped__.__qualname__}"]
-
-    def test_class_based_views_wrapped_with_with_tour_keep_their_own_names(
-        self, rf, tour
-    ):
-        """Two ``as_view()`` views are named by their own classes, not as one."""
-        seen = []
-
-        class FirstView(View):
-            def get(self, request):
-                seen.append(request.page_tour_view)
-                return HttpResponse()
-
-        class SecondView(FirstView):
-            pass
-
-        with_tour(tour)(FirstView.as_view())(rf.get("/"))
-        with_tour(tour)(SecondView.as_view())(rf.get("/"))
-
-        assert seen == [dotted_path(FirstView), dotted_path(SecondView)]
-
-    def test_a_view_without_a_qualified_name_can_carry_a_tour(self, rf, tour):
-        """A ``functools.partial`` view is decorated and named without error."""
-        seen = []
-
-        def view(request, answer):
-            seen.append(request.page_tour_view)
-            return HttpResponse()
-
-        with_tour(tour)(partial(view, answer=42))(rf.get("/"))
-
-        assert len(seen) == 1
-        assert isinstance(seen[0], str)
-
-    def test_the_view_is_forgotten_if_the_view_raises(self, rf, tour):
-        """The error page that follows does not name a view."""
-
-        @with_tour(tour)
-        def view(request):
-            raise PermissionError
-
-        request = rf.get("/")
-        with pytest.raises(PermissionError):
-            view(request)
-
-        assert not hasattr(request, "page_tour_view")
-
-    def test_an_async_view_that_raises_forgets_the_view(self, rf, tour):
-        """An async view's error page does not name a view either."""
-
-        @with_tour(tour)
-        async def view(request):
-            raise PermissionError
-
-        request = rf.get("/")
-        with pytest.raises(PermissionError):
-            run_in_own_loop(view(request))
-
-        assert not hasattr(request, "page_tour_view")
-
-    def test_the_wrapper_keeps_the_view_name(self, tour):
-        """The wrapper is made with functools.wraps."""
-
-        @with_tour(tour)
-        def my_view(request):
-            return HttpResponse()
-
-        assert my_view.__name__ == "my_view"
-        assert my_view.__wrapped__.__name__ == "my_view"
-
-
-class ParentView:
-    """A class-based view that declares a tour."""
-
-    tour = Tour(steps=[TourStep(title="Title", text="Body")])
-
-
-class InheritingView(ParentView):
-    """A view that takes its parent's tour."""
-
-
-class OwnTourView(ParentView):
-    """A view that declares a tour of its own."""
-
-    tour = Tour(steps=[TourStep(title="Other", text="Body")])
-
-
-class TourlessView:
-    """A view whose tour is set after the class is made."""
-
-
-def dotted_path(cls):
-    """Return the dotted path of a class as the tests expect to see it."""
-    return f"{cls.__module__}.{cls.__qualname__}"
-
-
-class TestTourId:
-    """Naming the tour of the page being rendered."""
-
-    def test_a_class_based_view_is_named_by_its_class(self):
-        """The class that holds the tour gives the id."""
-        assert tour_id({"view": ParentView()}) == dotted_path(ParentView)
-
-    def test_a_subclass_inheriting_the_tour_shares_its_parents_id(self):
-        """Inheriting a tour is showing the same tour."""
-        assert tour_id({"view": InheritingView()}) == dotted_path(ParentView)
-
-    def test_a_subclass_declaring_its_own_tour_has_its_own_id(self):
-        """Declaring a tour makes it a different tour."""
-        assert tour_id({"view": OwnTourView()}) == dotted_path(OwnTourView)
-
-    def test_a_tour_set_on_the_instance_is_named_by_the_views_class(self):
-        """With no class holding the tour, the view's own class gives the id."""
-        view = TourlessView()
-        view.tour = Tour(steps=[TourStep(title="Title", text="Body")])
-
-        assert tour_id({"view": view}) == dotted_path(TourlessView)
-
-    def test_a_tour_put_on_the_request_by_hand_still_gets_an_id(self, rf, tour):
-        """A request carrying a tour but no recorded view does not raise."""
-        request = rf.get("/")
-        request.page_tour = tour
-
-        assert isinstance(tour_id({"request": request}), str)
-
-    def test_a_function_based_view_is_named_by_the_request(self, rf, tour):
-        """The view that ``with_tour`` recorded gives the id."""
-
-        @with_tour(tour)
-        def view(request):
-            return request
-
-        request = view(rf.get("/"))
-
-        assert tour_id({"request": request}) == (
-            f"{view.__module__}.{view.__wrapped__.__qualname__}"
-        )
+    return Tour(name="test", steps=[STEP])
 
 
 class TestTourForPage:
@@ -411,15 +177,19 @@ class TestTourForPage:
 
         assert Tour.for_page({"view": view}) is tour
 
-    def test_a_function_view_supplies_its_tour_through_the_request(self, rf, tour):
-        """The tour set by with_tour on the request is found."""
-        request = rf.get("/")
-        request.page_tour = tour
+    def test_a_function_view_supplies_its_tour_through_the_context(self, tour):
+        """The tour a view passes in its context under ``tour`` is found."""
+        assert Tour.for_page({"tour": tour}) is tour
 
-        assert Tour.for_page({"request": request}) is tour
+    def test_the_views_own_tour_comes_before_the_context(self, tour):
+        """A class-based view's attribute is its page's tour."""
+        view = type("View", (), {"tour": tour})()
+        other = Tour(name="other", steps=[STEP])
+
+        assert Tour.for_page({"view": view, "tour": other}) is tour
 
     def test_an_empty_context_has_no_tour(self):
-        """With no view and no request there is nothing to find."""
+        """With no view and no tour there is nothing to find."""
         assert Tour.for_page({}) is None
 
     def test_a_view_without_a_tour_has_no_tour(self, rf):
@@ -428,14 +198,23 @@ class TestTourForPage:
 
         assert Tour.for_page(context) is None
 
-    def test_a_tour_that_is_not_a_tour_is_ignored(self):
-        """Only a Tour counts as a tour."""
-        view = type("View", (), {"tour": "not a tour"})()
+    @pytest.mark.parametrize("key", ["view", "tour"])
+    def test_a_tour_that_is_not_a_tour_is_ignored(self, key):
+        """Only a Tour counts as a tour, so a ``tour`` of a site's own is left alone."""
+        value = "not a tour"
+        context = {key: type("View", (), {"tour": value})() if key == "view" else value}
 
-        assert Tour.for_page({"view": view}) is None
+        assert Tour.for_page(context) is None
+
+    def test_the_request_does_not_supply_a_tour(self, rf, tour):
+        """A tour is found from the page's own rendering, never from the request."""
+        request = rf.get("/")
+        request.page_tour = tour
+
+        assert Tour.for_page({"request": request}) is None
 
 
-OVERRIDDEN = "tests.views.OverriddenTourView"
+OVERRIDDEN = views.APP_TOUR.name
 REPLACEMENT = "tests.views.REPLACEMENT_TOUR"
 
 
@@ -459,7 +238,15 @@ class TestTourOverrides:
         """Replacing a tour does not rename it, so what was seen stays seen."""
         settings.PAGE_TOURS_OVERRIDES = {OVERRIDDEN: REPLACEMENT}
 
-        assert tour_id({"view": views.OverriddenTourView()}) == OVERRIDDEN
+        assert self.page_tour(views.OverriddenTourView).name == OVERRIDDEN
+
+    def test_the_tour_a_page_plays_is_not_declared_again(self, settings):
+        """Playing a replacement under the app tour's name is not a second tour."""
+        settings.PAGE_TOURS_OVERRIDES = {OVERRIDDEN: REPLACEMENT}
+
+        played = self.page_tour(views.OverriddenTourView)
+
+        assert all(tour is not played for tour in declared_tours()[OVERRIDDEN])
 
     def test_none_turns_the_tour_off(self, settings):
         """A page whose tour is set to None has no tour."""
@@ -483,31 +270,27 @@ class TestTourOverrides:
 
         assert tour is views.OWN_TOUR
 
-    def test_a_function_based_view_gets_the_change(self, rf, settings):
-        """A tour set with ``with_tour`` is replaced by its name."""
-        settings.PAGE_TOURS_OVERRIDES = {
-            "tests.views.overridden_function_view": REPLACEMENT
-        }
-        request = rf.get("/")
-        views.overridden_function_view(request)
+    def test_a_function_based_view_gets_the_change(self, settings):
+        """A tour passed in the context is replaced by its name."""
+        settings.PAGE_TOURS_OVERRIDES = {OVERRIDDEN: REPLACEMENT}
 
-        tour = Tour.for_page({"request": request})
+        tour = Tour.for_page({"tour": views.APP_TOUR})
 
         assert tour.steps == views.REPLACEMENT_TOUR.steps
 
-    def test_a_tour_given_through_as_view_gets_the_change(self, settings):
-        """The name is that of the class that declares the tour."""
+    def test_a_tour_given_through_as_view_is_changed_by_its_own_name(self, settings):
+        """The view a tour is given to does not name it, the tour does."""
         settings.PAGE_TOURS_OVERRIDES = {OVERRIDDEN: REPLACEMENT}
 
         tour = self.page_tour(views.OverriddenTourView, tour=views.OWN_TOUR)
 
-        assert tour.steps == views.REPLACEMENT_TOUR.steps
+        assert tour is views.OWN_TOUR
 
     def test_another_tour_is_untouched(self, settings):
         """A tour the setting does not name is returned as declared."""
         settings.PAGE_TOURS_OVERRIDES = {OVERRIDDEN: REPLACEMENT}
 
-        assert self.page_tour(views.UntouchedTourView) is views.APP_TOUR
+        assert self.page_tour(views.UntouchedTourView) is views.UNTOUCHED_TOUR
 
     def test_without_the_setting_the_declared_tour_is_returned(self):
         """A project that sets nothing sees every tour as declared."""
@@ -526,9 +309,9 @@ class TestTourOverrides:
     ):
         """The version played is the declared one plus the replacement's, less one."""
         settings.PAGE_TOURS_OVERRIDES = {OVERRIDDEN: path}
-        view = views.OverriddenTourView(tour=replace(views.APP_TOUR, version=declared))
+        declared_tour = replace(views.APP_TOUR, version=declared)
 
-        assert Tour.for_page({"view": view}).version == played
+        assert Tour.for_page({"tour": declared_tour}).version == played
 
     def test_the_declared_replacement_is_not_changed(self, settings):
         """Counting a version on builds a new tour and leaves the declared one."""
@@ -611,27 +394,35 @@ class TestTourOverridesRefused:
             tour_overrides()
 
 
-class TestWithTourName:
-    """A decorated view carries the name its tour is remembered by."""
+class TestDeclaredTours:
+    """The package records every tour by its name as it is declared."""
 
-    def test_a_view_wrapper_carries_the_name(self, tour):
-        """The path ``with_tour`` puts on the request is also on the wrapper."""
+    def test_a_declared_tour_is_recorded_under_its_name(self):
+        """A tour can be found by its name once it exists."""
+        tour = Tour(name="tests.recorded", steps=[STEP])
 
-        @with_tour(tour)
-        def view(request):
-            return request
+        assert declared_tours()["tests.recorded"] == [tour]
 
-        assert (
-            view.page_tour_view == f"{view.__module__}.{view.__wrapped__.__qualname__}"
-        )
+    def test_two_tours_with_one_name_are_both_recorded(self):
+        """Both are kept, so the check can report the clash."""
+        first = Tour(name="tests.twice", steps=[STEP])
+        second = Tour(name="tests.twice", steps=[STEP], version=2)
 
-    def test_an_async_view_wrapper_carries_the_name(self, tour):
-        """The wrapper of an async view carries it as well."""
+        recorded = declared_tours()["tests.twice"]
 
-        @with_tour(tour)
-        async def view(request):
-            return request
+        assert len(recorded) == 2
+        assert any(tour is first for tour in recorded)
+        assert any(tour is second for tour in recorded)
 
-        assert (
-            view.page_tour_view == f"{view.__module__}.{view.__wrapped__.__qualname__}"
+    def test_a_tour_that_no_longer_exists_is_forgotten(self):
+        """A tour nothing refers to any more is no longer declared."""
+        Tour(name="tests.forgotten", steps=[STEP])
+        gc.collect()
+
+        assert "tests.forgotten" not in declared_tours()
+
+    def test_the_tours_of_the_routed_views_are_declared(self):
+        """A tour declared in a view module is recorded when the module is imported."""
+        assert any(
+            tour is views.APP_TOUR for tour in declared_tours()[views.APP_TOUR.name]
         )

@@ -1,4 +1,8 @@
-"""The library app's pages, each declaring its own tour."""
+"""The library app's pages, each declaring its own tour.
+
+The app names each tour ``"library.<tour>"``, after its app label, so its names
+cannot clash with the tours of the project or of another app.
+"""
 
 from django.views.generic import TemplateView
 
@@ -10,6 +14,7 @@ class BookListView(TemplateView):
 
     template_name = "library/book_list.html"
     tour = Tour(
+        name="library.book-list",
         steps=[
             TourStep(
                 title="The library's books",
@@ -21,7 +26,7 @@ class BookListView(TemplateView):
                 text="Choose a title to see its page.",
                 element="#library-first-book",
             ),
-        ]
+        ],
     )
 
 
@@ -30,6 +35,7 @@ class BookDetailView(TemplateView):
 
     template_name = "library/book_detail.html"
     tour = Tour(
+        name="library.book",
         steps=[
             TourStep(
                 title="A book",
@@ -41,7 +47,7 @@ class BookDetailView(TemplateView):
                 text="Press the button to borrow the book.",
                 element="#library-borrow",
             ),
-        ]
+        ],
     )
 
 
@@ -50,11 +56,12 @@ class LoansView(TemplateView):
 
     template_name = "library/loans.html"
     tour = Tour(
+        name="library.loans",
         steps=[
             TourStep(
                 title="Your loans",
                 text="The books you have borrowed are listed here.",
                 element="#library-loans",
             ),
-        ]
+        ],
     )

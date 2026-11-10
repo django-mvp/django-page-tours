@@ -6,6 +6,7 @@ import pytest
 from django.urls import reverse
 from playwright.sync_api import expect
 
+from tests import views
 from tests.views import CLASS_TOUR, MARKUP_TITLE
 
 TITLE = ".driver-popover-title"
@@ -405,14 +406,14 @@ class TestSeenTour:
 
         assert keys == []
 
-    def test_the_seen_tour_is_remembered_under_the_views_name(self, page, live_server):
-        """The browser keeps one entry, named for the view that declares the tour."""
+    def test_the_seen_tour_is_remembered_under_its_name(self, page, live_server):
+        """The browser keeps one entry, under the name the tour is declared with."""
         page.goto(live_server.url + reverse("navigation-tour"))
         expect(page.locator(TITLE)).to_have_text("Step 1")
 
         keys = page.evaluate("Object.keys(localStorage)")
 
-        assert keys == ["page-tours:seen:tests.views.NavigationTourView"]
+        assert keys == [f"page-tours:seen:{views.NavigationTourView.tour.name}"]
 
 
 REPLAY = "#replay"
@@ -640,7 +641,7 @@ class TestTourWithTheKeyboard:
 class TestTourVersion:
     """A tour declared with a new version plays once more for a browser that saw it."""
 
-    SEEN_KEY = "page-tours:seen:tests.views.VersionedTourView"
+    SEEN_KEY = f"page-tours:seen:{views.VersionedTourView.tour.name}"
 
     def assert_does_not_play(self, page):
         """Assert that the page has loaded and shows no tour."""
@@ -768,7 +769,7 @@ class TestOnRequestTour:
 class TestOverriddenTourSeen:
     """A project's replacement of a tour does not bring back a tour already seen."""
 
-    OVERRIDDEN = "tests.views.OverriddenTourView"
+    OVERRIDDEN = views.APP_TOUR.name
 
     def replace_with(self, settings, replacement):
         """Replace the app's tour with a module constant of the tests."""
