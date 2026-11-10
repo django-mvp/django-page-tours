@@ -359,5 +359,3 @@ class TestOwnLookPage:
         page = client.get(reverse("overview")).content.decode()
 
         assert f'href="{reverse("own-look")}"' in page.split("</nav>", 1)[1]
-
-
