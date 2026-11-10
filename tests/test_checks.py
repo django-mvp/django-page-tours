@@ -3,6 +3,7 @@
 import copy
 
 import pytest
+from django.apps import apps
 from django.core import checks
 from django.core.checks import run_checks
 from django.core.management import call_command
@@ -188,3 +189,55 @@ class TestClassesCheck:
         assert {issue.level for issue in found} == {checks.WARNING}
         settings.PAGE_TOURS_CLASSES = {"footer": "x", "box": 3}
         call_command("check")
+
+    def test_an_apps_unknown_part_gives_w002_naming_the_part_and_the_app(
+        self, settings, monkeypatch
+    ):
+        """An entry from a design system is reported with the app it came from."""
+        settings.INSTALLED_APPS = [*settings.INSTALLED_APPS, "tests.design_system"]
+        config = apps.get_app_config("design_system")
+        monkeypatch.setattr(config, "page_tour_classes", {"footer": "x"})
+
+        found = self.issues(settings, {})
+
+        assert [issue.id for issue in found] == ["page_tours.W002"]
+        assert "footer" in found[0].msg
+        assert "design_system" in found[0].msg
+
+    def test_an_apps_bad_value_gives_w003_naming_the_part_and_the_app(
+        self, settings, monkeypatch
+    ):
+        """A value that is not a string is reported with the app it came from."""
+        settings.INSTALLED_APPS = [*settings.INSTALLED_APPS, "tests.design_system"]
+        config = apps.get_app_config("design_system")
+        monkeypatch.setattr(config, "page_tour_classes", {"box": ["card"]})
+
+        found = self.issues(settings, {})
+
+        assert [issue.id for issue in found] == ["page_tours.W003"]
+        assert "box" in found[0].msg
+        assert "design_system" in found[0].msg
+
+    @pytest.mark.parametrize("value", ["box", ["box"], 3, None])
+    def test_an_apps_attribute_that_is_not_a_dict_gives_w003_naming_the_app(
+        self, settings, monkeypatch, value
+    ):
+        """The attribute itself must be a dict."""
+        settings.INSTALLED_APPS = [*settings.INSTALLED_APPS, "tests.design_system"]
+        config = apps.get_app_config("design_system")
+        monkeypatch.setattr(config, "page_tour_classes", value)
+
+        found = self.issues(settings, {})
+
+        assert [issue.id for issue in found] == ["page_tours.W003"]
+        assert "design_system" in found[0].msg
+
+    def test_a_valid_design_system_gives_nothing(self, settings):
+        """An app with known parts and string values is fine."""
+        settings.INSTALLED_APPS = [
+            *settings.INSTALLED_APPS,
+            "tests.design_system",
+            "tests.other_design_system",
+        ]
+
+        assert self.issues(settings, {}) == []
