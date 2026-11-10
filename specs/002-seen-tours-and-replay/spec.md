@@ -7,7 +7,8 @@
 **Status**: Draft
 
 **Serves**: G2 (a tour plays once for each visitor and then stays out of their way, until they ask
-to see it again). Roadmap: R2.
+to see it again), and G9 (when a tour changes enough to matter, people who saw the old one see it
+again). Roadmap: R2, R7.
 
 **Input**: Issue #6, "Play a tour once per visitor, with a way to replay it". A visitor who has
 been shown a page's tour should not be shown it again on every visit, or they learn to close it
@@ -17,6 +18,11 @@ to see it again starts it from a replay control the site puts on the page, which
 where the page has a tour. A developer can also make a tour play only from that control, never by
 itself. Whether a tour has been seen is remembered in the visitor's browser, so the site keeps
 nothing about it.
+
+User Story 4 comes from issue #21, "Show a changed tour again to people who saw the old one". A
+developer who changes a tour enough that people should see it again marks it as a new version, and
+visitors who saw an earlier version are shown the new one by itself once. Small edits, such as a
+typo fix, do not bring the tour back.
 
 **Builds on**: issue #5, a tour declared in Python for a page and played when the page opens.
 This feature changes when that tour plays by itself and adds a second way to start it.
@@ -132,6 +138,40 @@ control, open its page in a fresh browser, and confirm it waits for the control.
 
 ---
 
+### User Story 4 - A developer marks a changed tour as a new version (Priority: P2)
+
+A developer rewrites a page's tour because the page has changed: a new section, a control that
+moved. They give the tour a new version number where they declare it. A visitor who saw an earlier
+version is shown the new one by itself the next time they open the page, once, and from then on it
+stays quiet again. A small edit to a tour, such as fixing a typo, keeps the version as it was, so
+nobody is shown the tour again for it.
+
+**Why this priority**: without it, everyone who saw a tour once never learns that it changed. It
+matters only once a site has tours people have seen, after User Stories 1 to 3.
+
+**Independent Test**: see a tour in a browser, change its version and confirm it plays by itself
+once more; reload and confirm it stays quiet; edit a step's text without changing the version and
+confirm it stays quiet.
+
+**Acceptance Scenarios**:
+
+1. **Given** a visitor has seen a tour, **When** the developer declares it with a new version and
+   the visitor opens the page again, **Then** the tour plays by itself.
+2. **Given** a visitor has been shown the new version, **When** they open the page again, **Then**
+   the tour does not play by itself.
+3. **Given** a visitor has seen a tour, **When** the developer changes a step's text without
+   changing the version, **Then** the tour does not play by itself.
+4. **Given** a visitor has never seen any version of a tour, **When** they open the page, **Then**
+   the tour plays by itself once, as in User Story 1.
+5. **Given** a developer declares a tour without a version, **When** a visitor who saw the tour
+   before versions existed opens the page, **Then** the tour does not play by itself.
+6. **Given** a tour marked to play only from the replay control, **When** the developer declares it
+   with a new version, **Then** it still does not play by itself.
+7. **Given** a developer declares a tour with a version that is not a whole number of 1 or more,
+   **When** the project loads, **Then** it is refused with an error naming the problem.
+
+---
+
 ### Edge Cases
 
 - The visitor clears their browser's site data: the tour has not been seen, so it plays by itself
@@ -141,8 +181,9 @@ control, open its page in a fresh browser, and confirm it waits for the control.
 - The replay control is placed more than once on one page: each one starts the page's tour.
 - The visitor uses the replay control while the tour is already playing: the tour starts again
   from its first step rather than playing twice over itself.
-- A tour is changed after a visitor has seen it: it stays seen. Showing a changed tour again is
-  roadmap item R7, not this feature.
+- A tour is changed after a visitor has seen it, without a new version: it stays seen.
+- A developer lowers a tour's version, for example by reverting a release: the visitor's browser
+  holds a different version from the one declared, so the tour plays by itself once more.
 
 ## Requirements *(mandatory)*
 
@@ -152,8 +193,8 @@ control, open its page in a fresh browser, and confirm it waits for the control.
   not seen it, unless the developer has marked it to play only from the replay control. (US1, US3)
 - **FR-002**: A tour MUST be recorded as seen in the browser as soon as it starts playing, so it
   counts as seen however it ends: finished, skipped, closed, or left by navigating away. (US1)
-- **FR-003**: A tour that has been seen in a browser MUST NOT play by itself again in that browser.
-  (US1)
+- **FR-003**: A tour that has been seen in a browser MUST NOT play by itself again in that browser
+  until it is declared with a new version. (US1, US4)
 - **FR-004**: Seen MUST be recorded for each tour separately, and belong to the tour rather than
   to the page's address, so one tour shown on many addresses is seen once. (US1)
 - **FR-005**: Seen MUST be kept in the visitor's browser only. The package MUST add no database
@@ -180,12 +221,25 @@ control, open its page in a fresh browser, and confirm it waits for the control.
   exactly as usable as it would be without a tour (Article XIII). (US1, US2)
 - **FR-015**: The documentation site MUST describe how a tour plays once, how to place the replay
   control, and how to make a tour play only from it, and the demo project MUST show a page whose
-  tour plays once with a replay control and a page whose tour plays only from the control. (US3)
+  tour plays once with a replay control and a page whose tour plays only from the control. It
+  MUST also describe how to show a changed tour again, and the demo MUST show a tour at a new
+  version being played once to a browser that saw the earlier one. (US3, US4)
+- **FR-016**: A developer MUST be able to give a tour a version, where they declare it. A tour
+  declared without one has version 1. (US4)
+- **FR-017**: A tour whose browser record holds a version other than the declared one MUST count
+  as not seen, so it plays by itself once and is then seen at the declared version. (US4)
+- **FR-018**: The version MUST be set by the developer only, and never derived from the tour's
+  steps, so an edit that keeps the version brings nobody the tour again. (US4)
+- **FR-019**: A tour seen before versions existed MUST count as seen at version 1. (US4)
+- **FR-020**: A version that is not a whole number of 1 or more MUST be refused where the tour is
+  declared, with `ImproperlyConfigured`. (US4)
 
 ### Key Entities
 
-- **Seen tour**: the browser's record that one tour has played there. Identified by the tour,
-  held only in that browser, with nothing on the server.
+- **Seen tour**: the browser's record that one tour has played there, and at which version.
+  Identified by the tour, held only in that browser, with nothing on the server.
+- **Tour version**: a whole number the developer gives a tour, 1 unless they say otherwise. A new
+  number marks a change that people who saw the tour should see.
 - **Replay control**: an element the developer places on the page that starts the page's tour on
   request.
 
@@ -207,12 +261,21 @@ control, open its page in a fresh browser, and confirm it waits for the control.
   own (Article XIV), and the developer gives it its own content and classes. Integrated into FR-011
   and US3 scenario 2.
 
+### Session 2026-11-10
+
+- Q: Is a tour's version worked out from its content, or set by the developer? → A: Set by the
+  developer. A version worked out from the steps would bring the tour back for a typo fix, which
+  is exactly what must not happen. Integrated into FR-018 and US4 scenario 3.
+- Q: A visitor saw version 1 and the tour is now at version 3: is it shown once or twice? → A:
+  Once. The browser holds the version it last played, and any other number counts as not seen.
+  Integrated into FR-017 and US4 scenarios 1 and 2.
+
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
-- **SC-001**: In one browser, a tour that plays by itself does so at most once, across any number
-  of visits to its page and to other pages showing the same tour.
+- **SC-001**: In one browser, a tour that plays by itself does so at most once for each version,
+  across any number of visits to its page and to other pages showing the same tour.
 - **SC-002**: On every page with a tour and a placed replay control, a visitor starts the tour with
   one action, and on every page without a tour no replay control is shown.
 - **SC-003**: The feature adds no database tables and no server-side record of any visitor.
@@ -220,6 +283,8 @@ control, open its page in a fresh browser, and confirm it waits for the control.
   same page without one.
 - **SC-005**: A developer makes a tour play only on request by changing its declaration alone, and
   places the replay control by editing only their own templates.
+- **SC-006**: A developer brings a changed tour back to every visitor who saw it by changing its
+  declaration alone, and each of those visitors is shown it by itself at most once per version.
 
 ## Assumptions
 
@@ -229,7 +294,6 @@ control, open its page in a fresh browser, and confirm it waits for the control.
   is marked to play only from the replay control.
 - Seen state that follows a signed-in person across browsers is out of scope. A new browser or
   device sees the tour again.
-- Showing a changed tour again to people who saw the old one is roadmap item R7, out of scope.
 - Where the replay control sits in a particular design system's layout is that design system's
   choice, not this package's.
 - Translating the control's own text is roadmap item R4. The control's text is translatable from
