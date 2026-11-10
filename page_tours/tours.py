@@ -20,7 +20,12 @@ _declared: dict[str, list[weakref.ref["Tour"]]] = {}
 
 
 def _forget(name: str, ref: weakref.ref["Tour"]) -> None:
-    """Drop the record of a collected tour, and its name once no tour has it."""
+    """Drop the record of a collected tour, and its name once no tour has it.
+
+    Args:
+        name: The name the tour was declared with.
+        ref: The weak reference to the tour, which the collector has cleared.
+    """
     refs = _declared.get(name, [])
     if ref in refs:
         refs.remove(ref)
