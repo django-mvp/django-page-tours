@@ -100,3 +100,43 @@ project's change" in the meaning given under Key Entities.
 
 `none`: the feature puts nothing new in front of a visitor. A replaced tour is drawn exactly as
 any tour is.
+
+## D11 — The project's change is one setting, `PAGE_TOURS_OVERRIDES`
+
+It maps a tour's name to the dotted path of a replacement, or to `None` to turn the tour off,
+the same shape as Django's `MIGRATION_MODULES`. A registry filled from the project's code was
+weighed and left out: it needs a place and an order to be called from, and a test has to reset
+it. The replacement is named by a path because a replacement that reuses the app's steps imports
+the app's views, which settings cannot (`research.md`, "Where the project's change lives").
+Settles D8.
+
+**ADR:** to be considered at S5, with D3
+
+## D12 — A replaced tour plays at the replacement's own version
+
+The page emits the replacement in place of the app's tour, so the browser compares the
+replacement's version. An app release that raises its own tour's version does not bring back a
+project's replacement. The guide tells the project to give a replacement the version the app's
+tour had, written as a number, so visitors who saw the app's tour do not see it again by itself
+(FR-008). Inheriting the app's version was left out because it would undo D4 on every app release
+that raised it (`research.md`, "How a version meets a replacement"). Settles D4's open question.
+
+**ADR:** to be considered at S5, with D3
+
+## D13 — Every replacement is imported when the project starts
+
+`PageToursConfig.ready` resolves every path in the setting, so a path that does not import, a
+path that names something other than a tour, and a replacement that is not a valid tour all fail
+when the project starts, never on a visitor's page (FR-010). The lookup on each page reads the
+setting again, so a test that changes it sees the change at once.
+
+**ADR:** none — follows D7 and the existing rule
+
+## D14 — The stale-change check walks the URLconf
+
+`page_tours.W002` lists the tour names of every view the root URLconf routes, by the rule
+`tour_id` applies, and warns once per name in the setting that is not among them. A tour declared
+on a view no URL routes cannot play, so a change naming it is stale in the same sense. `with_tour`
+records its name on the wrapper so a function-based view's tour is found without calling it.
+
+**ADR:** none — local to this feature, nothing downstream inherits it
