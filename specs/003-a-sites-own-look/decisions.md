@@ -160,3 +160,11 @@ hook that throws ends the tour from a microtask, because ending it inside the ho
 add its markup to the page afterwards.
 
 **ADR:** none — local to the starter script
+
+## D19 — The replay test's race is fixed in the test, by the orchestrator
+
+The parts check read the highlight as soon as the step's title showed, and on a slower machine
+the overlay is not there yet. The check now waits for it. A one-line test change with no design
+content, so it was made directly rather than dispatched.
+
+**ADR:** none — local to one test helper

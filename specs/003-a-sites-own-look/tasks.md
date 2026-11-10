@@ -85,22 +85,24 @@ take effect on the parts they name and on no other part.
 
 ### Group 4 — review fixes
 
-- [ ] T013 [US1] The highlight's dimming is moved onto the overlay as `fill-opacity`, not
+- [x] T013 [US1] The highlight's dimming is moved onto the overlay as `fill-opacity`, not
   `opacity`, so Driver.js's fade-in on the overlay multiplies into it as before and never shows
   the overlay at full strength. A site sets the strength with `fill-opacity` or an alpha in
   `fill`. Browser test: sampled through the fade, the overlay's effective dimming never exceeds
   Driver.js's 0.7; it goes red with the value put back as `opacity` on the overlay. The styling
   page and the demo say `fill` and `fill-opacity`, and that a `background` on the highlight is
   drawn across the whole page.
-- [ ] T014 [US1] The test that the package's stylesheet comes first reads a page whose own
+- [x] T014 [US1] The test that the package's stylesheet comes first reads a page whose own
   `<style>` sits before the tag, and asserts the package's link precedes it. It goes red with the
   move removed from the starter script.
-- [ ] T015 [US1] The demo test reads the demo's own `PAGE_TOURS_CLASSES` and asserts its classes
+- [x] T015 [US1] The demo test reads the demo's own `PAGE_TOURS_CLASSES` and asserts its classes
   reach the payload. It goes red with the entry removed from `demo/settings.py`.
-- [ ] T016 [US1] The failure test runs for a failure on the title and on the highlight. The
+- [x] T016 [US1] The failure test runs for a failure on the title and on the highlight. The
   highlight case goes red with the guard removed from the overlay watcher.
-- [ ] T017 [US1] The tests of the package's own stylesheet keep only that it is found and linked,
+- [x] T017 [US1] The tests of the package's own stylesheet keep only that it is found and linked,
   in `tests/test_static/test_page_tours_css.py`. No bare `_` name in the new tests.
+- [x] T018 [US1] The parts check in the browser tests waits for the highlight before it reads
+  the parts, because Driver.js adds the overlay a moment after the step's box.
 
 ## Phase 2: User Story 2 — A design-system author styles tours once for every site built on it (P2)
 

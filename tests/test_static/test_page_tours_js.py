@@ -990,6 +990,8 @@ class TestPartNames:
 
     def assert_parts_named(self, page):
         """Assert every part on the page carries its name and configured class."""
+        # Driver.js adds the overlay a moment after the step's box.
+        expect(page.locator(PART_SELECTORS["highlight"])).to_have_count(1)
         for part, selector in PART_SELECTORS.items():
             tokens = classes_of(page, selector)
             assert f"page-tour-{part}" in tokens, part
