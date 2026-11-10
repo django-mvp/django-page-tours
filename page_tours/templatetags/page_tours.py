@@ -5,6 +5,7 @@ from django.forms.utils import flatatt
 from django.utils.html import escape, format_html
 from django.utils.translation import gettext_lazy, pgettext
 
+from page_tours.parts import TourParts
 from page_tours.tours import Tour, tour_id
 
 register = template.Library()
@@ -22,8 +23,9 @@ def page_tour(context):
     Returns:
         The context for ``page_tours/page_tour.html``: the tour's id and
         version, whether it plays by itself, its steps in the form Driver.js
-        takes and the labels of its controls in the active language, or an empty
-        payload when the page has no tour.
+        takes, the labels of its controls in the active language and the classes
+        each part of a shown step carries, or an empty payload when the page has
+        no tour.
     """
     tour = Tour.for_page(context)
     if tour is None:
@@ -42,6 +44,7 @@ def page_tour(context):
                 "done": escape(pgettext("page tour control", "Done")),
                 "close": pgettext("page tour control", "Close"),
             },
+            "parts": TourParts.classes(),
         }
     }
 
