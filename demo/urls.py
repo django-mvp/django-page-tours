@@ -22,12 +22,12 @@ urlpatterns = [
     path("on-request/", OnRequestView.as_view(), name="on-request"),
     path(
         "changed-tour/",
-        ChangedTourView.as_view(tour=FIRST_VERSION),
+        ChangedTourView.as_view(extra_context={"tour": FIRST_VERSION}),
         name="changed-tour",
     ),
     path(
         "changed-tour/new-version/",
-        ChangedTourView.as_view(tour=NEW_VERSION),
+        ChangedTourView.as_view(extra_context={"tour": NEW_VERSION}),
         name="changed-tour-new-version",
     ),
     # A reusable app ships its URLs and the project includes them.

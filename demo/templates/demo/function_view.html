@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
   <h1>A tour from a function-based view</h1>
-  <p id="demo-function-view">A function renders this page. It passes the tour to the template in its context, under <code>tour</code>, and the tag in the base template plays it.</p>
+  <p id="demo-function-view">A function renders this page. It passes the tour to the template in its context, under <code>tour</code>, and the page renders it with <code>{% verbatim %}{{ tour }}{% endverbatim %}</code>.</p>
+  {{ tour }}
 {% endblock content %}

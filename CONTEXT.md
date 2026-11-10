@@ -12,6 +12,10 @@ A short, guided walk through one page of a site, made of an ordered list of
 developer, next to the view that renders the page, with a [name](#tour-name), and shown in the
 browser by Driver.js.
 
+The view puts the tour in the page's template context under `tour`, like any other value, and the
+page's template outputs it with `{{ tour }}`. A tour renders itself as the element the package's
+script plays it from. Nothing finds the tour for the page. A page has one tour.
+
 _Avoid:_ walkthrough, guide, onboarding (onboarding is the wider experience a tour may be part of).
 
 ### Tour step

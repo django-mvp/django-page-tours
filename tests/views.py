@@ -52,19 +52,19 @@ class ClassTourView(TemplateView):
     """A class-based page with a tour."""
 
     template_name = "test_page.html"
-    tour = CLASS_TOUR
+    extra_context = {"tour": CLASS_TOUR}
 
 
 class MarkupTourView(ClassTourView):
     """A page whose step carries markup characters."""
 
-    tour = MARKUP_TOUR
+    extra_context = {"tour": MARKUP_TOUR}
 
 
 class TranslatedTourView(ClassTourView):
     """A page whose step title is translated."""
 
-    tour = TRANSLATED_TOUR
+    extra_context = {"tour": TRANSLATED_TOUR}
 
 
 class NoTourView(TemplateView):
@@ -94,10 +94,9 @@ def missing_function_tour_view(request):
 
 
 class ControlsTourView(TemplateView):
-    """A page with controls of its own, whose tour is set per URL."""
+    """A page with controls of its own, whose tour each subclass sets."""
 
     template_name = "test_controls.html"
-    tour = None
     fragile = ""
 
     def get_context_data(self, **kwargs):
@@ -107,10 +106,13 @@ class ControlsTourView(TemplateView):
         return context
 
 
+NAVIGATION_TOUR = steps_for("tests.navigation-tour", "h1", "#control", "#output")
+
+
 class NavigationTourView(ControlsTourView):
     """Three steps, each attached to an element."""
 
-    tour = steps_for("tests.navigation-tour", "h1", "#control", "#output")
+    extra_context = {"tour": NAVIGATION_TOUR}
 
 
 class GermanNavigationTourView(NavigationTourView):
@@ -127,43 +129,55 @@ class GermanNavigationTourView(NavigationTourView):
 class MissingFirstTourView(ControlsTourView):
     """The first step's element is not on the page."""
 
-    tour = steps_for("tests.missing-first-tour", "#absent", "h1", "#control")
+    extra_context = {
+        "tour": steps_for("tests.missing-first-tour", "#absent", "h1", "#control")
+    }
 
 
 class MissingMiddleTourView(ControlsTourView):
     """The second step's element is not on the page."""
 
-    tour = steps_for("tests.missing-middle-tour", "h1", "#absent", "#control")
+    extra_context = {
+        "tour": steps_for("tests.missing-middle-tour", "h1", "#absent", "#control")
+    }
 
 
 class HiddenMiddleTourView(ControlsTourView):
     """The second step's element carries the hidden attribute."""
 
-    tour = steps_for("tests.hidden-middle-tour", "h1", "#secret", "#control")
+    extra_context = {
+        "tour": steps_for("tests.hidden-middle-tour", "h1", "#secret", "#control")
+    }
 
 
 class InvalidSelectorTourView(ControlsTourView):
     """The second step's selector is not valid CSS."""
 
-    tour = steps_for("tests.invalid-selector-tour", "h1", "[[", "#control")
+    extra_context = {
+        "tour": steps_for("tests.invalid-selector-tour", "h1", "[[", "#control")
+    }
 
 
 class NothingShowableTourView(ControlsTourView):
     """Every step names an element that is not on the page."""
 
-    tour = steps_for("tests.nothing-showable-tour", "#absent", "#also-absent")
+    extra_context = {
+        "tour": steps_for("tests.nothing-showable-tour", "#absent", "#also-absent")
+    }
 
 
 class TwinTourView(ControlsTourView):
     """A step whose selector matches two elements."""
 
-    tour = steps_for("tests.twin-tour", ".twin", "#control")
+    extra_context = {"tour": steps_for("tests.twin-tour", ".twin", "#control")}
 
 
 class FragileTourView(ControlsTourView):
     """The second step's element throws when Driver.js measures it."""
 
-    tour = steps_for("tests.fragile-tour", "h1", "#output", "#control")
+    extra_context = {
+        "tour": steps_for("tests.fragile-tour", "h1", "#output", "#control")
+    }
     fragile = "output"
 
 
@@ -171,7 +185,7 @@ class BareTourView(TemplateView):
     """A page with a tour, for comparing with the same page without one."""
 
     template_name = "test_controls.html"
-    tour = steps_for("tests.bare-tour", "h1", "#control")
+    extra_context = {"tour": steps_for("tests.bare-tour", "h1", "#control")}
 
 
 class NoTourControlsView(TemplateView):
@@ -184,25 +198,29 @@ class ReplayView(TemplateView):
     """A page with a tour and a replay control carrying attributes of its own."""
 
     template_name = "test_replay.html"
-    tour = steps_for("tests.replay", "h1", "#control")
+    extra_context = {"tour": steps_for("tests.replay", "h1", "#control")}
 
 
 class ReplayNoTourView(ReplayView):
     """The same page with no tour."""
 
-    tour = None
+    extra_context = None
 
 
 class ReplayPointedAtView(ReplayView):
     """The second step points at the replay control."""
 
-    tour = steps_for("tests.replay-pointed-at", "h1", "#replay", "#control")
+    extra_context = {
+        "tour": steps_for("tests.replay-pointed-at", "h1", "#replay", "#control")
+    }
 
 
 class ReplayNothingShowableView(ReplayView):
     """Every step names an element that is not on the page."""
 
-    tour = steps_for("tests.replay-nothing-showable", "#absent", "#also-absent")
+    extra_context = {
+        "tour": steps_for("tests.replay-nothing-showable", "#absent", "#also-absent")
+    }
 
 
 class ReplayTwiceView(ReplayView):
@@ -230,18 +248,19 @@ def on_request_tour():
 class OnRequestView(ReplayView):
     """A page whose tour plays only when the replay control is used."""
 
-    tour = on_request_tour()
+    extra_context = {"tour": on_request_tour()}
+
+
+VERSIONED_TOUR = steps_for("tests.versioned", "h1", "#control")
 
 
 class VersionedTourView(ControlsTourView):
     """A page whose tour is routed at several versions, all seen as one tour."""
 
-    tour = steps_for("tests.versioned", "h1", "#control")
+    extra_context = {"tour": VERSIONED_TOUR}
 
 
-VERSION_TWO = Tour(
-    name="tests.versioned", steps=VersionedTourView.tour.steps, version=2
-)
+VERSION_TWO = Tour(name="tests.versioned", steps=VERSIONED_TOUR.steps, version=2)
 VERSION_TWO_EDITED = Tour(
     name="tests.versioned",
     steps=[TourStep(title="Step 1", text="Text, with a typo fixed.", element="h1")],
@@ -259,14 +278,14 @@ class OnRequestNoControlView(TemplateView):
     """A page whose tour plays only on request, with no control placed."""
 
     template_name = "test_controls.html"
-    tour = on_request_tour()
+    extra_context = {"tour": on_request_tour()}
 
 
 class ControlInBaseView(TemplateView):
     """A page with a tour, extending a base template that places the control."""
 
     template_name = "test_control_in_base_page.html"
-    tour = steps_for("tests.control-in-base", "h1", "#control")
+    extra_context = {"tour": steps_for("tests.control-in-base", "h1", "#control")}
 
 
 class ControlInBaseNoTourView(TemplateView):
@@ -314,29 +333,19 @@ NOT_A_TOUR = "not a tour"
 class OverriddenTourView(ReplayView):
     """A page of an installed app, whose tour a project changes."""
 
-    tour = APP_TOUR
-
-
-class OverriddenTourSubclassView(OverriddenTourView):
-    """A page that sets no tour and so shares the tour of the page it extends."""
-
-
-class OverriddenTourOwnView(OverriddenTourView):
-    """A page that sets a tour of its own, which is another tour."""
-
-    tour = OWN_TOUR
+    extra_context = {"tour": APP_TOUR}
 
 
 class OffTourView(ReplayView):
     """A page of an installed app, whose tour a project turns off."""
 
-    tour = OFF_TOUR
+    extra_context = {"tour": OFF_TOUR}
 
 
 class UntouchedTourView(ReplayView):
     """A page of an installed app whose tour a project leaves alone."""
 
-    tour = UNTOUCHED_TOUR
+    extra_context = {"tour": UNTOUCHED_TOUR}
 
 
 def overridden_function_view(request):
@@ -348,24 +357,24 @@ class PartsTourView(TemplateView):
     """A tour whose first and last steps are attached and whose middle one is not."""
 
     template_name = "test_page.html"
-    tour = steps_for("tests.parts-tour", "h1", "", "#control")
+    extra_context = {"tour": steps_for("tests.parts-tour", "h1", "", "#control")}
 
 
 class StyleBeforeView(TemplateView):
-    """A page whose own style sits before the tag."""
+    """A page whose own style sits before the package's stylesheet."""
 
     template_name = "test_style_before.html"
-    tour = steps_for("tests.style-before", "h1", "", "#control")
+    extra_context = {"tour": steps_for("tests.style-before", "h1", "", "#control")}
 
 
 class StyleAfterView(StyleBeforeView):
-    """A page whose own style sits after the tag."""
+    """A page whose own style sits after the package's stylesheet."""
 
     template_name = "test_style_after.html"
 
 
 class LayerBeforeView(StyleBeforeView):
-    """A page whose own layered style sits before the tag."""
+    """A page whose own layered style sits before the package's stylesheet."""
 
     template_name = "test_layer_before.html"
 
@@ -374,4 +383,18 @@ class DesignSystemView(TemplateView):
     """A page whose base template loads a design system's stylesheet."""
 
     template_name = "test_design_system_page.html"
-    tour = steps_for("tests.design-system", "h1", "#control")
+    extra_context = {"tour": steps_for("tests.design-system", "h1", "#control")}
+
+
+class ScriptsNotDeferredView(TemplateView):
+    """A page loading the package's scripts at the top of the head, without defer."""
+
+    template_name = "test_scripts_not_deferred.html"
+    extra_context = {"tour": steps_for("tests.not-deferred", "h1", "#control")}
+
+
+class TourTwiceView(TemplateView):
+    """A page whose template renders its tour twice."""
+
+    template_name = "test_tour_twice.html"
+    extra_context = {"tour": steps_for("tests.rendered-twice", "h1", "#control")}

@@ -250,6 +250,37 @@ class TestTourFailure:
 VISIBLE_ELEMENTS = "body *:not(script):not(link):not(style)"
 
 
+class TestWhereTheTourSits:
+    """The tour plays wherever the page renders it and however the scripts load."""
+
+    def test_scripts_loaded_without_defer_play_a_tour_rendered_below_them(
+        self, page, live_server
+    ):
+        """The script waits for the page to be parsed before it looks for the tour."""
+        page.goto(live_server.url + reverse("not-deferred"))
+
+        expect(page.locator(TITLE)).to_have_text("Step 1")
+
+    def test_a_tour_rendered_twice_plays_once_and_the_page_works(
+        self, page, live_server
+    ):
+        """The first element is played; the second breaks nothing."""
+        problems = []
+        page.on("pageerror", lambda error: problems.append(str(error)))
+        page.goto(live_server.url + reverse("tour-twice"))
+        expect(page.locator(TITLE)).to_have_text("Step 1")
+        expect(page.locator(".driver-popover")).to_have_count(1)
+
+        page.click(NEXT)
+        page.click(NEXT)
+
+        expect(page.locator(".driver-popover")).to_have_count(0)
+        assert_no_driver_markup(page)
+        page.click("#control")
+        expect(page.locator("#output")).to_have_text("worked")
+        assert problems == []
+
+
 class TestTourWithoutJavaScript:
     """With JavaScript off, a page with a tour looks like the page without one."""
 
@@ -413,7 +444,7 @@ class TestSeenTour:
 
         keys = page.evaluate("Object.keys(localStorage)")
 
-        assert keys == [f"page-tours:seen:{views.NavigationTourView.tour.name}"]
+        assert keys == [f"page-tours:seen:{views.NAVIGATION_TOUR.name}"]
 
 
 REPLAY = "#replay"
@@ -657,7 +688,7 @@ class TestTourWithTheKeyboard:
 class TestTourVersion:
     """A tour declared with a new version plays once more for a browser that saw it."""
 
-    SEEN_KEY = f"page-tours:seen:{views.VersionedTourView.tour.name}"
+    SEEN_KEY = f"page-tours:seen:{views.VERSIONED_TOUR.name}"
 
     def assert_does_not_play(self, page):
         """Assert that the page has loaded and shows no tour."""
@@ -944,13 +975,13 @@ class TestOwnLook:
     def test_the_packages_link_is_first_in_the_head_once_the_tour_shows(
         self, page, live_server
     ):
-        """A style the site placed before the tag ends up after the package's link."""
+        """A style the site placed before the package's link ends up after it."""
         page.goto(live_server.url + reverse("style-before"))
         expect(page.locator(TITLE)).to_be_visible()
 
         link_is_first = page.evaluate(
             """() => {
-                const link = document.querySelector("link[data-page-tour-stylesheet]");
+                const link = document.querySelector('link[href*="page-tours.css"]');
                 const style = document.head.querySelector("style");
                 return Boolean(
                     link.compareDocumentPosition(style) &

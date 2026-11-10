@@ -1,15 +1,21 @@
 """Tests for page_tours.tours."""
 
 import gc
+import json
+import re
 from dataclasses import replace
 
 import pytest
 from django.core.exceptions import ImproperlyConfigured
+from django.template import Context, Template
+from django.urls import reverse
 from django.utils import translation
 from django.utils.html import escape
+from django.utils.safestring import SafeString
 from django.utils.translation import gettext, gettext_lazy
 
 from page_tours import tours as tours_module
+from page_tours.parts import TourParts
 from page_tours.tours import (
     Tour,
     TourStep,
@@ -18,6 +24,7 @@ from page_tours.tours import (
     tour_overrides,
 )
 from tests import views
+from tests.views import MARKUP_TITLE
 
 STEP = TourStep(title="Title", text="Body")
 
@@ -163,56 +170,205 @@ class TestTourAsDriverSteps:
         assert step["title"] == expected
 
 
-@pytest.fixture
-def tour():
-    """Return a valid one-step tour."""
-    return Tour(name="test", steps=[STEP])
+STEPS_SCRIPT = re.compile(
+    r'<script id="page-tour-steps" type="application/json">(.*?)</script>', re.DOTALL
+)
 
 
-class TestTourForPage:
-    """Finding the tour of the page being rendered."""
+def payload_of(html):
+    """Return the payload a rendered tour carries, parsed from its script element."""
+    match = STEPS_SCRIPT.fullmatch(str(html))
+    assert match is not None
+    return json.loads(match.group(1))
 
-    def test_a_class_based_view_supplies_its_tour(self, tour):
-        """The tour attribute of the view in the context is found."""
-        view = type("View", (), {"tour": tour})()
 
-        assert Tour.for_page({"view": view}) is tour
+def page_payload(response):
+    """Return the payload a page carries, parsed from its script element."""
+    match = STEPS_SCRIPT.search(response.content.decode())
+    assert match is not None
+    return json.loads(match.group(1))
 
-    def test_a_function_view_supplies_its_tour_through_the_context(self, tour):
-        """The tour a view passes in its context under ``tour`` is found."""
-        assert Tour.for_page({"tour": tour}) is tour
 
-    def test_the_views_own_tour_comes_before_the_context(self, tour):
-        """A class-based view's attribute is its page's tour."""
-        view = type("View", (), {"tour": tour})()
-        other = Tour(name="other", steps=[STEP])
+def page_steps(response):
+    """Return the steps a page carries."""
+    return page_payload(response)["steps"]
 
-        assert Tour.for_page({"view": view, "tour": other}) is tour
 
-    def test_an_empty_context_has_no_tour(self):
-        """With no view and no tour there is nothing to find."""
-        assert Tour.for_page({}) is None
+class TestTourRendering:
+    """A tour renders itself as the element the package's script plays it from."""
 
-    def test_a_view_without_a_tour_has_no_tour(self, rf):
-        """A view that declares no tour yields none."""
-        context = {"view": object(), "request": rf.get("/")}
+    def test_in_a_template_it_renders_its_script_element_unescaped(self):
+        """``{{ tour }}`` outputs the element itself, not escaped text."""
+        rendered = Template("{{ tour }}").render(Context({"tour": views.CLASS_TOUR}))
 
-        assert Tour.for_page(context) is None
+        assert payload_of(rendered)["id"] == views.CLASS_TOUR.name
 
-    @pytest.mark.parametrize("key", ["view", "tour"])
-    def test_a_tour_that_is_not_a_tour_is_ignored(self, key):
-        """Only a Tour counts as a tour, so a ``tour`` of a site's own is left alone."""
-        value = "not a tour"
-        context = {key: type("View", (), {"tour": value})() if key == "view" else value}
+    @pytest.mark.parametrize("autoescape", [True, False])
+    def test_it_renders_the_same_with_and_without_autoescaping(self, autoescape):
+        """Turning autoescaping off changes nothing."""
+        context = Context({"tour": views.CLASS_TOUR}, autoescape=autoescape)
 
-        assert Tour.for_page(context) is None
+        rendered = Template("{{ tour }}").render(context)
 
-    def test_the_request_does_not_supply_a_tour(self, rf, tour):
-        """A tour is found from the page's own rendering, never from the request."""
-        request = rf.get("/")
-        request.page_tour = tour
+        assert rendered == views.CLASS_TOUR.__html__()
 
-        assert Tour.for_page({"request": request}) is None
+    def test_str_is_the_same_safe_html(self):
+        """``str()`` returns what ``__html__`` returns, marked safe."""
+        rendered = str(views.CLASS_TOUR)
+
+        assert rendered == views.CLASS_TOUR.__html__()
+        assert isinstance(rendered, SafeString)
+
+    def test_the_payload_carries_exactly_its_id_version_autoplay_steps_and_controls(
+        self,
+    ):
+        """Nothing else reaches the browser."""
+        payload = payload_of(views.CLASS_TOUR)
+
+        assert set(payload) == {
+            "id",
+            "version",
+            "autoplay",
+            "steps",
+            "controls",
+            "parts",
+        }
+
+    def test_the_payload_carries_the_tours_name_version_and_autoplay(self):
+        """The browser remembers the tour by its name, at its version."""
+        payload = payload_of(views.ON_REQUEST_VERSION_TWO)
+
+        assert payload["id"] == views.ON_REQUEST_VERSION_TWO.name
+        assert payload["version"] == 2
+        assert payload["autoplay"] is False
+
+    def test_a_tour_declared_with_neither_plays_by_itself_at_version_one(self):
+        """``autoplay`` is true and ``version`` is 1 for a tour that does not say."""
+        payload = payload_of(views.CLASS_TOUR)
+
+        assert payload["autoplay"] is True
+        assert payload["version"] == 1
+
+    def test_the_steps_are_its_steps_as_driverjs_takes_them(self):
+        """The steps arrive in the declared order, in Driver.js's form."""
+        assert payload_of(views.CLASS_TOUR)["steps"] == (
+            views.CLASS_TOUR.as_driver_steps()
+        )
+
+    def test_markup_characters_in_a_step_arrive_escaped(self):
+        """The step is plain text: its markup characters reach the page escaped."""
+        rendered = str(views.MARKUP_TOUR)
+
+        assert payload_of(rendered)["steps"][0]["title"] == escape(MARKUP_TITLE)
+        assert MARKUP_TITLE not in rendered
+
+    def test_a_translated_step_and_the_controls_are_in_the_active_language(self):
+        """The tour is converted when it renders, in the language active then."""
+        with translation.override("de"):
+            payload = payload_of(views.TRANSLATED_TOUR)
+            expected = str(gettext("Yes"))
+
+        assert payload["steps"][0]["title"] == expected != "Yes"
+        assert payload["controls"]["previous"] == "Zurück"
+        assert payload["controls"]["done"] == "Fertig"
+
+    def test_the_payload_carries_every_part_with_its_name(self):
+        """Each part is a key, and its documented name is the first class."""
+        assert payload_of(views.CLASS_TOUR)["parts"] == {
+            part: [f"page-tour-{part}"] for part in TourParts.parts
+        }
+
+    def test_a_configured_value_is_carried_after_the_name(self, settings):
+        """The classes a site sets for a part reach the browser."""
+        settings.PAGE_TOURS_CLASSES = {"box": "card shadow"}
+
+        payload = payload_of(views.CLASS_TOUR)
+
+        assert payload["parts"]["box"] == ["page-tour-box", "card", "shadow"]
+
+    def test_a_value_holding_markup_stays_inside_the_script_element(self, settings):
+        """A value cannot close the element or add one to the page."""
+        value = '"><script>alert(1)</script>'
+        settings.PAGE_TOURS_CLASSES = {"box": value}
+
+        rendered = str(views.CLASS_TOUR)
+
+        assert len(STEPS_SCRIPT.findall(rendered)) == 1
+        assert "<script>alert(1)</script>" not in rendered
+        assert payload_of(rendered)["parts"]["box"] == ["page-tour-box", *value.split()]
+
+    @pytest.mark.parametrize("value", [None, "box", 3, {"box": 3, "footer": "x"}])
+    def test_a_tour_renders_with_a_wrong_setting(self, settings, value):
+        """A styling mistake never stops a tour from rendering."""
+        settings.PAGE_TOURS_CLASSES = value
+
+        assert payload_of(views.CLASS_TOUR)["parts"]["box"] == ["page-tour-box"]
+
+    def test_the_payload_does_not_carry_where_the_tour_is_declared(self):
+        """Where the tour lives in the code stays out of the page source."""
+        assert "tests.views" not in str(views.CLASS_TOUR)
+
+
+class TestTourOnAPage:
+    """A view puts its tour in the context, and the page renders it."""
+
+    @pytest.mark.parametrize(
+        ("url", "tour"),
+        [("class-tour", views.CLASS_TOUR), ("function-tour", views.FUNCTION_TOUR)],
+        ids=["class-based view", "function-based view"],
+    )
+    def test_the_page_carries_its_views_tour(self, client, url, tour):
+        """A class-based view's ``extra_context`` and a function's context both work."""
+        response = client.get(reverse(url))
+
+        assert page_payload(response) == payload_of(tour)
+
+    def test_a_page_with_no_tour_carries_no_steps(self, client):
+        """``{{ tour }}`` with nothing in the context renders nothing."""
+        response = client.get(reverse("no-tour"))
+
+        assert "page-tour-steps" not in response.content.decode()
+
+    def test_a_tour_given_through_as_view_is_on_that_url(self, client):
+        """``as_view(extra_context=...)`` puts a tour on one URL."""
+        response = client.get(reverse("versioned-two"))
+
+        assert page_payload(response)["version"] == 2
+
+    def test_both_urls_of_a_view_carry_its_tour(self, client):
+        """A view routed twice shows its tour on both."""
+        first = page_payload(client.get(reverse("class-tour")))
+        second = page_payload(client.get(reverse("class-tour-again")))
+
+        assert first == second
+
+    @pytest.mark.django_db
+    def test_a_signed_in_and_an_anonymous_visitor_get_the_same_steps(
+        self, client, django_user_model
+    ):
+        """The tour does not depend on who is looking."""
+        anonymous = page_steps(client.get(reverse("class-tour")))
+        client.force_login(django_user_model.objects.create_user("visitor"))
+
+        signed_in = page_steps(client.get(reverse("class-tour")))
+
+        assert signed_in == anonymous
+
+    @pytest.mark.parametrize("name", ["missing-class-tour", "missing-function-tour"])
+    def test_a_not_found_page_does_not_carry_the_tour(self, client, settings, name):
+        """The error page renders ``{{ tour }}`` with a context that has no tour."""
+        settings.DEBUG = False
+
+        response = client.get(reverse(name))
+
+        assert response.status_code == 404
+        assert "page-tour-steps" not in response.content.decode()
+
+    def test_a_tour_rendered_twice_is_on_the_page_twice(self, client):
+        """The template decides; the browser plays the first one."""
+        response = client.get(reverse("tour-twice"))
+
+        assert len(STEPS_SCRIPT.findall(response.content.decode())) == 2
 
 
 OVERRIDDEN = views.APP_TOUR.name
@@ -222,80 +378,65 @@ REPLACEMENT = "tests.views.REPLACEMENT_TOUR"
 class TestTourOverrides:
     """A project changes or turns off a tour declared by an installed app."""
 
-    def page_tour(self, view_class, **initkwargs):
-        """Return the tour of a class-based page, as the page renders it."""
-        view = view_class(**initkwargs)
-        return Tour.for_page({"view": view})
+    def test_a_replacement_is_rendered_in_its_place(self, settings):
+        """The tour renders the replacement's steps and autoplay."""
+        settings.PAGE_TOURS_OVERRIDES = {
+            OVERRIDDEN: "tests.views.QUIET_REPLACEMENT_TOUR"
+        }
 
-    def test_a_replacement_is_the_tour_of_the_page(self, settings):
-        """The page plays the replacement's steps."""
-        settings.PAGE_TOURS_OVERRIDES = {OVERRIDDEN: REPLACEMENT}
+        payload = payload_of(views.APP_TOUR)
 
-        tour = self.page_tour(views.OverriddenTourView)
-
-        assert tour.steps == views.REPLACEMENT_TOUR.steps
+        assert payload["steps"] == views.QUIET_REPLACEMENT_TOUR.as_driver_steps()
+        assert payload["autoplay"] is False
 
     def test_a_replacement_keeps_the_name_of_the_tour_it_replaces(self, settings):
         """Replacing a tour does not rename it, so what was seen stays seen."""
         settings.PAGE_TOURS_OVERRIDES = {OVERRIDDEN: REPLACEMENT}
 
-        assert self.page_tour(views.OverriddenTourView).name == OVERRIDDEN
+        assert payload_of(views.APP_TOUR)["id"] == OVERRIDDEN
 
-    def test_the_tour_a_page_plays_is_not_declared_again(self, settings):
+    def test_rendering_a_replacement_declares_no_tour(self, settings):
         """Playing a replacement under the app tour's name is not a second tour."""
         settings.PAGE_TOURS_OVERRIDES = {OVERRIDDEN: REPLACEMENT}
+        before = {name: len(tours) for name, tours in declared_tours().items()}
 
-        played = self.page_tour(views.OverriddenTourView)
+        str(views.APP_TOUR)
 
-        assert all(tour is not played for tour in declared_tours()[OVERRIDDEN])
+        after = {name: len(tours) for name, tours in declared_tours().items()}
+        assert after == before
 
     def test_none_turns_the_tour_off(self, settings):
-        """A page whose tour is set to None has no tour."""
+        """A tour set to None renders nothing at all."""
         settings.PAGE_TOURS_OVERRIDES = {OVERRIDDEN: None}
 
-        assert self.page_tour(views.OverriddenTourView) is None
+        assert Template("{{ tour }}").render(Context({"tour": views.APP_TOUR})) == ""
 
-    def test_a_subclass_that_sets_no_tour_gets_the_change(self, settings):
-        """A page that shares the tour shares its replacement."""
+    def test_a_tour_turned_off_leaves_its_page_without_steps(self, client, settings):
+        """Nothing about the tour reaches the page, so a replay control stays hidden."""
+        settings.PAGE_TOURS_OVERRIDES = {views.OFF_TOUR.name: None}
+
+        response = client.get(reverse("overridden-off"))
+
+        assert "page-tour-steps" not in response.content.decode()
+
+    @pytest.mark.parametrize(
+        "url", ["overridden", "overridden-again", "overridden-function"]
+    )
+    def test_every_page_of_the_tour_renders_the_change(self, client, settings, url):
+        """Every URL, class-based or function-based, plays the replacement."""
         settings.PAGE_TOURS_OVERRIDES = {OVERRIDDEN: REPLACEMENT}
 
-        tour = self.page_tour(views.OverriddenTourSubclassView)
+        response = client.get(reverse(url))
 
-        assert tour.steps == views.REPLACEMENT_TOUR.steps
-
-    def test_a_subclass_that_sets_its_own_tour_does_not(self, settings):
-        """A page with a tour of its own is another tour."""
-        settings.PAGE_TOURS_OVERRIDES = {OVERRIDDEN: REPLACEMENT}
-
-        tour = self.page_tour(views.OverriddenTourOwnView)
-
-        assert tour is views.OWN_TOUR
-
-    def test_a_function_based_view_gets_the_change(self, settings):
-        """A tour passed in the context is replaced by its name."""
-        settings.PAGE_TOURS_OVERRIDES = {OVERRIDDEN: REPLACEMENT}
-
-        tour = Tour.for_page({"tour": views.APP_TOUR})
-
-        assert tour.steps == views.REPLACEMENT_TOUR.steps
-
-    def test_a_tour_given_through_as_view_is_changed_by_its_own_name(self, settings):
-        """The view a tour is given to does not name it, the tour does."""
-        settings.PAGE_TOURS_OVERRIDES = {OVERRIDDEN: REPLACEMENT}
-
-        tour = self.page_tour(views.OverriddenTourView, tour=views.OWN_TOUR)
-
-        assert tour is views.OWN_TOUR
+        assert page_steps(response) == views.REPLACEMENT_TOUR.as_driver_steps()
 
     def test_another_tour_is_untouched(self, settings):
-        """A tour the setting does not name is returned as declared."""
+        """A tour the setting does not name renders as declared."""
         settings.PAGE_TOURS_OVERRIDES = {OVERRIDDEN: REPLACEMENT}
 
-        assert self.page_tour(views.UntouchedTourView) is views.UNTOUCHED_TOUR
+        payload = payload_of(views.UNTOUCHED_TOUR)
 
-    def test_without_the_setting_the_declared_tour_is_returned(self):
-        """A project that sets nothing sees every tour as declared."""
-        assert self.page_tour(views.OverriddenTourView) is views.APP_TOUR
+        assert payload["steps"] == views.UNTOUCHED_TOUR.as_driver_steps()
 
     @pytest.mark.parametrize(
         ("declared", "path", "played"),
@@ -312,24 +453,32 @@ class TestTourOverrides:
         settings.PAGE_TOURS_OVERRIDES = {OVERRIDDEN: path}
         declared_tour = replace(views.APP_TOUR, version=declared)
 
-        assert Tour.for_page({"tour": declared_tour}).version == played
+        assert payload_of(declared_tour)["version"] == played
 
     def test_the_declared_replacement_is_not_changed(self, settings):
-        """Counting a version on builds a new tour and leaves the declared one."""
+        """Counting a version on leaves the declared replacement as it was."""
         settings.PAGE_TOURS_OVERRIDES = {OVERRIDDEN: REPLACEMENT}
 
-        self.page_tour(views.OverriddenTourView)
+        str(views.APP_TOUR)
 
         assert views.REPLACEMENT_TOUR.version == 1
+        assert views.REPLACEMENT_TOUR.name == "tests.replacement"
 
     def test_a_change_to_the_setting_is_seen_at_once(self, settings):
-        """The setting is read on every call, not cached."""
+        """The setting is read every time the tour renders, not cached."""
         settings.PAGE_TOURS_OVERRIDES = {OVERRIDDEN: None}
-        assert self.page_tour(views.OverriddenTourView) is None
+        assert str(views.APP_TOUR) == ""
 
         settings.PAGE_TOURS_OVERRIDES = {}
 
-        assert self.page_tour(views.OverriddenTourView) is views.APP_TOUR
+        assert payload_of(views.APP_TOUR)["steps"] == views.APP_TOUR.as_driver_steps()
+
+    def test_a_bad_entry_is_refused_when_the_tour_renders(self, settings):
+        """An entry set after start-up that cannot be resolved raises."""
+        settings.PAGE_TOURS_OVERRIDES = {OVERRIDDEN: 42}
+
+        with pytest.raises(ImproperlyConfigured):
+            str(views.APP_TOUR)
 
 
 class TestTourOverridesRefused:

@@ -8,6 +8,35 @@ All notable changes to this project are documented in this file. The format foll
 
 ### Changed
 
+- **Breaking:** a page outputs its own tour with `{{ tour }}`, in place of `{% page_tour %}` in the
+  base template. A `Tour` renders itself as the `<script type="application/json">` element the
+  package's script plays it from, so `{{ tour }}` needs no tag library and Django does not escape
+  it. A view puts the tour in its template context like any other value. A tour that
+  `PAGE_TOURS_OVERRIDES` replaces renders the replacement, and one it turns off renders nothing.
+  A tour still never plays over an error page, because the error page renders its own context.
+  To upgrade:
+  1. Include the package's stylesheet and scripts in your base template, and remove
+     `{% load page_tours %}` and `{% page_tour %}`:
+
+     ```django
+     {% load static %}
+     <link rel="stylesheet" href="{% static 'page_tours/page-tours.css' %}">
+     <script src="{% static 'page_tours/vendor/driver.js-1.10.2/driver.js.iife.js' %}" defer></script>
+     <script src="{% static 'page_tours/page-tours.js' %}" defer></script>
+     ```
+
+  2. Put `{{ tour }}` in the template of each page that has a tour, once.
+  3. Move each class-based view's `tour` into its context: replace `tour = DASHBOARD_TOUR` with
+     `extra_context = {"tour": DASHBOARD_TOUR}`, or add it in `get_context_data`, and replace
+     `as_view(tour=...)` with `as_view(extra_context={"tour": ...})`. A function-based view that
+     already passes `tour` to `render` needs no change.
+- The package's script waits until the page is parsed before it looks for the tour, so
+  `{{ tour }}` can sit anywhere in the page and the scripts can be loaded with or without
+  `defer`. On a page with no tour it still does nothing, so a replay control written with
+  `hidden` stays hidden.
+- The script finds the package's stylesheet by its path, `page_tours/page-tours.`, before moving
+  it to the start of `<head>`. The `data-page-tour-stylesheet` attribute is no longer needed.
+
 - **Breaking:** a tour is named where it is declared, and the name is required:
   `Tour(name="dashboard", steps=[...])`. The name is what a browser remembers a seen tour by and
   what `PAGE_TOURS_OVERRIDES` is keyed by, in place of the dotted path of the view that declared
@@ -41,6 +70,10 @@ All notable changes to this project are documented in this file. The format foll
 
 ### Removed
 
+- **Breaking:** the `{% page_tour %}` tag, the `page_tours` template tag library and its
+  template, `page_tours/page_tour.html`.
+- **Breaking:** the `tour` attribute of a class-based view, and `Tour.for_page`, which read it.
+  Put the tour in the view's context instead.
 - **Breaking:** `with_tour`. A function-based view passes its tour in the template context
   instead: `render(request, "dashboard.html", {"tour": DASHBOARD_TOUR})`.
 - **Breaking:** `page_tours.tours.tour_id` and `page_tours.tours.declaring_view_name`, along with

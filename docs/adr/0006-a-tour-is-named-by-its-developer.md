@@ -1,6 +1,7 @@
 # ADR 0006 — A tour is named by its developer
 
-**Status:** accepted. Supersedes ADR 0002 and ADR 0004.
+**Status:** accepted. Supersedes ADR 0002 and ADR 0004. Amended by ADR 0007, which changes how a
+page gets its tour.
 
 ## Decision
 
@@ -14,9 +15,9 @@ name is required and is the tour's identity everywhere.
   and every entry is resolved when the project starts. A replacement has a name of its own, and
   plays under the name of the tour it replaces, at that tour's version plus its own, less one.
   These rules are carried over from ADR 0004 unchanged except for the key.
-- A class-based view keeps its `tour` attribute. A function-based view passes its tour in the
-  template context under `tour`. `Tour.for_page` takes the view's attribute first, then the
-  context's `tour`, and only a `Tour` counts.
+- A view puts its tour in the template context, and the page renders it with `{{ tour }}`
+  (ADR 0007). Until ADR 0007 a class-based view kept a `tour` attribute, which `Tour.for_page`
+  read before the context's `tour`.
 - Every `Tour` is recorded under its name when it is made, by weak reference.
   `page_tours.W002` warns about an override key that names no recorded tour, after loading the
   root URLconf so the routed views' tours are recorded. `page_tours.W005` warns when tours with
@@ -49,7 +50,7 @@ leaving the project a way to show it again.
 
 A name the developer writes down stays put while the code moves, needs no machinery to find, and
 is one keyword argument per tour. It also answers ADR 0002's open case: two tours given to one
-view class through `as_view(tour=...)` now have their own seen states when they have their own
+view class through `as_view` now have their own seen states when they have their own
 names.
 
 - **Steps, not equality, decide a clash.** One tour routed at two versions, or declared with and
@@ -57,8 +58,8 @@ names.
   they want. Tours with different steps under one name are two tours, and the warning catches
   the accident.
 - **The registry holds weak references,** so a tour nothing refers to any more, such as one made
-  in a test, does not stay declared. The tour a page plays for a replacement is copied rather
-  than constructed, so it is never recorded as a second tour.
+  in a test, does not stay declared. A replacement is rendered under the replaced tour's name
+  without a new `Tour` being made, so it is never recorded as a second tour.
 - **The app-label rule is not checked.** The package cannot tell a reusable app's tour from a
   project's own, so a check would warn about every project tour too.
 

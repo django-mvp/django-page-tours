@@ -1,9 +1,10 @@
 {% extends "base.html" %}
 {% block content %}
-  <h1 id="demo-version">A changed tour, version {{ view.tour.version }}</h1>
+  <h1 id="demo-version">A changed tour, version {{ tour.version }}</h1>
   <p>Both addresses show the same tour, at different versions. A browser that has seen one version has not seen the other, so the tour opens by itself once at each. Open either address again and the tour stays quiet.</p>
   <ul>
     <li><a href="{% url 'changed-tour' %}">Version 1</a></li>
     <li><a href="{% url 'changed-tour-new-version' %}">Version 2</a></li>
   </ul>
+  {{ tour }}
 {% endblock content %}

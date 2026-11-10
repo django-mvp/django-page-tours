@@ -5,5 +5,8 @@ from django.urls import path
 from tests import views
 
 urlpatterns = [
-    path("given/", views.OverriddenTourSubclassView.as_view(tour=views.OWN_TOUR)),
+    path(
+        "given/",
+        views.OverriddenTourView.as_view(extra_context={"tour": views.OWN_TOUR}),
+    ),
 ]

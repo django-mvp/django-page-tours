@@ -1,0 +1,15 @@
+{% load static %}<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Test page</title>
+    <link rel="stylesheet" href="{% static 'page_tours/page-tours.css' %}">
+    <script src="{% static 'page_tours/vendor/driver.js-1.10.2/driver.js.iife.js' %}"></script>
+    <script src="{% static 'page_tours/page-tours.js' %}"></script>
+  </head>
+  <body>
+    <h1>Page</h1>
+    <button id="control" type="button">Control</button>
+    {{ tour }}
+  </body>
+</html>
