@@ -33,8 +33,19 @@ class BookDetailView(TemplateView):
 ```
 
 This tour's name is `library.book`. The app's documentation should list its names. Otherwise
-read the app's code, or open the page and read the name in the page source, where the tour's
-payload carries it as `id`.
+list every tour the project knows, by name, from `manage.py shell`:
+
+```python
+>>> from django.urls import get_resolver
+>>> from page_tours.tours import declared_tours
+>>> get_resolver().url_patterns  # imports the views, which declares their tours
+>>> sorted(declared_tours())
+['library.book', 'library.book-list', 'library.loans', ...]
+```
+
+`declared_tours()` returns the tours that exist under each name. A tour is declared when the
+module that holds it is imported, which is why the URLs are loaded first. You can also open the
+page and read the name in the page source, where the tour's payload carries it as `id`.
 
 ## Replace a tour from the project
 
