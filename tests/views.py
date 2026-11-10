@@ -316,3 +316,22 @@ class PartsTourView(TemplateView):
 
     template_name = "test_page.html"
     tour = steps_for("h1", "", "#control")
+
+
+class StyleBeforeView(TemplateView):
+    """A page whose own style sits before the tag."""
+
+    template_name = "test_style_before.html"
+    tour = steps_for("h1", "", "#control")
+
+
+class StyleAfterView(StyleBeforeView):
+    """A page whose own style sits after the tag."""
+
+    template_name = "test_style_after.html"
+
+
+class LayerBeforeView(StyleBeforeView):
+    """A page whose own layered style sits before the tag."""
+
+    template_name = "test_layer_before.html"

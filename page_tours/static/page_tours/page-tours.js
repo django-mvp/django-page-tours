@@ -84,8 +84,22 @@
     addClasses(popover.closeButton, "close");
   }
 
+  // Driver.js writes the overlay's fill and opacity as inline styles, which no
+  // site rule can beat. As attributes of the svg they look the same and give way.
   function nameOverlay() {
-    addClasses(document.querySelector("svg.driver-overlay"), "highlight");
+    var overlay = document.querySelector("svg.driver-overlay");
+    if (!overlay) {
+      return;
+    }
+    addClasses(overlay, "highlight");
+    var path = overlay.querySelector("path");
+    ["fill", "opacity"].forEach(function (property) {
+      var value = path && path.style.getPropertyValue(property);
+      if (value) {
+        overlay.setAttribute(property, value);
+        path.style.removeProperty(property);
+      }
+    });
   }
 
   // Driver.js creates the overlay after the first step's box and a moment before

@@ -818,8 +818,75 @@ class TestOverriddenTourSeen:
         expect(page.locator(".driver-popover")).to_have_count(0)
 
 
+OVERLAY_PATH = "svg.driver-overlay path"
+
+
+def computed(page, selector, prop):
+    """Return a computed style value of the first element matching a selector."""
+    return page.evaluate(
+        "([selector, prop]) => "
+        "getComputedStyle(document.querySelector(selector))[prop]",
+        [selector, prop],
+    )
+
+
 class TestOwnLook:
     """The tour's stylesheet sits where a site's own rules can override it."""
+
+    @pytest.mark.parametrize("name", ["style-before", "style-after"])
+    def test_a_site_rule_on_the_box_wins_wherever_its_style_sits(
+        self, page, live_server, name
+    ):
+        """The site's background reaches the box, before or after the tag."""
+        page.goto(live_server.url + reverse(name))
+        expect(page.locator(TITLE)).to_be_visible()
+
+        assert computed(page, ".driver-popover", "backgroundColor") == "rgb(1, 2, 3)"
+
+    @pytest.mark.parametrize("name", ["style-before", "style-after"])
+    def test_a_site_rule_on_the_highlight_sets_the_overlays_fill(
+        self, page, live_server, name
+    ):
+        """The overlay's fill is the site's colour, not Driver.js's inline one."""
+        page.goto(live_server.url + reverse(name))
+        expect(page.locator(TITLE)).to_be_visible()
+
+        assert computed(page, OVERLAY_PATH, "fill") == "rgb(4, 5, 6)"
+
+    @pytest.mark.parametrize("steps", [1, 2])
+    def test_the_highlight_carries_its_name_on_an_attached_and_an_unattached_step(
+        self, page, live_server, steps
+    ):
+        """The overlay is named on a step attached to an element and one that is not."""
+        page.goto(live_server.url + reverse("style-before"))
+        for _ in range(steps - 1):
+            page.click(NEXT)
+        expect(page.locator(TITLE)).to_have_text(f"Step {steps}")
+
+        assert "page-tour-highlight" in classes_of(page, "svg.driver-overlay")
+
+    def test_a_class_in_a_site_layer_beats_driverjs(self, page, live_server, settings):
+        """A configured class whose rule sits in a layer of the site's takes effect."""
+        settings.PAGE_TOURS_CLASSES = {"box": "site-box"}
+        page.goto(live_server.url + reverse("layer-before"))
+        expect(page.locator(TITLE)).to_be_visible()
+
+        assert computed(page, ".driver-popover", "backgroundColor") == "rgb(7, 8, 9)"
+
+    def test_the_overlays_fill_and_opacity_are_not_inline_on_its_path(
+        self, page, live_server
+    ):
+        """Both values moved to the overlay's attributes, where a rule can win."""
+        page.goto(live_server.url + reverse("class-tour"))
+        expect(page.locator(TITLE)).to_be_visible()
+
+        inline = page.evaluate(
+            """() => {
+                const path = document.querySelector("svg.driver-overlay path");
+                return [path.style.fill, path.style.opacity];
+            }"""
+        )
+        assert inline == ["", ""]
 
     def test_the_packages_link_is_first_in_the_head_once_the_tour_shows(
         self, page, live_server
