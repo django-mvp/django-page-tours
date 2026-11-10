@@ -84,7 +84,7 @@ Every part of a shown tour step has a documented class name: `page-tour-box`, `p
 classes of your own with the `PAGE_TOURS_CLASSES` setting. A design system installed as an app
 can supply classes for the parts as defaults with `AppConfig.page_tour_classes`, and the project's
 setting replaces them part by part. Django's `check` command reports a wrong entry with
-`page_tours.W002` or `page_tours.W003`. The
+`page_tours.W003` or `page_tours.W004`. The
 [styling page](https://django-mvp.github.io/django-page-tours/developer/styling-tours.html)
 has the details.
 

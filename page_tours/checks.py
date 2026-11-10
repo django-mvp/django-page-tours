@@ -125,8 +125,8 @@ def check_part_classes(app_configs, **kwargs):
         **kwargs: Other arguments Django passes to every check.
 
     Returns:
-        A list with a ``page_tours.W002`` warning for each unknown part and a
-        ``page_tours.W003`` warning for each value, or whole mapping, that is not
+        A list with a ``page_tours.W003`` warning for each unknown part and a
+        ``page_tours.W004`` warning for each value, or whole mapping, that is not
         what it should be.
     """
     issues = []
@@ -136,7 +136,7 @@ def check_part_classes(app_configs, **kwargs):
                 checks.Warning(
                     _("%(source)s must be a dict from part to a string of class names.")
                     % {"source": source},
-                    id="page_tours.W003",
+                    id="page_tours.W004",
                 )
             )
             continue
@@ -148,7 +148,7 @@ def check_part_classes(app_configs, **kwargs):
                         % {"source": source, "part": part},
                         hint=_("The parts are: %(parts)s.")
                         % {"parts": ", ".join(TourParts.parts)},
-                        id="page_tours.W002",
+                        id="page_tours.W003",
                     )
                 )
             elif not isinstance(value, str):
@@ -157,7 +157,7 @@ def check_part_classes(app_configs, **kwargs):
                         _("%(source)s gives '%(part)s' a value that is not a string.")
                         % {"source": source, "part": part},
                         hint=_("Write the class names as one string."),
-                        id="page_tours.W003",
+                        id="page_tours.W004",
                     )
                 )
     return issues

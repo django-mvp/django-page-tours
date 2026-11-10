@@ -131,9 +131,9 @@ an entry came from, so a design system's mistake is easy to find.
 Django's `check` command warns about an entry that cannot work, in the setting or in an app's
 `page_tour_classes`:
 
-- `page_tours.W002` says the entry names something that is not a part. The message lists the
+- `page_tours.W003` says the entry names something that is not a part. The message lists the
   nine parts.
-- `page_tours.W003` says a value is not a string of class names, or that the setting or the app's
+- `page_tours.W004` says a value is not a string of class names, or that the setting or the app's
   attribute is not a dict.
 
 Both messages name the part, where there is one, and say where the entry came from: the setting,

@@ -136,7 +136,7 @@ class TestClassesCheck:
         """The warning says which entry is wrong and where it was found."""
         found = self.issues(settings, {"footer": "x"})
 
-        assert [issue.id for issue in found] == ["page_tours.W002"]
+        assert [issue.id for issue in found] == ["page_tours.W003"]
         assert "footer" in found[0].msg
         assert "PAGE_TOURS_CLASSES" in found[0].msg
 
@@ -150,7 +150,7 @@ class TestClassesCheck:
         """A list of class names is not a string of them."""
         found = self.issues(settings, {"box": ["card"]})
 
-        assert [issue.id for issue in found] == ["page_tours.W003"]
+        assert [issue.id for issue in found] == ["page_tours.W004"]
         assert "box" in found[0].msg
         assert "PAGE_TOURS_CLASSES" in found[0].msg
 
@@ -159,7 +159,7 @@ class TestClassesCheck:
         """The setting itself must be a dict."""
         found = self.issues(settings, value)
 
-        assert [issue.id for issue in found] == ["page_tours.W003"]
+        assert [issue.id for issue in found] == ["page_tours.W004"]
         assert "PAGE_TOURS_CLASSES" in found[0].msg
 
     def test_each_wrong_entry_gets_its_own_warning(self, settings):
@@ -167,8 +167,8 @@ class TestClassesCheck:
         found = self.issues(settings, {"footer": "x", "box": 3})
 
         assert sorted(issue.id for issue in found) == [
-            "page_tours.W002",
             "page_tours.W003",
+            "page_tours.W004",
         ]
 
     @pytest.mark.parametrize("value", [{}, {"box": "card", "close": ""}])
@@ -200,7 +200,7 @@ class TestClassesCheck:
 
         found = self.issues(settings, {})
 
-        assert [issue.id for issue in found] == ["page_tours.W002"]
+        assert [issue.id for issue in found] == ["page_tours.W003"]
         assert "footer" in found[0].msg
         assert "design_system" in found[0].msg
 
@@ -214,7 +214,7 @@ class TestClassesCheck:
 
         found = self.issues(settings, {})
 
-        assert [issue.id for issue in found] == ["page_tours.W003"]
+        assert [issue.id for issue in found] == ["page_tours.W004"]
         assert "box" in found[0].msg
         assert "design_system" in found[0].msg
 
@@ -229,7 +229,7 @@ class TestClassesCheck:
 
         found = self.issues(settings, {})
 
-        assert [issue.id for issue in found] == ["page_tours.W003"]
+        assert [issue.id for issue in found] == ["page_tours.W004"]
         assert "design_system" in found[0].msg
 
     def test_a_valid_design_system_gives_nothing(self, settings):

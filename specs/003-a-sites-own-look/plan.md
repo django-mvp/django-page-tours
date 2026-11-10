@@ -72,7 +72,7 @@ specs/003-a-sites-own-look/
 ```text
 page_tours/
 ├── parts.py                         # new: TourParts, the parts, their names and their classes
-├── checks.py                        # + W002, W003
+├── checks.py                        # + W003, W004
 ├── templatetags/page_tours.py       # payload gains "parts"
 ├── templates/page_tours/page_tour.html   # links page-tours.css instead of driver.css
 └── static/page_tours/
@@ -178,9 +178,9 @@ call is removed too, and focus is restored (edge case, Article XIII).
 
 Two warnings in `page_tours/checks.py`, registered as `W001` is, both from `TourParts.sources()`:
 
-- `page_tours.W002` — an entry names a part the package does not have. The message names the
+- `page_tours.W003` — an entry names a part the package does not have. The message names the
   part and the source, and the hint lists the parts.
-- `page_tours.W003` — a value is not a string of class names, or the setting or attribute is not
+- `page_tours.W004` — a value is not a string of class names, or the setting or attribute is not
   a dict. The message names the part (when there is one) and the source.
 
 Warnings, never errors: an error stops `runserver`, and FR-008 says a styling mistake never stops
@@ -207,7 +207,7 @@ installed with `override_settings(INSTALLED_APPS=...)`.
   outside a layer win; a framework's layered rules win too); giving parts classes with
   `PAGE_TOURS_CLASSES`, including the empty string; how a design system supplies defaults on its
   `AppConfig`, and the precedence; the check ids.
-- README: the names, the setting, the `AppConfig` attribute and `W002`/`W003` listed as public
+- README: the names, the setting, the `AppConfig` attribute and `W003`/`W004` listed as public
   surface; a short "Styling" pointer to the page.
 - CHANGELOG `[Unreleased]`: Added (names, setting, app defaults, checks); Changed (Driver.js's
   stylesheet now sits in the `page-tours` cascade layer, so a site's element rules such as

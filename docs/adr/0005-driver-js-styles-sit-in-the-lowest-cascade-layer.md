@@ -1,4 +1,4 @@
-# ADR 0004 — Driver.js's stylesheet sits in the lowest cascade layer
+# ADR 0005 — Driver.js's stylesheet sits in the lowest cascade layer
 
 **Status:** accepted
 

@@ -36,9 +36,9 @@ take effect on the parts they name and on no other part.
   with no tour still emits nothing (US1-10); a page renders with a wrong setting (FR-008). The
   existing test that lists the payload's keys gains `"parts"` in its expected set, as the
   specified change to the payload, and nothing else in it changes.
-- [x] T003 [US1] Checks `page_tours.W002` and `page_tours.W003` for the setting, as plan.md
+- [x] T003 [US1] Checks `page_tours.W003` and `page_tours.W004` for the setting, as plan.md
   "System checks". Tests in `tests/test_checks.py` (`TestClassesCheck`): an unknown part gives
-  `W002` naming the part and the setting; a non-string value and a non-dict setting give `W003`;
+  `W003` naming the part and the setting; a non-string value and a non-dict setting give `W004`;
   a valid setting and no setting give nothing; both are warnings, so they do not stop the checks
   passing (US1-9). Assert ids and the named part, never the sentence.
 
@@ -125,8 +125,8 @@ while the others keep the app's.
   part, and the second still supplies the parts the first does not (edge case, FR-010); no app
   and no setting gives names only (US2-4); a bad entry from an app is skipped.
 - [x] T010 [US2] The checks report app entries, naming the app's label (US2-5). Tests in
-  `tests/test_checks.py` (`TestClassesCheck`): an app's unknown part gives `W002` naming the part
-  and the app; an app's bad value gives `W003` naming the app.
+  `tests/test_checks.py` (`TestClassesCheck`): an app's unknown part gives `W003` naming the part
+  and the app; an app's bad value gives `W004` naming the app.
 - [x] T011 [US2] Browser test (`TestAppDefaults` in `tests/test_static/test_page_tours_js.py`):
   with the test app installed and a test base template linking its stylesheet, the parts carry
   the app's classes and its rule against a documented name takes effect (US2-1, US2-2); with the

@@ -21,7 +21,7 @@ All notable changes to this project are documented in this file. The format foll
   `page-tour-highlight`, so a site can style the tour from its own stylesheet.
 - The `PAGE_TOURS_CLASSES` setting gives parts classes of your own, for every step of every tour.
   An empty string gives a part none.
-- System checks `page_tours.W002`, for a part that does not exist, and `page_tours.W003`, for a
+- System checks `page_tours.W003`, for a part that does not exist, and `page_tours.W004`, for a
   value that is not a string of class names. A wrong entry is ignored when the page renders.
 - A design system installed as an app can supply classes for the parts as defaults, with
   `page_tour_classes` on its `AppConfig`. The project's `PAGE_TOURS_CLASSES` replaces them part by
