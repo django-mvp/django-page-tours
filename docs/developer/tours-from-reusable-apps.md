@@ -76,8 +76,8 @@ The page then has no tour, and a replay control placed in the base template does
 
 ## Check that the setting is right
 
-The setting is read when the project starts. `PageToursConfig.ready` calls
-`page_tours.tours.tour_overrides()`, which resolves every entry with
+The setting is checked when the project starts, and read again each time a page renders.
+`PageToursConfig.ready` calls `page_tours.tours.tour_overrides()`, which resolves every entry with
 `page_tours.tours.resolve_override`. An entry whose value is neither a string nor `None`, whose
 path cannot be imported, or whose path names something that is not a `Tour` raises
 `ImproperlyConfigured` at start-up, naming the entry.

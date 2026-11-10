@@ -1,7 +1,7 @@
 [project]
 name = "django-page-tours"
-# Pre-viable. The first published release is 0.1.0, cut once the Essential goals
-# in GOALS.md are delivered; until then the version stays in 0.0.x.
+# 0.x until every Expected goal in GOALS.md is delivered, then 1.0.0. See the
+# versioning table in docs/ROADMAP.md.
 version = "0.2.0"
 description = "Guided tours of a page for Django sites, shown with Driver.js"
 authors = [
@@ -15,7 +15,7 @@ requires-python = ">=3.12,<4.0"
 dependencies = ["django>=5.2"]
 keywords = ["django", "tour", "guided tour", "onboarding", "driver.js"]
 classifiers = [
-    "Development Status :: 2 - Pre-Alpha",
+    "Development Status :: 3 - Alpha",
     "Environment :: Web Environment",
     "Framework :: Django",
     "Framework :: Django :: 5.2",
