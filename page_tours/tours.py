@@ -1,14 +1,16 @@
 """Declarations of a tour and its steps."""
 
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from functools import wraps
 from inspect import iscoroutinefunction
 from typing import Any, TypeVar
 
+from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.functional import Promise
 from django.utils.html import escape
+from django.utils.module_loading import import_string
 from django.utils.translation import gettext_lazy as _
 
 F = TypeVar("F", bound=Callable[..., Any])
@@ -84,16 +86,35 @@ class Tour:
         A function-based view supplies the tour that ``with_tour`` put on the request.
         An error page has neither, so it has no tour.
 
+        When the ``PAGE_TOURS_OVERRIDES`` setting names the tour, the replacement
+        is returned in its place, or ``None`` when the setting turns it off. The
+        replacement plays at the declared tour's version plus its own, less one,
+        so a browser that saw the declared tour does not see the replacement by
+        itself until the replacement's own version is raised. The setting is read
+        on every call.
+
         Args:
             context: The template context, or any mapping with ``get``.
 
         Returns:
             The tour, or ``None`` when the page has none.
+
+        Raises:
+            ImproperlyConfigured: If the setting's entry for this tour is not valid.
         """
         tour = getattr(context.get("view"), "tour", None)
         if not isinstance(tour, cls):
             tour = getattr(context.get("request"), "page_tour", None)
-        return tour if isinstance(tour, cls) else None
+        if not isinstance(tour, cls):
+            return None
+        overrides = getattr(settings, "PAGE_TOURS_OVERRIDES", {})
+        name = tour_id(context)
+        if name not in overrides:
+            return tour
+        replacement = resolve_override(name, overrides[name])
+        if replacement is None:
+            return None
+        return replace(replacement, version=tour.version + replacement.version - 1)
 
     def as_driver_steps(self) -> list[dict[str, str]]:
         """Convert the steps to the form Driver.js takes.
@@ -117,6 +138,80 @@ class Tour:
         return driver_steps
 
 
+def declaring_view_name(view_class: type) -> str:
+    """Name a class-based view for the tour it declares or inherits.
+
+    The name is the dotted path of the first class along the view's method
+    resolution order whose own body declares ``tour``, so a subclass that
+    inherits the tour shares its parent's name. When no class declares it,
+    because it was set on the instance or through ``as_view``, it is the view
+    class's own path.
+
+    Args:
+        view_class: The class of a class-based view.
+
+    Returns:
+        The dotted path of the class that names the view's tour.
+    """
+    for cls in view_class.__mro__:
+        if "tour" in cls.__dict__:
+            return f"{cls.__module__}.{cls.__qualname__}"
+    return f"{view_class.__module__}.{view_class.__qualname__}"
+
+
+def resolve_override(name: str, value: Any) -> Tour | None:
+    """Resolve one entry of the ``PAGE_TOURS_OVERRIDES`` setting.
+
+    Args:
+        name: The name of the tour the entry changes, for the error message.
+        value: A dotted path to a ``Tour``, or ``None`` to turn the tour off.
+
+    Returns:
+        The replacement tour, or ``None`` when the tour is turned off.
+
+    Raises:
+        ImproperlyConfigured: If ``value`` is neither a string nor ``None``, the
+            path does not import, or it names something that is not a ``Tour``.
+            A module whose own ``Tour(...)`` is invalid raises its own error.
+    """
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ImproperlyConfigured(
+            _(
+                "PAGE_TOURS_OVERRIDES[%(name)s] must be the dotted path of a Tour "
+                "or None."
+            )
+            % {"name": name}
+        )
+    try:
+        replacement = import_string(value)
+    except ImportError as error:
+        raise ImproperlyConfigured(
+            _("PAGE_TOURS_OVERRIDES[%(name)s]: %(path)s cannot be imported.")
+            % {"name": name, "path": value}
+        ) from error
+    if not isinstance(replacement, Tour):
+        raise ImproperlyConfigured(
+            _("PAGE_TOURS_OVERRIDES[%(name)s]: %(path)s is not a Tour.")
+            % {"name": name, "path": value}
+        )
+    return replacement
+
+
+def tour_overrides() -> dict[str, Tour | None]:
+    """Resolve every entry of the ``PAGE_TOURS_OVERRIDES`` setting.
+
+    Returns:
+        The replacement tour, or ``None`` for a tour turned off, by tour name.
+
+    Raises:
+        ImproperlyConfigured: If any entry is not valid.
+    """
+    overrides = getattr(settings, "PAGE_TOURS_OVERRIDES", {})
+    return {name: resolve_override(name, value) for name, value in overrides.items()}
+
+
 def tour_id(context: Any) -> str:
     """Name the tour of the page being rendered, for remembering that it was seen.
 
@@ -135,10 +230,7 @@ def tour_id(context: Any) -> str:
     """
     view = context.get("view")
     if isinstance(getattr(view, "tour", None), Tour):
-        for cls in type(view).__mro__:
-            if "tour" in cls.__dict__:
-                return f"{cls.__module__}.{cls.__qualname__}"
-        return f"{type(view).__module__}.{type(view).__qualname__}"
+        return declaring_view_name(type(view))
     return str(getattr(context.get("request"), "page_tour_view", ""))
 
 

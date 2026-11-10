@@ -2,6 +2,7 @@
 
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
 from functools import partial
 
 import pytest
@@ -15,6 +16,7 @@ from django.utils.translation import gettext, gettext_lazy
 from django.views import View
 
 from page_tours.tours import Tour, TourStep, tour_id, with_tour
+from tests import views
 
 
 def run_in_own_loop(coroutine):
@@ -424,3 +426,116 @@ class TestTourForPage:
         view = type("View", (), {"tour": "not a tour"})()
 
         assert Tour.for_page({"view": view}) is None
+
+
+OVERRIDDEN = "tests.views.OverriddenTourView"
+REPLACEMENT = "tests.views.REPLACEMENT_TOUR"
+
+
+class TestTourOverrides:
+    """A project changes or turns off a tour declared by an installed app."""
+
+    def page_tour(self, view_class, **initkwargs):
+        """Return the tour of a class-based page, as the page renders it."""
+        view = view_class(**initkwargs)
+        return Tour.for_page({"view": view})
+
+    def test_a_replacement_is_the_tour_of_the_page(self, settings):
+        """The page plays the replacement's steps."""
+        settings.PAGE_TOURS_OVERRIDES = {OVERRIDDEN: REPLACEMENT}
+
+        tour = self.page_tour(views.OverriddenTourView)
+
+        assert tour.steps == views.REPLACEMENT_TOUR.steps
+
+    def test_a_replacement_keeps_the_name_of_the_tour_it_replaces(self, settings):
+        """Replacing a tour does not rename it, so what was seen stays seen."""
+        settings.PAGE_TOURS_OVERRIDES = {OVERRIDDEN: REPLACEMENT}
+
+        assert tour_id({"view": views.OverriddenTourView()}) == OVERRIDDEN
+
+    def test_none_turns_the_tour_off(self, settings):
+        """A page whose tour is set to None has no tour."""
+        settings.PAGE_TOURS_OVERRIDES = {OVERRIDDEN: None}
+
+        assert self.page_tour(views.OverriddenTourView) is None
+
+    def test_a_subclass_that_sets_no_tour_gets_the_change(self, settings):
+        """A page that shares the tour shares its replacement."""
+        settings.PAGE_TOURS_OVERRIDES = {OVERRIDDEN: REPLACEMENT}
+
+        tour = self.page_tour(views.OverriddenTourSubclassView)
+
+        assert tour.steps == views.REPLACEMENT_TOUR.steps
+
+    def test_a_subclass_that_sets_its_own_tour_does_not(self, settings):
+        """A page with a tour of its own is another tour."""
+        settings.PAGE_TOURS_OVERRIDES = {OVERRIDDEN: REPLACEMENT}
+
+        tour = self.page_tour(views.OverriddenTourOwnView)
+
+        assert tour is views.OWN_TOUR
+
+    def test_a_function_based_view_gets_the_change(self, rf, settings):
+        """A tour set with ``with_tour`` is replaced by its name."""
+        settings.PAGE_TOURS_OVERRIDES = {
+            "tests.views.overridden_function_view": REPLACEMENT
+        }
+        request = rf.get("/")
+        views.overridden_function_view(request)
+
+        tour = Tour.for_page({"request": request})
+
+        assert tour.steps == views.REPLACEMENT_TOUR.steps
+
+    def test_a_tour_given_through_as_view_gets_the_change(self, settings):
+        """The name is that of the class that declares the tour."""
+        settings.PAGE_TOURS_OVERRIDES = {OVERRIDDEN: REPLACEMENT}
+
+        tour = self.page_tour(views.OverriddenTourView, tour=views.OWN_TOUR)
+
+        assert tour.steps == views.REPLACEMENT_TOUR.steps
+
+    def test_another_tour_is_untouched(self, settings):
+        """A tour the setting does not name is returned as declared."""
+        settings.PAGE_TOURS_OVERRIDES = {OVERRIDDEN: REPLACEMENT}
+
+        assert self.page_tour(views.UntouchedTourView) is views.APP_TOUR
+
+    def test_without_the_setting_the_declared_tour_is_returned(self):
+        """A project that sets nothing sees every tour as declared."""
+        assert self.page_tour(views.OverriddenTourView) is views.APP_TOUR
+
+    @pytest.mark.parametrize(
+        ("declared", "path", "played"),
+        [
+            (2, REPLACEMENT, 2),
+            (2, "tests.views.REPLACEMENT_TOUR_VERSION_TWO", 3),
+            (1, REPLACEMENT, 1),
+        ],
+    )
+    def test_a_replacement_counts_on_from_the_version_it_replaces(
+        self, settings, declared, path, played
+    ):
+        """The version played is the declared one plus the replacement's, less one."""
+        settings.PAGE_TOURS_OVERRIDES = {OVERRIDDEN: path}
+        view = views.OverriddenTourView(tour=replace(views.APP_TOUR, version=declared))
+
+        assert Tour.for_page({"view": view}).version == played
+
+    def test_the_declared_replacement_is_not_changed(self, settings):
+        """Counting a version on builds a new tour and leaves the declared one."""
+        settings.PAGE_TOURS_OVERRIDES = {OVERRIDDEN: REPLACEMENT}
+
+        self.page_tour(views.OverriddenTourView)
+
+        assert views.REPLACEMENT_TOUR.version == 1
+
+    def test_a_change_to_the_setting_is_seen_at_once(self, settings):
+        """The setting is read on every call, not cached."""
+        settings.PAGE_TOURS_OVERRIDES = {OVERRIDDEN: None}
+        assert self.page_tour(views.OverriddenTourView) is None
+
+        settings.PAGE_TOURS_OVERRIDES = {}
+
+        assert self.page_tour(views.OverriddenTourView) is views.APP_TOUR

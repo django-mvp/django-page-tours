@@ -255,3 +255,57 @@ class ControlInBaseNoTourView(TemplateView):
     """A page with no tour, extending the base template that places the control."""
 
     template_name = "test_control_in_base_page.html"
+
+
+APP_TOUR = Tour(steps=steps_for("h1", "#control", "#output").steps, version=2)
+OWN_TOUR = steps_for("h1")
+REPLACEMENT_TOUR = Tour(
+    steps=[
+        TourStep(title="Ours 1", text="Our first.", element="h1"),
+        TourStep(title="Ours 2", text="Our second.", element="#control"),
+    ]
+)
+REWORDED_TOUR = Tour(
+    steps=[
+        APP_TOUR.steps[0],
+        TourStep(title="Step 2", text="Reworded for us.", element="#control"),
+        APP_TOUR.steps[2],
+    ]
+)
+QUIET_REPLACEMENT_TOUR = Tour(steps=REPLACEMENT_TOUR.steps, autoplay=False)
+REPLACEMENT_TOUR_VERSION_TWO = Tour(steps=REPLACEMENT_TOUR.steps, version=2)
+NOT_A_TOUR = "not a tour"
+
+
+class OverriddenTourView(ControlsTourView):
+    """A page of an installed app, whose tour a project changes."""
+
+    tour = APP_TOUR
+
+
+class OverriddenTourSubclassView(OverriddenTourView):
+    """A page that sets no tour and so shares the tour of the page it extends."""
+
+
+class OverriddenTourOwnView(OverriddenTourView):
+    """A page that sets a tour of its own, which is another tour."""
+
+    tour = OWN_TOUR
+
+
+class OffTourView(ControlsTourView):
+    """A page of an installed app, whose tour a project turns off."""
+
+    tour = APP_TOUR
+
+
+class UntouchedTourView(ControlsTourView):
+    """A page of an installed app whose tour a project leaves alone."""
+
+    tour = APP_TOUR
+
+
+@with_tour(APP_TOUR)
+def overridden_function_view(request):
+    """Render a function-based page of an installed app, whose tour is changed."""
+    return render(request, "test_controls.html")
