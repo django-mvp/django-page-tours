@@ -21,9 +21,9 @@ def page_tour(context):
 
     Returns:
         The context for ``page_tours/page_tour.html``: the tour's id and
-        version, whether it plays by itself, its steps in the form Driver.js takes and the labels of
-        its controls in the active language, or an empty payload when the page has
-        no tour.
+        version, whether it plays by itself, its steps in the form Driver.js
+        takes and the labels of its controls in the active language, or an empty
+        payload when the page has no tour.
     """
     tour = Tour.for_page(context)
     if tour is None:
