@@ -43,7 +43,7 @@ It positions the box and draws the highlight as well as giving the default look.
 optional would mean splitting the shipped stylesheet or rewriting its layout, and the site's rules
 already lay over it once D4 holds. Out of scope.
 
-**ADR:** none — scope
+**ADR:** none — a scope boundary of this feature, which nothing downstream inherits
 
 ## D6 — Site-wide only, not per tour or per step
 
@@ -51,7 +51,7 @@ The issue asks for a site's tours to look like the site. Per-tour or per-step st
 way that nothing asks for yet, and "fewer settings beat more" (README). It can be added later as
 one more story.
 
-**ADR:** none — scope
+**ADR:** none — a scope boundary of this feature, which a later story can widen
 
 ## D7 — A design system reaches every site by being installed
 
@@ -76,7 +76,7 @@ framework is where the package already reports a project's setup (FR-008).
 The replay control already takes the site's own content and classes (issue #6). What a step says
 belongs to its declaration, and the controls' labels to the package's translations.
 
-**ADR:** none — scope
+**ADR:** none — a scope boundary of this feature, which nothing downstream inherits
 
 ## D10 — Glossary terms for the build
 
@@ -102,7 +102,7 @@ in layers (Tailwind v4) would lose to Driver.js's defaults whenever `{% page_tou
 its stylesheet. The starter script moves the package's link to the start of `<head>`, so the
 `page-tours` layer is always the lowest, and no rule about where the tag sits is needed.
 
-**ADR:** docs/adr/0004-driver-js-styles-sit-in-the-lowest-cascade-layer.md, with D11
+**ADR:** docs/adr/0004-driver-js-styles-sit-in-the-lowest-cascade-layer.md
 
 ## D13 — The highlight's fill and opacity become presentation attributes
 
