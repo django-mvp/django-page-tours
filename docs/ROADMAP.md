@@ -70,7 +70,7 @@ Step text and the tour's own controls (next, back, close, the step count) are sh
 
 ### R5 — A site's own look for its tours
 
-*feature · advances G7*
+*delivered in [#22](https://github.com/django-mvp/django-page-tours/issues/22) · advances G7*
 
 A site restyles its tours with its own CSS, and a design system built on Django can style tours once for every site that uses it, without editing the package's templates. Serves G7. Out of scope: a design shipped by this package.
 
