@@ -4,9 +4,14 @@ import json
 import re
 
 import pytest
+from django.core.checks import run_checks
 from django.core.management import call_command
 from django.urls import reverse
 from playwright.sync_api import expect
+
+from demo import settings as demo_settings
+from demo.library.views import BookDetailView, BookListView
+from demo.tours import book_tour
 
 pytestmark = pytest.mark.urls("demo.urls")
 
@@ -145,6 +150,94 @@ class TestDemoTourPages:
         page = client.get(reverse("on-request")).content.decode()
 
         assert page.count("data-page-tour-replay") == 2
+
+
+class TestLibraryPages:
+    """The demo pages of an installed app whose tours the project changed."""
+
+    PAGES = ["library-books", "library-book", "library-loans"]
+
+    @pytest.fixture(autouse=True)
+    def project_overrides(self, settings):
+        """Set the demo's own overrides, which the test settings do not carry."""
+        settings.PAGE_TOURS_OVERRIDES = demo_settings.PAGE_TOURS_OVERRIDES
+
+    def payload(self, page):
+        """Return the payload the page hands to the browser."""
+        match = re.search(
+            r'<script id="page-tour-steps" type="application/json">(.*?)</script>',
+            page,
+            re.DOTALL,
+        )
+        return json.loads(match.group(1))
+
+    def bar(self, page):
+        """Return the markup of the page bar."""
+        return page.split('aria-label="Demo pages"', 1)[1].split("</nav>", 1)[0]
+
+    @pytest.mark.parametrize("name", PAGES)
+    def test_the_page_responds(self, client, name):
+        """Each page renders for an anonymous visitor."""
+        assert client.get(reverse(name)).status_code == 200
+
+    def test_the_book_list_plays_the_steps_the_app_declared(self, client):
+        """Its payload is the app's own tour."""
+        page = client.get(reverse("library-books")).content.decode()
+
+        assert self.payload(page)["steps"] == BookListView.tour.as_driver_steps()
+
+    def test_the_book_page_plays_the_projects_replacement(self, client):
+        """Its payload carries the replacement's steps under the app view's id."""
+        payload = self.payload(client.get(reverse("library-book")).content.decode())
+
+        assert payload["steps"] == book_tour.as_driver_steps()
+        assert payload["id"] == "demo.library.views.BookDetailView"
+
+    def test_the_replacement_differs_from_the_apps_tour(self):
+        """The project reworded a step, so the two tours are not the same."""
+        assert book_tour.as_driver_steps() != BookDetailView.tour.as_driver_steps()
+
+    def test_the_loans_page_has_no_tour_payload(self, client):
+        """The project turned its tour off."""
+        page = client.get(reverse("library-loans")).content.decode()
+
+        assert 'id="page-tour-steps"' not in page
+
+    def test_the_loans_page_has_no_replay_control(self, client):
+        """With no tour there is nothing to replay."""
+        page = client.get(reverse("library-loans")).content.decode()
+
+        assert "data-page-tour-replay" not in self.bar(page)
+
+    @pytest.mark.parametrize("name", ["library-books", "library-book"])
+    def test_every_step_with_an_element_points_at_the_page(self, client, name):
+        """The markup each step points at is in the page."""
+        page = client.get(reverse(name)).content.decode()
+        selectors = [
+            s["element"] for s in self.payload(page)["steps"] if "element" in s
+        ]
+
+        assert selectors
+        assert all(f'id="{s.removeprefix("#")}"' in page for s in selectors)
+
+    @pytest.mark.parametrize("name", PAGES)
+    def test_the_overview_links_the_page(self, client, name):
+        """The overview names each of them outside the page bar."""
+        page = client.get(reverse("overview")).content.decode()
+
+        assert f'href="{reverse(name)}"' in page.split("</nav>", 1)[1]
+
+    def test_the_page_bar_links_the_book_list(self, client):
+        """The bar every demo page shares links the library."""
+        page = client.get(reverse("overview")).content.decode()
+
+        assert f'href="{reverse("library-books")}"' in self.bar(page)
+
+    def test_the_demo_raises_no_page_tours_warning(self):
+        """Both override keys are routed, so the check is silent."""
+        found = [m for m in run_checks() if m.id.startswith("page_tours.")]
+
+        assert found == []
 
 
 class TestTourPageInBrowser:
