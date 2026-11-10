@@ -1,7 +1,7 @@
 # Installation
 
-Django Page Tours is a Django app with no models and no settings of its own, so installing it
-takes two steps.
+Django Page Tours is a Django app with no models and no settings you have to set, so installing
+it takes three steps.
 
 ## Install the package
 
@@ -38,6 +38,22 @@ Load the tag library and place the tag once in the `<head>` of your base templat
 </head>
 ```
 
+The tag draws nothing where it stands. On a page with a tour it adds the tour's stylesheet, its
+steps and the scripts that play it, the way `{{ form.media }}` adds a form's assets, and the tour
+then shows over the page. That is why it goes once in the base template and not where a tour is
+used: every page that extends the template is served by it, and a page with no tour gets nothing
+from it. The one tag a visitor sees is the [replay control](replaying-a-tour.md), which you place
+where its button should appear.
+
 The tag needs `django.template.context_processors.request` in the `context_processors` option of
 your `TEMPLATES` setting, and Django's `check` command warns with `page_tours.W001` when it is
 missing. [Adding a tour to a page](tours.md) shows how to declare a tour.
+
+## Settings
+
+None are required. Two are there when you need them:
+
+- `PAGE_TOURS_CLASSES` gives the parts of a shown step classes of your own. See
+  [Styling tours](styling-tours.md).
+- `PAGE_TOURS_OVERRIDES` replaces or turns off the tour of an installed app. See
+  [Tours from reusable apps](tours-from-reusable-apps.md).

@@ -20,9 +20,8 @@ sentence about it. Building one by hand means wiring a JavaScript library into t
 the steps in JavaScript far from the view they describe, and remembering who has already seen it.
 django-page-tours moves the steps into Python, next to the page, and handles the rest.
 
-> **Status:** pre-release. A tour can be declared for a page and plays when the page opens.
-> Visitors can step through it or close it, and a tour that fails leaves the page usable.
-> Nothing is published to PyPI until the first usable version.
+> **Status:** alpha. Every feature on the roadmap is in place, and the API may still change
+> before 1.0.
 
 ## Scope & philosophy
 
@@ -35,8 +34,8 @@ see the new one once.
 
 **What it deliberately is not.**
 
-- **Not a design.** The package ships Driver.js's own styling and nothing more. A site gives the
-  tour its look with its own CSS.
+- **Not a design.** The package ships Driver.js's own styling, in the lowest cascade layer on the
+  page, and nothing more. A site gives the tour its look with its own CSS.
 - **Not a store of progress per account.** Whether someone has seen a tour is kept in their
   browser. The package adds no database tables.
 - **Not tours across several pages,** and not a getting-started checklist.
@@ -51,13 +50,30 @@ see the new one once.
 
 ## Quickstart
 
-Add `page_tours` to `INSTALLED_APPS`, load the tag once in the `<head>` of your base template,
-and declare a tour on a view:
+```bash
+pip install django-page-tours
+```
+
+Add `page_tours` to `INSTALLED_APPS`, and check that
+`django.template.context_processors.request` is in the `context_processors` of your `TEMPLATES`
+setting.
+
+Place `{% page_tour %}` once in the `<head>` of your base template:
 
 ```django
 {% load page_tours %}
-{% page_tour %}
+<head>
+  ...
+  {% page_tour %}
+</head>
 ```
+
+The tag draws nothing where it stands. It adds the tour's stylesheet, its steps and its scripts
+to the page, the way `{{ form.media }}` adds a form's assets, and the tour then shows over the
+page. Placed once in the base template, it serves every page that extends it. A page with no tour
+gets nothing from it.
+
+Declare a tour on a view:
 
 ```python
 from django.views.generic import TemplateView
@@ -67,14 +83,29 @@ from page_tours import Tour, TourStep
 
 class DashboardView(TemplateView):
     template_name = "dashboard.html"
-    tour = Tour(steps=[TourStep(title="Welcome", text="A quick look around.")])
+    tour = Tour(
+        steps=[
+            TourStep(title="Welcome", text="A quick look around."),
+            TourStep(title="Projects", text="Your work is here.", element="#projects"),
+        ]
+    )
+```
+
+The tour plays the first time a browser opens the page, and not again in that browser.
+
+To let visitors play it again, place `{% page_tour_replay %}` where the button should appear. It
+shows only on pages that have a tour:
+
+```django
+{% page_tour_replay class="btn" %}Show the tour{% endpage_tour_replay %}
 ```
 
 A project can replace the tour of an installed app, or turn it off, from its own settings with
 `PAGE_TOURS_OVERRIDES`, without editing the app.
 
 The [documentation](https://django-mvp.github.io/django-page-tours/) covers function-based views,
-steps attached to elements, what a visitor sees, and translation.
+steps attached to elements, tour versions, replaying a tour and tours that play only on request,
+tours from reusable apps, styling, and translation.
 
 ## Styling
 

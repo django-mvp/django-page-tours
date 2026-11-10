@@ -15,8 +15,10 @@ Python, next to the view that renders it, as a short list of steps that each poi
 the page. [Driver.js](https://driverjs.com/), shipped inside the package, shows the tour in the
 visitor's browser.
 
-The package is in early development. A tour can be declared for a page and plays when the page
-opens. This site grows as each feature lands.
+A tour plays by itself the first time a browser opens its page and then stays out of the way. A
+visitor can play it again from a replay control you place. It works from the keyboard and with a
+screen reader, speaks the page's language, and takes your site's look. A project can change the
+tours of the apps it installs without editing them.
 
 ## Requirements
 
@@ -29,7 +31,8 @@ opens. This site grows as each feature lands.
 pip install django-page-tours
 ```
 
-Add the app to `INSTALLED_APPS`:
+Add the app to `INSTALLED_APPS`, and check that `django.template.context_processors.request` is
+in the `context_processors` of your `TEMPLATES` setting:
 
 ```python
 INSTALLED_APPS = [
@@ -38,12 +41,18 @@ INSTALLED_APPS = [
 ]
 ```
 
-Load the tag once in the `<head>` of your base template:
+Place the tag once in the `<head>` of your base template:
 
 ```django
 {% load page_tours %}
-{% page_tour %}
+<head>
+  ...
+  {% page_tour %}
+</head>
 ```
+
+The tag draws nothing where it stands. It adds the tour's stylesheet, steps and scripts to the
+page, and the tour then shows over the page.
 
 [Installation](developer/installation.md) in the developer guide says what each step sets up.
 
@@ -72,7 +81,9 @@ function-based views, steps and translation.
 
 ## Next steps
 
-- [Developer guide](developer/index.md): installing the package and [adding a tour to a page](developer/tours.md).
+- [Developer guide](developer/index.md): installing the package, [adding a tour to a page](developer/tours.md),
+  [replaying a tour](developer/replaying-a-tour.md), [tours from reusable apps](developer/tours-from-reusable-apps.md)
+  and [styling tours](developer/styling-tours.md).
 - [Reference](reference/api/index): the Python API.
 
 ## About the project

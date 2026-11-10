@@ -37,7 +37,8 @@ this once for the whole project.
    ]
    ```
 
-A page with no tour gets nothing from the tag: no script, no stylesheet, no reference to
+The tag draws nothing where it stands, so its place in the `<head>` does not decide where the
+tour shows. A page with no tour gets nothing from the tag: no script, no stylesheet, no reference to
 Driver.js. A page with a tour gets the Driver.js stylesheet and script from your own static
 files, and the page's steps.
 
@@ -208,8 +209,9 @@ translated label is shown as text, never as markup.
 
 The demo project in `demo/` has a tour page at `/tour/`, linked from the bar at the top of every
 demo page. Its tour has a step attached to nothing, a step attached to a disclosure, a step
-attached to an element that is not on the page, and a closing step attached to a text field. Run
-`python manage.py runserver` from the repository root and open the page to see all of them.
+attached to an element that is not on the page, and a closing step attached to a text field. To
+run the demo, follow [Run the demo project](../contributing/set-up-a-development-environment.md#run-the-demo-project)
+and open the page to see all of them.
 
 The changed-tour page at `/changed-tour/` routes one tour at two versions, at `/changed-tour/`
 and `/changed-tour/new-version/`. Open one and then the other to see a new version play once

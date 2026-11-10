@@ -1,7 +1,7 @@
 # Styling tours
 
-The package ships Driver.js's own look and nothing more. This page shows how to give a tour the
-look of your site. Every piece of a shown step has a documented class name, so you style the tour
+The package ships Driver.js's own look, in the lowest cascade layer on the page, and nothing more.
+This page shows how to give a tour the look of your site. Every piece of a shown step has a documented class name, so you style the tour
 from your own stylesheet. You can also give a piece classes of your own, for example classes from
 your CSS framework.
 
