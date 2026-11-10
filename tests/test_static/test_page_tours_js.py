@@ -1122,20 +1122,24 @@ class TestPartNames:
             page.click(NEXT)
 
     @pytest.mark.usefixtures("site_classes")
-    def test_a_failure_while_naming_a_part_ends_the_tour(self, page, live_server):
+    @pytest.mark.parametrize("token", ["page-tour-title", "page-tour-highlight"])
+    def test_a_failure_while_naming_a_part_ends_the_tour(
+        self, page, live_server, token
+    ):
         """When adding a class throws, the tour ends without a page error."""
         errors = []
         page.on("pageerror", lambda error: errors.append(str(error)))
         page.add_init_script(
             """
+            const token = "TOKEN";
             const add = DOMTokenList.prototype.add;
             DOMTokenList.prototype.add = function (...tokens) {
-              if (tokens.includes("page-tour-title")) {
+              if (tokens.includes(token)) {
                 throw new Error("cannot add");
               }
               return add.apply(this, tokens);
             };
-            """
+            """.replace("TOKEN", token)
         )
         page.goto(live_server.url + reverse("parts-tour"))
         page.wait_for_load_state("load")
