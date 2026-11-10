@@ -3,7 +3,11 @@
 import copy
 
 import pytest
+from django.core import checks
 from django.core.checks import run_checks
+from django.core.management import call_command
+
+from page_tours.parts import TourParts
 
 REQUEST_PROCESSOR = "django.template.context_processors.request"
 
@@ -114,3 +118,73 @@ class TestOverridesCheck:
         settings.PAGE_TOURS_OVERRIDES = {"tests.views.UntouchedTourView": 42}
 
         assert overrides_warnings() == {}
+
+
+class TestClassesCheck:
+    """The warnings for classes configured for the wrong parts or in the wrong shape."""
+
+    @staticmethod
+    def issues(settings, value):
+        """Return the issues raised for a PAGE_TOURS_CLASSES of this value."""
+        settings.PAGE_TOURS_CLASSES = value
+        return [
+            issue for issue in run_checks() if issue.id.startswith("page_tours.W00")
+        ]
+
+    def test_an_unknown_part_gives_w002_naming_the_part_and_the_setting(self, settings):
+        """The warning says which entry is wrong and where it was found."""
+        found = self.issues(settings, {"footer": "x"})
+
+        assert [issue.id for issue in found] == ["page_tours.W002"]
+        assert "footer" in found[0].msg
+        assert "PAGE_TOURS_CLASSES" in found[0].msg
+
+    def test_the_hint_of_w002_lists_every_part(self, settings):
+        """The developer is shown the parts they can use."""
+        found = self.issues(settings, {"footer": "x"})
+
+        assert all(part in found[0].hint for part in TourParts.parts)
+
+    def test_a_value_that_is_not_a_string_gives_w003_naming_the_part(self, settings):
+        """A list of class names is not a string of them."""
+        found = self.issues(settings, {"box": ["card"]})
+
+        assert [issue.id for issue in found] == ["page_tours.W003"]
+        assert "box" in found[0].msg
+        assert "PAGE_TOURS_CLASSES" in found[0].msg
+
+    @pytest.mark.parametrize("value", ["box", ["box"], 3, None])
+    def test_a_setting_that_is_not_a_dict_gives_w003(self, settings, value):
+        """The setting itself must be a dict."""
+        found = self.issues(settings, value)
+
+        assert [issue.id for issue in found] == ["page_tours.W003"]
+        assert "PAGE_TOURS_CLASSES" in found[0].msg
+
+    def test_each_wrong_entry_gets_its_own_warning(self, settings):
+        """Two mistakes are two warnings."""
+        found = self.issues(settings, {"footer": "x", "box": 3})
+
+        assert sorted(issue.id for issue in found) == [
+            "page_tours.W002",
+            "page_tours.W003",
+        ]
+
+    @pytest.mark.parametrize("value", [{}, {"box": "card", "close": ""}])
+    def test_a_valid_setting_gives_nothing(self, settings, value):
+        """Known parts with string values, an empty string included, are fine."""
+        assert self.issues(settings, value) == []
+
+    def test_no_setting_gives_nothing(self, settings):
+        """The setting is optional."""
+        del settings.PAGE_TOURS_CLASSES
+
+        assert [i for i in run_checks() if i.id.startswith("page_tours.W00")] == []
+
+    def test_both_are_warnings_so_the_checks_still_pass(self, settings):
+        """A styling mistake never stops the project from running."""
+        found = self.issues(settings, {"footer": "x", "box": 3})
+
+        assert {issue.level for issue in found} == {checks.WARNING}
+        settings.PAGE_TOURS_CLASSES = {"footer": "x", "box": 3}
+        call_command("check")

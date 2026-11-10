@@ -5,6 +5,7 @@ from django.core import checks
 from django.urls import URLPattern, URLResolver, get_resolver
 from django.utils.translation import gettext_lazy as _
 
+from page_tours.parts import TourParts
 from page_tours.tours import Tour, declaring_view_name
 
 REQUEST_PROCESSOR = "django.template.context_processors.request"
@@ -111,3 +112,52 @@ def check_overrides_name_declared_tours(app_configs, **kwargs):
         for name in overrides
         if name not in declared
     ]
+
+
+@checks.register()
+def check_part_classes(app_configs, **kwargs):
+    """Warn about classes configured for a part that does not exist or in a wrong shape.
+
+    Wrong entries are skipped when a tour renders, so each is only a warning.
+
+    Args:
+        app_configs: The app configs being checked, supplied by Django.
+        **kwargs: Other arguments Django passes to every check.
+
+    Returns:
+        A list with a ``page_tours.W002`` warning for each unknown part and a
+        ``page_tours.W003`` warning for each value, or whole mapping, that is not
+        what it should be.
+    """
+    issues = []
+    for source, mapping in TourParts.sources():
+        if not isinstance(mapping, dict):
+            issues.append(
+                checks.Warning(
+                    _("%(source)s must be a dict from part to a string of class names.")
+                    % {"source": source},
+                    id="page_tours.W003",
+                )
+            )
+            continue
+        for part, value in mapping.items():
+            if part not in TourParts.parts:
+                issues.append(
+                    checks.Warning(
+                        _("%(source)s names '%(part)s', which is not a part of a tour.")
+                        % {"source": source, "part": part},
+                        hint=_("The parts are: %(parts)s.")
+                        % {"parts": ", ".join(TourParts.parts)},
+                        id="page_tours.W002",
+                    )
+                )
+            elif not isinstance(value, str):
+                issues.append(
+                    checks.Warning(
+                        _("%(source)s gives '%(part)s' a value that is not a string.")
+                        % {"source": source, "part": part},
+                        hint=_("Write the class names as one string."),
+                        id="page_tours.W003",
+                    )
+                )
+    return issues
