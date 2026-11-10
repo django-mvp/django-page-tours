@@ -67,6 +67,7 @@ urlpatterns = [
         views.ControlInBaseNoTourView.as_view(),
         name="control-in-base-no-tour",
     ),
+    path("parts/", views.PartsTourView.as_view(), name="parts-tour"),
     path("tour/", views.ClassTourView.as_view(), name="class-tour"),
     path("tour-again/", views.ClassTourView.as_view(), name="class-tour-again"),
     path("function-tour/", views.function_tour_view, name="function-tour"),

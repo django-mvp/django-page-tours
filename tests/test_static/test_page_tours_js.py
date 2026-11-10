@@ -2,6 +2,7 @@
 
 import re
 
+import pytest
 from django.urls import reverse
 from playwright.sync_api import expect
 
@@ -852,3 +853,184 @@ class TestOwnLook:
         assert len(imports) == 1
         assert imports[0]["layer"] == "page-tours"
         assert imports[0]["href"].endswith("driver.css")
+
+
+PART_SELECTORS = {
+    "box": ".driver-popover",
+    "title": ".driver-popover-title",
+    "text": ".driver-popover-description",
+    "progress": ".driver-popover-progress-text",
+    "previous": ".driver-popover-prev-btn",
+    "next": ".driver-popover-next-btn",
+    "close": ".driver-popover-close-btn",
+    "highlight": "svg.driver-overlay",
+}
+SITE_CLASSES = {part: f"site-{part}" for part in [*PART_SELECTORS, "done"]}
+
+
+def classes_of(page, selector):
+    """Return the class tokens of the first element matching a selector."""
+    return page.evaluate(
+        "(selector) => [...document.querySelector(selector).classList]", selector
+    )
+
+
+def press_until_titled(page, key, title):
+    """Press a key until the step with the given title shows.
+
+    Driver.js ignores the arrow keys while a step is still moving in, so the
+    press is repeated until the step arrives.
+    """
+    for _ in range(20):
+        page.keyboard.press(key)
+        try:
+            expect(page.locator(TITLE)).to_have_text(title, timeout=250)
+        except AssertionError:
+            continue
+        return
+    expect(page.locator(TITLE)).to_have_text(title)
+
+
+class TestPartNames:
+    """Every part of a shown step carries its documented name and its classes."""
+
+    @pytest.fixture
+    def site_classes(self, settings):
+        """Configure a class of the site's own for every part."""
+        settings.PAGE_TOURS_CLASSES = SITE_CLASSES
+
+    def assert_parts_named(self, page):
+        """Assert every part on the page carries its name and configured class."""
+        for part, selector in PART_SELECTORS.items():
+            tokens = classes_of(page, selector)
+            assert f"page-tour-{part}" in tokens, part
+            assert f"site-{part}" in tokens, part
+
+    @pytest.mark.usefixtures("site_classes")
+    def test_each_part_of_an_attached_step_carries_its_name(self, page, live_server):
+        """On a step attached to an element, every part is named and classed."""
+        page.goto(live_server.url + reverse("parts-tour"))
+        expect(page.locator(TITLE)).to_have_text("Step 1")
+
+        self.assert_parts_named(page)
+
+    @pytest.mark.usefixtures("site_classes")
+    def test_an_unattached_step_carries_the_same_names(self, page, live_server):
+        """A step attached to nothing names and classes its parts the same way."""
+        page.goto(live_server.url + reverse("parts-tour"))
+        page.click(NEXT)
+        expect(page.locator(TITLE)).to_have_text("Step 2")
+
+        self.assert_parts_named(page)
+
+    @pytest.mark.usefixtures("site_classes")
+    def test_the_controls_carry_their_names_on_every_step(self, page, live_server):
+        """Previous is named while disabled, next in the middle, done at the end."""
+        page.goto(live_server.url + reverse("parts-tour"))
+        expect(page.locator(PREVIOUS)).to_be_disabled()
+        assert "page-tour-previous" in classes_of(page, PREVIOUS)
+        assert "site-previous" in classes_of(page, PREVIOUS)
+
+        page.click(NEXT)
+        expect(page.locator(TITLE)).to_have_text("Step 2")
+        assert "page-tour-next" in classes_of(page, NEXT)
+        assert "site-next" in classes_of(page, NEXT)
+
+        page.click(NEXT)
+        expect(page.locator(TITLE)).to_have_text("Step 3")
+        last = classes_of(page, NEXT)
+        assert "page-tour-done" in last
+        assert "site-done" in last
+        assert "page-tour-next" not in last
+        assert "site-next" not in last
+
+    @pytest.mark.usefixtures("site_classes")
+    def test_a_configured_class_is_on_exactly_its_part_on_every_step(
+        self, page, live_server
+    ):
+        """One element carries each configured class, on each of the three steps."""
+        page.goto(live_server.url + reverse("parts-tour"))
+        for number in (1, 2, 3):
+            expect(page.locator(TITLE)).to_have_text(f"Step {number}")
+            for part in ("box", "title", "text", "close", "highlight"):
+                assert page.locator(f".site-{part}").count() == 1, (number, part)
+            page.click(NEXT)
+
+    @pytest.mark.usefixtures("site_classes")
+    def test_classes_on_the_controls_leave_the_keyboard_alone(self, page, live_server):
+        """Names stay, Tab reaches next, Enter and the arrows move, Escape ends."""
+        page.goto(live_server.url + reverse("parts-tour"))
+        title = page.locator(TITLE)
+        expect(title).to_have_text("Step 1")
+        label = page.evaluate(
+            """() => JSON.parse(
+                document.getElementById("page-tour-steps").textContent
+            ).controls.close"""
+        )
+        expect(page.locator(CLOSE)).to_have_attribute("aria-label", label)
+
+        page.focus(CLOSE)
+        page.keyboard.press("Tab")
+        expect(page.locator(NEXT)).to_be_focused()
+        page.keyboard.press("Enter")
+        expect(title).to_have_text("Step 2")
+        press_until_titled(page, "ArrowRight", "Step 3")
+        press_until_titled(page, "ArrowLeft", "Step 2")
+        page.keyboard.press("Escape")
+
+        expect(page.locator(".driver-popover")).to_have_count(0)
+
+    @pytest.mark.usefixtures("site_classes")
+    def test_a_replayed_tour_carries_the_same_names(self, page, live_server):
+        """Closing the tour and starting it from the replay control names its parts."""
+        page.goto(live_server.url + reverse("replay"))
+        expect(page.locator(TITLE)).to_have_text("Step 1")
+        page.click(CLOSE)
+        expect(page.locator(".driver-popover")).to_have_count(0)
+
+        page.click("#replay")
+
+        expect(page.locator(TITLE)).to_have_text("Step 1")
+        self.assert_parts_named(page)
+
+    def test_with_no_setting_no_class_of_the_sites_appears(self, page, live_server):
+        """Without configuration, every class in the tour is the package's or Driver's."""
+        page.goto(live_server.url + reverse("parts-tour"))
+        for number in (1, 2, 3):
+            expect(page.locator(TITLE)).to_have_text(f"Step {number}")
+            foreign = page.evaluate(
+                """() => [
+                    ...document.querySelectorAll(
+                        ".driver-popover, .driver-popover *, svg.driver-overlay, "
+                        + "svg.driver-overlay *"
+                    ),
+                ].flatMap((el) => [...el.classList]).filter(
+                    (name) => !name.startsWith("driver-")
+                        && !name.startsWith("page-tour-")
+                )"""
+            )
+            assert foreign == []
+            page.click(NEXT)
+
+    @pytest.mark.usefixtures("site_classes")
+    def test_a_failure_while_naming_a_part_ends_the_tour(self, page, live_server):
+        """When adding a class throws, the tour ends without a page error."""
+        errors = []
+        page.on("pageerror", lambda error: errors.append(str(error)))
+        page.add_init_script(
+            """
+            const add = DOMTokenList.prototype.add;
+            DOMTokenList.prototype.add = function (...tokens) {
+              if (tokens.includes("page-tour-title")) {
+                throw new Error("cannot add");
+              }
+              return add.apply(this, tokens);
+            };
+            """
+        )
+        page.goto(live_server.url + reverse("parts-tour"))
+        page.wait_for_load_state("load")
+
+        expect(page.locator(".driver-popover")).to_have_count(0)
+        assert_no_driver_markup(page)
+        assert errors == []

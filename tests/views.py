@@ -309,3 +309,10 @@ class UntouchedTourView(ReplayView):
 def overridden_function_view(request):
     """Render a function-based page of an installed app, whose tour is changed."""
     return render(request, "test_controls.html")
+
+
+class PartsTourView(TemplateView):
+    """A tour whose first and last steps are attached and whose middle one is not."""
+
+    template_name = "test_page.html"
+    tour = steps_for("h1", "", "#control")

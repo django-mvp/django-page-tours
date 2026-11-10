@@ -65,6 +65,52 @@
   var tour;
   var returnFocusTo;
 
+  function addClasses(element, part) {
+    var tokens = payload.parts && payload.parts[part];
+    if (element && tokens && tokens.length) {
+      element.classList.add.apply(element.classList, tokens);
+    }
+  }
+
+  // Gives every part of the shown step its documented name and the classes the
+  // site configured for it, and nothing else: no attribute, text or role.
+  function nameParts(popover, opts) {
+    addClasses(popover.wrapper, "box");
+    addClasses(popover.title, "title");
+    addClasses(popover.description, "text");
+    addClasses(popover.progress, "progress");
+    addClasses(popover.previousButton, "previous");
+    addClasses(popover.nextButton, opts.driver.isLastStep() ? "done" : "next");
+    addClasses(popover.closeButton, "close");
+  }
+
+  function nameOverlay() {
+    addClasses(document.querySelector("svg.driver-overlay"), "highlight");
+  }
+
+  // Driver.js creates the overlay after the first step's box and a moment before
+  // that step is highlighted, so the overlay is named when it is added.
+  var overlayWatcher;
+
+  function stopWatchingOverlay() {
+    if (overlayWatcher) {
+      overlayWatcher.disconnect();
+      overlayWatcher = undefined;
+    }
+  }
+
+  // Ending the tour waits until Driver.js has finished the call that raised,
+  // so what it adds afterwards is removed too.
+  function guarded(work) {
+    return function (a, b) {
+      try {
+        work(a, b);
+      } catch (error) {
+        queueMicrotask(endTour);
+      }
+    };
+  }
+
   // Driver.js 1.10.2 puts focus back on whatever had it when the current step
   // opened, which after the first step is a button of a popover it has removed.
   // Focus is put back here instead, on what had it before the tour started.
@@ -85,6 +131,7 @@
       // Cleaning up by hand below covers whatever destroy() could not.
     }
     window.removeEventListener("error", endTour);
+    stopWatchingOverlay();
     document
       .querySelectorAll(".driver-overlay, .driver-popover, #driver-dummy-element")
       .forEach(function (el) {
@@ -129,18 +176,24 @@
         prevBtnText: payload.controls.previous,
         doneBtnText: payload.controls.done,
         closeBtnLabel: payload.controls.close,
+        onPopoverRender: guarded(nameParts),
         // Every way a visitor ends the tour arrives here, including a close
         // pressed while a step is still opening, which skips onDestroyed.
         onDestroyStarted: function () {
           tour.destroy();
           window.removeEventListener("error", endTour);
+          stopWatchingOverlay();
           restoreFocus();
         },
         onDestroyed: function () {
           window.removeEventListener("error", endTour);
+          stopWatchingOverlay();
         },
       });
       window.addEventListener("error", endTour);
+      stopWatchingOverlay();
+      overlayWatcher = new MutationObserver(guarded(nameOverlay));
+      overlayWatcher.observe(document.body, { childList: true });
       tour.drive();
       markSeen();
     } catch (error) {

@@ -148,3 +148,14 @@ class attribute. No base class and no registry: one class grouping today's behav
 - The pull request description names D11's reading of FR-006 for the merge gate.
 
 **ADR:** none — review record
+
+## D18 — The overlay is named by a watcher, and a failed hook ends the tour from a microtask
+
+Driver.js renders the first step's box before it creates the overlay, and creates the overlay a
+moment before it reports that step as highlighted, so the render hook finds no overlay on the first
+step and a later hook would leave the first step unnamed for the length of its animation. The
+starter script watches the body for the overlay being added and names it then, on every tour. A
+hook that throws ends the tour from a microtask, because ending it inside the hook let Driver.js
+add its markup to the page afterwards.
+
+**ADR:** none — local to the starter script
