@@ -6,6 +6,8 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+## [v0.1.0] - 2026-11-10
+
 ### Added
 
 - The package skeleton: an installable Django app with its test suite, CI and release flow.

@@ -2,7 +2,7 @@
 name = "django-page-tours"
 # Pre-viable. The first published release is 0.1.0, cut once the Essential goals
 # in GOALS.md are delivered; until then the version stays in 0.0.x.
-version = "0.0.1"
+version = "0.1.0"
 description = "Guided tours of a page for Django sites, shown with Driver.js"
 authors = [
     { name = "Samuel Jennings", email = "samuel.scott.jennings@gmail.com" },
