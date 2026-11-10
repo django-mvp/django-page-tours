@@ -389,6 +389,14 @@ class TestTourOverrides:
         assert payload["steps"] == views.QUIET_REPLACEMENT_TOUR.as_driver_steps()
         assert payload["autoplay"] is False
 
+    def test_one_reworded_step_arrives_among_the_apps_in_order(self, settings):
+        """A replacement that rewords one step carries all three, in order."""
+        settings.PAGE_TOURS_OVERRIDES = {OVERRIDDEN: "tests.views.REWORDED_TOUR"}
+
+        steps = payload_of(views.APP_TOUR)["steps"]
+
+        assert steps == views.REWORDED_TOUR.as_driver_steps()
+
     def test_a_replacement_keeps_the_name_of_the_tour_it_replaces(self, settings):
         """Replacing a tour does not rename it, so what was seen stays seen."""
         settings.PAGE_TOURS_OVERRIDES = {OVERRIDDEN: REPLACEMENT}

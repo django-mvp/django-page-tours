@@ -68,9 +68,9 @@ class Tour:
     """A guided tour of one page.
 
     A view puts the tour in its template context, and ``{{ tour }}`` in the
-    page's template renders it. Every tour is recorded under its name when it is made, so the system checks
-    can report a name declared twice or a ``PAGE_TOURS_OVERRIDES`` key that names
-    no tour.
+    page's template renders it. Every tour is recorded under its name when it is
+    made, so the system checks can report a name declared twice or a
+    ``PAGE_TOURS_OVERRIDES`` key that names no tour.
 
     Args:
         name: The name the tour is known by: a browser remembers that it has seen
