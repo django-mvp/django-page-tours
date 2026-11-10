@@ -84,3 +84,46 @@ The build adds "part of a step" and the highlight to `CONTEXT.md`, under Tour st
 documented names have a definition. "Popover" stays avoided as a word for the step itself.
 
 **ADR:** none — vocabulary
+
+## D11 — Driver.js's stylesheet is imported into a layer by a one-line file of the package's
+
+FR-003 needs Driver.js's rules under the site's wherever the site links its stylesheet, and only a
+cascade layer does that without editing `driver.css`. An inline `<style>` import would break under
+the strict content security policy the README promises, so the package links
+`page-tours.css`, which holds one `@import` of `driver.css` into layer `page-tours` and no rule of
+its own. FR-006 is read as the package adding no style rules: Driver.js's are still the only ones.
+
+**ADR:** pending — graduates at converge if it holds: it fixes how every future Driver.js release
+is loaded.
+
+## D12 — The layer is kept first in the document by the starter script
+
+A layer declared after a framework's layers outranks them, so a site whose framework classes sit
+in layers (Tailwind v4) would lose to Driver.js's defaults whenever `{% page_tour %}` comes after
+its stylesheet. The starter script moves the package's link to the start of `<head>`, so the
+`page-tours` layer is always the lowest, and no rule about where the tag sits is needed.
+
+**ADR:** none — part of D11's mechanism
+
+## D13 — The highlight's fill and opacity become presentation attributes
+
+Driver.js writes them as inline styles, which no stylesheet rule can beat. As presentation
+attributes on the overlay they look the same and give way to any rule a site writes.
+
+**ADR:** none — local to the starter script
+
+## D14 — App defaults are an `AppConfig` attribute, warnings are warnings
+
+`page_tour_classes` on an app's `AppConfig`, read in `INSTALLED_APPS` order through Django's app
+registry, is the least machinery that gives per-part, first-app-wins defaults (planning note 2).
+Wrong entries are `Warning`s, not `Error`s, because an error stops `runserver`, and FR-008 says a
+styling mistake never stops a page.
+
+**ADR:** none — follows from FR-008 and FR-010 with Django's own mechanisms
+
+## D15 — Values are strings; an empty string clears a part
+
+One shape for configured classes keeps the setting simple. An empty string is the way a project
+removes an app's classes from one part, which FR-010's part-by-part replacement implies.
+
+**ADR:** none — local to the setting's shape
