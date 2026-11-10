@@ -162,13 +162,17 @@ Three additions to `page-tours.js`, inside its existing guards:
    (highlight). Only classes are added: no attribute, text, role or tabindex is touched (FR-005).
    Driver.js builds a new box per step, so this runs on every step, the first, the last, an
    unattached one and a replayed one alike (FR-011).
-3. **The highlight gives way to site rules.** In the same hook, when the overlay's `path` carries
-   inline `fill` or `opacity`, move those values onto the `svg` as `fill` and `opacity`
-   attributes and remove them from the path's inline style. With no site rule the overlay looks
-   as before. The overlay is created once per tour, so this is idempotent and cheap.
+3. **The highlight gives way to site rules.** A `MutationObserver` on `document.body`, started
+   with the tour, names the overlay when Driver.js adds it (D18), because Driver.js draws the
+   first step's box before it creates the overlay. When the overlay's `path` carries inline
+   `fill` or `opacity`, those move onto the `svg` as the `fill` and `fill-opacity` attributes
+   and leave the path's inline style. `fill-opacity` rather than `opacity`, because Driver.js's
+   fade-in animates the `svg`'s own opacity and the dimming has to multiply into it. With no
+   site rule the overlay looks as before.
 
-The whole hook body sits in a `try`. On any error it calls the existing `endTour()`, which
-removes everything Driver.js added and restores focus (edge case, Article XIII).
+The popover hook and the overlay watcher each run inside a guard. On any error the guard ends the
+tour from a microtask with the existing `endTour()`, so whatever Driver.js adds after the failing
+call is removed too, and focus is restored (edge case, Article XIII).
 
 ### System checks
 

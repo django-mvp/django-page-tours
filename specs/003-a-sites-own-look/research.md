@@ -86,9 +86,11 @@ The highlight is the overlay `svg.driver-overlay`, created once when the tour st
 between steps; later steps only rewrite its path. Driver.js sets the path's fill and opacity as
 inline styles (`a.style.fill`, `a.style.opacity`), and an inline style beats any rule in a
 stylesheet, so FR-003 cannot hold for the highlight as Driver.js leaves it. The starter script
-moves those two values onto the `svg` as `fill` and `opacity` presentation attributes. A
-presentation attribute gives way to any stylesheet rule, the path inherits the fill, and with no
-site rule the overlay looks exactly as before.
+moves those two values onto the `svg` as the `fill` and `fill-opacity` presentation attributes.
+A presentation attribute gives way to any stylesheet rule and the path inherits both. The
+opacity becomes `fill-opacity` because Driver.js's fade-in animates the `svg`'s own `opacity`
+from 0 to 1, and an `opacity` attribute there would be overridden by the animation, so the
+overlay would flash at full strength. With no site rule the overlay looks exactly as before.
 
 ## What already exists
 

@@ -106,8 +106,10 @@ its stylesheet. The starter script moves the package's link to the start of `<he
 
 ## D13 — The highlight's fill and opacity become presentation attributes
 
-Driver.js writes them as inline styles, which no stylesheet rule can beat. As presentation
-attributes on the overlay they look the same and give way to any rule a site writes.
+Driver.js writes them as inline styles, which no stylesheet rule can beat. As the `fill` and
+`fill-opacity` presentation attributes on the overlay they look the same and give way to any rule
+a site writes. The opacity goes to `fill-opacity` because Driver.js's fade-in animates the
+overlay's own `opacity`.
 
 **ADR:** none — local to the starter script
 
