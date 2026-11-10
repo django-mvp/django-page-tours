@@ -112,16 +112,27 @@ Settles D8.
 
 **ADR:** to be considered at S5, with D3
 
-## D12 — A replaced tour plays at the replacement's own version
+## D12 — A replacement's version counts on from the app tour's
 
-The page emits the replacement in place of the app's tour, so the browser compares the
-replacement's version. An app release that raises its own tour's version does not bring back a
-project's replacement. The guide tells the project to give a replacement the version the app's
-tour had, written as a number, so visitors who saw the app's tour do not see it again by itself
-(FR-008). Inheriting the app's version was left out because it would undo D4 on every app release
-that raised it (`research.md`, "How a version meets a replacement"). Settles D4's open question.
+A replaced tour plays at the app tour's version plus the replacement's, less one. A replacement
+left at version 1 therefore plays at the app tour's version, so nobody who saw the app's tour
+sees it by itself (FR-008, scenario 9), and raising the replacement's version shows it again.
+Emitting the replacement's own version was the first reading and was dropped at design review: an
+app tour at version 2 stores `"2"`, so a replacement at 1 would play once for everyone who saw it,
+against FR-008. Emitting only the app's version was dropped too: a project could never show its
+own replacement again, against FR-004. The cost is D4's starting reading: an app release that
+raises its own tour's version shows the project's replacement again once. The app's author said
+the page changed enough, so that is the safer side to err on. Settles D4's open question.
 
 **ADR:** to be considered at S5, with D3
+
+## D15 — The naming rule is stated once
+
+`tour_id` and the check both name a class-based view's tour through `declaring_view_name`, so the
+check cannot disagree with what the browser is sent. Design review found the plan's restatement
+named `Sub.as_view(tour=...)` differently from `tour_id` when a parent class sets `tour = None`.
+
+**ADR:** none — local to this feature, nothing downstream inherits it
 
 ## D13 — Every replacement is imported when the project starts
 

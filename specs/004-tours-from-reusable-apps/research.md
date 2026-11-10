@@ -37,22 +37,20 @@ default, and the browser stores the version that played as the value under the e
   dotted path, resolved with `django.utils.module_loading.import_string`, as Django resolves
   `FORM_RENDERER` and `DEFAULT_EXCEPTION_REPORTER`.
 
-### How a version meets a replacement (decisions.md D4)
+### How a version meets a replacement (decisions.md D4, D12)
 
-What the browser compares is the version of the tour the page emits. A replaced tour emits the
-replacement, so its version is the replacement's own. The app raising its own tour's version
-changes nothing for a project that replaced it: the replacement stands, and only a version on
-the replacement shows it again. That is D4's starting reading, and it needs no code beyond
-emitting the replacement in place of the app's tour.
+What the browser compares is the version of the tour the page emits (`page-tours.js` compares the
+stored value to `String(payload.version)` for equality). A browser that saw the app's tour at
+version 2 holds `"2"`. Three readings were weighed:
 
-FR-008 holds as long as the replacement carries the version the app's tour had when it was
-replaced: 1, unless the app raised it. A browser that saw the app's tour at version 3 holds `"3"`,
-so a replacement left at version 1 would play once for it. The guide tells the project to give
-the replacement the app tour's version as a number, and not as a reference to the app's
-attribute, which would follow every later release of the app. Inheriting the app's version
-automatically was weighed and left out: it would bring the replacement back on every app release
-that raised its version, which is the opposite of D4, and `Tour(version=1)` cannot be told apart
-from a tour that left the version out.
+- Emit the replacement's own version. A replacement left at 1 plays once for everyone who saw the
+  app's tour at 2. Against FR-008. Not adopted.
+- Emit the app tour's version. The project can never show its replacement again. Against FR-004.
+  Not adopted.
+- Count the replacement's version on from the app tour's: `app + replacement - 1`. A replacement
+  at 1 plays at the app's version, so FR-008 holds at any app version; raising it shows it again.
+  An app release that raises its own version also shows the replacement again once, which is
+  where it gives up D4's starting reading. Adopted.
 
 ### Listing the declared tours for the check (FR-009)
 
@@ -74,7 +72,7 @@ and `django.contrib.auth`, which a project need not install. The walk is a dozen
   in `PageToursConfig.ready`, so the import happens then.
 - A tour's name: this repo, `tour_id` (ADR 0002). Nothing new.
 - Keeping a replacement's seen state: this repo, the name is the declaring view's and the starter
-  script keys on it. Nothing needed.
+  script keys on it. New code is the version arithmetic, `dataclasses.replace` (standard library).
 - Hiding the replay control on a page whose tour is off: this repo, `page_tour_replay` already
   renders nothing when `Tour.for_page` returns `None`. Nothing needed.
 - Reporting a stale change: Django's system check framework, as `page_tours.W001` already uses.

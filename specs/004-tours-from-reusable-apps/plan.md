@@ -51,20 +51,38 @@ PAGE_TOURS_OVERRIDES = {
 
 ### Resolving the setting (`page_tours/tours.py`)
 
-- `tour_overrides() -> dict[str, Tour | None]`: reads `getattr(settings, "PAGE_TOURS_OVERRIDES",
-  {})` and returns a new dict with every string value resolved with `import_string`. Raises
-  `ImproperlyConfigured` when a value is neither a string nor `None`, when the path does not
-  import (chain the `ImportError`), or when it names something other than a `Tour`. Each message
-  names the key. Not cached: `import_string` on an imported module is a dict lookup and an
-  attribute read, and a test that changes the setting sees the change at once (D13).
-- `Tour.for_page(context)`: finds the declared tour as today. When there is one, it looks up
-  `tour_id(context)` in `tour_overrides()`: a key that is present returns its value, a replacement
-  or `None`; otherwise the declared tour. The docstring says so.
-- `tour_id` is unchanged. It reads the declared tour from the view, so a replaced tour keeps its
-  name and therefore its seen state (FR-008).
+- `resolve_override(name, value) -> Tour | None`: `None` returns `None`; a string is resolved
+  with `import_string` and must be a `Tour`. Raises `ImproperlyConfigured`, naming the key, when
+  the value is neither a string nor `None`, when the path does not import (catch `ImportError`
+  only, and chain it; a replacement module whose `Tour(...)` raises propagates its own
+  `ImproperlyConfigured` unchanged), or when it names something other than a `Tour`.
+- `tour_overrides() -> dict[str, Tour | None]`: every entry of
+  `getattr(settings, "PAGE_TOURS_OVERRIDES", {})` through `resolve_override`. Used at start-up.
+- `Tour.for_page(context)`: finds the declared tour as today. When there is one and its name,
+  `tour_id(context)`, is a key of the setting, it resolves only that entry. `None` turns the tour
+  off. A replacement is returned at its played version (below). Otherwise the declared tour. Not
+  cached, so a test that changes the setting sees the change at once (D13).
+- `tour_id` keeps its rule, moved into `declaring_view_name(view_class)`, which returns the dotted
+  path of the first class along `view_class.__mro__` whose own `__dict__` holds `tour`, or of
+  `view_class` when none does. `tour_id` and the check both call it, so the rule is stated once.
+  A replaced tour keeps its name and therefore its seen state (FR-008).
 - `PageToursConfig.ready` calls `tour_overrides()` once, after registering the checks, so every
   mistake in the setting, including a replacement module whose `Tour(...)` raises, fails when the
   project starts (FR-010).
+
+### The version a replaced tour plays at
+
+A replacement's version counts on from the app tour's: the page emits the replacement with
+`version = app tour's version + replacement's version - 1`, built with `dataclasses.replace`.
+
+- A replacement left at version 1 plays at the app tour's version, so a visitor who saw the app's
+  tour at any version does not see the replacement by itself (FR-008, scenario 9, SC-004).
+- Raising the replacement's version shows it again (FR-004: a replacement carries what a tour
+  carries).
+- Turning a tour off and on changes nothing stored, so it resets nobody.
+- An app release that raises its own tour's version shows the replacement again once. The app's
+  author said the page changed enough, so the project's visitors see the project's tour of it
+  again.
 
 ### The tag and the replay control
 
@@ -77,23 +95,16 @@ return `None`, so the tag emits nothing and `{% page_tour_replay %}` renders not
 - `with_tour`'s decorator sets `page_tour_view` on the wrapper it returns, the same path it puts
   on the request, sync and async.
 - `declared_tour_names(patterns) -> set[str]`: walks the given URL patterns, recursing into every
-  `URLResolver.url_patterns`. For each `URLPattern.callback`:
-  - with `view_class`: the tour from `view_initkwargs["tour"]` when it is a `Tour`, named by
-    `view_class`'s dotted path; otherwise the first class along `view_class.__mro__` whose own
-    `__dict__` holds a `Tour` under `tour`, named by its dotted path. The same rule as `tour_id`.
-  - with `page_tour_view`: that name.
+  `URLResolver.url_patterns`. For each `URLPattern.callback`: `page_tour_view` first, when the
+  callback has it; otherwise, with `view_class`, when `view_initkwargs.get("tour")` or
+  `getattr(view_class, "tour", None)` is a `Tour`, the name `declaring_view_name(view_class)`
+  gives. The same rule as `tour_id`, from the same helper.
 - `check_overrides_name_declared_tours`, registered with `checks.Tags.urls`: for each key of the
   setting not in `declared_tour_names(get_resolver().url_patterns)`, one
   `checks.Warning(..., obj=<key>, id="page_tours.W002")`, the message naming the key and the hint
   saying a view that was renamed or moved gives its tour a new name. Silent when the setting is
   absent or empty. It reads the raw keys and does not resolve values, so a bad value is reported
   once, by `ready`.
-
-### Version
-
-The browser compares the version the page emits, which for a replaced tour is the replacement's
-(D12). Nothing is coded for it. The guide says to give a replacement the version the app's tour
-has, as a number.
 
 ### Demo project
 
@@ -115,10 +126,10 @@ demo's own pages do not meet them, except in `overview.html`, `settings.py` and 
 
 - `docs/developer/tours-from-reusable-apps.md`, in the Guides toctree after `replaying-a-tour`:
   for an app author, ship tours by declaring them on the app's views as in any project, and treat
-  moving or renaming a view that declares a tour as a change projects may depend on; for a
-  project, find a tour's name, replace it (reusing the app's steps), turn it off, keep visitors
-  who saw it from seeing the replacement by giving it the app tour's version, and what `W002`
-  means.
+  moving or renaming a view that declares a tour, or raising its version, as a change projects
+  see; for a project, find a tour's name, replace it (reusing the app's steps), turn it off, how
+  a replacement's version counts on from the app's, and what `W002` means, including that it
+  reads the root URLconf only.
 - `docs/developer/tours.md`, "Seen tours": one sentence that a tour's name is also how a project
   changes it, linking the new page.
 - README: one line in the feature list. CHANGELOG `[Unreleased]`: one entry.
@@ -146,13 +157,17 @@ origin/main at the push.
   path that does not import, path to something that is not a tour); `ready` raises for a bad
   setting.
 - `tests/test_templatetags/test_page_tours.py`, `TestOverriddenTourPayload`: the page's payload
-  carries the replacement's steps and the declared id; one step reworded among the app's steps
+  carries the replacement's steps, the declared id, and the version counted on from the app
+  tour's; one step reworded among the app's steps
   arrives in order; a replacement with `autoplay=False` carries it; a turned-off page has no
   payload and no replay template; two URLs of the view both carry the change.
-- `tests/test_static/test_page_tours_js.py`, `TestOverriddenTourSeen`: having seen the app's tour,
-  the replacement does not play by itself and the replay control plays it (scenario 9).
+- `tests/test_static/test_page_tours_js.py`, `TestOverriddenTourSeen`, with the app's tour at
+  version 2: having seen it, the replacement left at version 1 does not play by itself and the
+  replay control plays it (scenario 9); a replacement at version 2 plays by itself once.
 - `tests/test_checks.py`, `TestOverridesCheck`: `W002` for a name no routed view declares, with
   the name as `obj`; silent for a routed class, a routed subclass's inherited name, a function
-  view, an `as_view(tour=...)` route and a view under `include()`; silent with no setting.
+  view, a view under `include()`, and a subclass that sets no tour routed with `as_view(tour=...)`
+  under the name `tour_id` gives it; `W002` for that subclass's own name; silent with no
+  setting.
 - `tests/test_demo.py`: the library's untouched page carries its own steps, the replaced page
   carries the project's, the turned-off page carries no payload.
