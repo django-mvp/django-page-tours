@@ -71,6 +71,7 @@ urlpatterns = [
     path("style-before/", views.StyleBeforeView.as_view(), name="style-before"),
     path("style-after/", views.StyleAfterView.as_view(), name="style-after"),
     path("layer-before/", views.LayerBeforeView.as_view(), name="layer-before"),
+    path("design-system/", views.DesignSystemView.as_view(), name="design-system"),
     path("tour/", views.ClassTourView.as_view(), name="class-tour"),
     path("tour-again/", views.ClassTourView.as_view(), name="class-tour-again"),
     path("function-tour/", views.function_tour_view, name="function-tour"),

@@ -335,3 +335,10 @@ class LayerBeforeView(StyleBeforeView):
     """A page whose own layered style sits before the tag."""
 
     template_name = "test_layer_before.html"
+
+
+class DesignSystemView(TemplateView):
+    """A page whose base template loads a design system's stylesheet."""
+
+    template_name = "test_design_system_page.html"
+    tour = steps_for("h1", "#control")

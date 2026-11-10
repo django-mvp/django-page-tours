@@ -1101,3 +1101,45 @@ class TestPartNames:
         expect(page.locator(".driver-popover")).to_have_count(0)
         assert_no_driver_markup(page)
         assert errors == []
+
+
+class TestAppDefaults:
+    """A design system installed as an app styles the tour without any setting."""
+
+    @pytest.fixture(autouse=True)
+    def design_system(self, settings):
+        """Install the test design system, whose stylesheet the finders then find."""
+        settings.PAGE_TOURS_CLASSES = {}
+        settings.INSTALLED_APPS = [*settings.INSTALLED_APPS, "tests.design_system"]
+
+    def test_the_parts_carry_the_apps_classes(self, page, live_server):
+        """The box and the controls the app names carry its classes."""
+        page.goto(live_server.url + reverse("design-system"))
+        expect(page.locator(TITLE)).to_be_visible()
+
+        assert {"page-tour-box", "ds-box", "ds-raised"} <= set(
+            classes_of(page, PART_SELECTORS["box"])
+        )
+        assert "ds-button" in classes_of(page, NEXT)
+
+    def test_the_apps_rule_against_a_documented_name_takes_effect(
+        self, page, live_server
+    ):
+        """The stylesheet its own base template loads reaches the box."""
+        page.goto(live_server.url + reverse("design-system"))
+        expect(page.locator(TITLE)).to_be_visible()
+
+        assert computed(page, ".driver-popover", "backgroundColor") == "rgb(7, 8, 9)"
+
+    def test_a_part_the_project_configures_carries_its_classes_and_not_the_apps(
+        self, page, live_server, settings
+    ):
+        """The setting replaces the app for that part, and the app keeps the rest."""
+        settings.PAGE_TOURS_CLASSES = {"box": "site-box"}
+        page.goto(live_server.url + reverse("design-system"))
+        expect(page.locator(TITLE)).to_be_visible()
+
+        box = classes_of(page, PART_SELECTORS["box"])
+        assert "site-box" in box
+        assert "ds-box" not in box
+        assert "ds-button" in classes_of(page, NEXT)

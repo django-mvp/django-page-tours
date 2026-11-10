@@ -1,0 +1,12 @@
+{% load page_tours static %}<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Test page</title>
+    <link rel="stylesheet" href="{% static 'design_system/design-system.css' %}">
+    {% page_tour %}
+  </head>
+  <body>
+    {% block content %}{% endblock content %}
+  </body>
+</html>
