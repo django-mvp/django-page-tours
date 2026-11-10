@@ -15,7 +15,14 @@ from django.utils.html import escape
 from django.utils.translation import gettext, gettext_lazy
 from django.views import View
 
-from page_tours.tours import Tour, TourStep, tour_id, with_tour
+from page_tours.tours import (
+    Tour,
+    TourStep,
+    resolve_override,
+    tour_id,
+    tour_overrides,
+    with_tour,
+)
 from tests import views
 
 
@@ -539,3 +546,66 @@ class TestTourOverrides:
         settings.PAGE_TOURS_OVERRIDES = {}
 
         assert self.page_tour(views.OverriddenTourView) is views.APP_TOUR
+
+
+class TestTourOverridesRefused:
+    """A setting that cannot be used is refused, not ignored."""
+
+    @pytest.mark.parametrize("value", [42, ["tests.views.REPLACEMENT_TOUR"], True])
+    def test_a_value_that_is_neither_a_path_nor_none_is_refused(self, value):
+        """Only a dotted path or None is a replacement."""
+        with pytest.raises(ImproperlyConfigured):
+            resolve_override(OVERRIDDEN, value)
+
+    def test_a_tour_object_is_refused(self):
+        """The setting holds paths, so a project's settings do not import its tours."""
+        with pytest.raises(ImproperlyConfigured):
+            resolve_override(OVERRIDDEN, views.REPLACEMENT_TOUR)
+
+    @pytest.mark.parametrize(
+        "path", ["tests.views.missing_tour", "tests.no_such_module.tour", "nodots"]
+    )
+    def test_a_path_that_does_not_import_is_refused(self, path):
+        """A replacement that is not there is an error."""
+        with pytest.raises(ImproperlyConfigured):
+            resolve_override(OVERRIDDEN, path)
+
+    def test_a_path_that_does_not_import_keeps_its_cause(self):
+        """The import error that explains the refusal is chained."""
+        with pytest.raises(ImproperlyConfigured) as raised:
+            resolve_override(OVERRIDDEN, "tests.views.missing_tour")
+
+        assert isinstance(raised.value.__cause__, ImportError)
+
+    def test_a_path_to_something_that_is_not_a_tour_is_refused(self):
+        """What the path names has to be a Tour."""
+        with pytest.raises(ImproperlyConfigured):
+            resolve_override(OVERRIDDEN, "tests.views.NOT_A_TOUR")
+
+    def test_a_module_whose_own_tour_is_invalid_raises_its_own_error(self):
+        """The module's error is not reported as a path that cannot be imported."""
+        with pytest.raises(ImproperlyConfigured) as raised:
+            resolve_override(OVERRIDDEN, "tests.invalid_tour.BROKEN_TOUR")
+
+        assert raised.value.__cause__ is None
+
+    def test_none_resolves_to_none(self):
+        """A tour turned off has no replacement."""
+        assert resolve_override(OVERRIDDEN, None) is None
+
+    def test_every_entry_of_the_setting_is_resolved(self, settings):
+        """The replacements and the tours turned off are returned by name."""
+        settings.PAGE_TOURS_OVERRIDES = {OVERRIDDEN: REPLACEMENT, "other": None}
+
+        assert tour_overrides() == {OVERRIDDEN: views.REPLACEMENT_TOUR, "other": None}
+
+    def test_no_setting_resolves_to_nothing(self):
+        """A project that sets nothing changes no tour."""
+        assert tour_overrides() == {}
+
+    def test_one_bad_entry_refuses_the_whole_setting(self, settings):
+        """A good entry does not hide a bad one."""
+        settings.PAGE_TOURS_OVERRIDES = {OVERRIDDEN: REPLACEMENT, "other": 42}
+
+        with pytest.raises(ImproperlyConfigured):
+            tour_overrides()
