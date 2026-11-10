@@ -1,6 +1,6 @@
 # ADR 0004 — A project changes an installed app's tour by its name
 
-**Status:** accepted
+**Status:** superseded by ADR 0006
 
 ## Decision
 

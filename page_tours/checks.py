@@ -2,85 +2,19 @@
 
 from django.conf import settings
 from django.core import checks
-from django.urls import URLPattern, URLResolver, get_resolver
+from django.urls import get_resolver
 from django.utils.translation import gettext_lazy as _
 
 from page_tours.parts import TourParts
-from page_tours.tours import Tour, declaring_view_name
-
-REQUEST_PROCESSOR = "django.template.context_processors.request"
-DJANGO_TEMPLATES = "django.template.backends.django.DjangoTemplates"
-
-
-@checks.register()
-def check_request_context_processor(app_configs, **kwargs):
-    """Warn when no Django template engine puts the request in the context.
-
-    Without the request, a function-based view's tour cannot be found.
-
-    Args:
-        app_configs: The app configs being checked, supplied by Django.
-        **kwargs: Other arguments Django passes to every check.
-
-    Returns:
-        A list with one warning, or an empty list when the processor is listed.
-    """
-    for engine in settings.TEMPLATES:
-        processors = engine.get("OPTIONS", {}).get("context_processors", [])
-        if engine["BACKEND"] == DJANGO_TEMPLATES and REQUEST_PROCESSOR in processors:
-            return []
-    return [
-        checks.Warning(
-            _(
-                "Tours on function-based views are not shown because "
-                "'django.template.context_processors.request' is not in the "
-                "context_processors of any DjangoTemplates backend."
-            ),
-            hint=_("Add it to the 'context_processors' option of TEMPLATES."),
-            id="page_tours.W001",
-        )
-    ]
-
-
-def declared_tour_names(patterns) -> set[str]:
-    """Name every tour the routed views declare, as ``tour_id`` names them.
-
-    A function-based view is named by ``with_tour``. A class-based view that
-    carries a tour, declared on the class or given through ``as_view``, is named
-    by the class that declares it.
-
-    Args:
-        patterns: URL patterns and resolvers, such as ``get_resolver().url_patterns``.
-
-    Returns:
-        The names of the tours of every view the patterns route to, including
-        views under ``include()``.
-    """
-    names: set[str] = set()
-    for pattern in patterns:
-        if isinstance(pattern, URLResolver):
-            names |= declared_tour_names(pattern.url_patterns)
-        elif isinstance(pattern, URLPattern):
-            callback = pattern.callback
-            view_class = getattr(callback, "view_class", None)
-            if hasattr(callback, "page_tour_view"):
-                names.add(callback.page_tour_view)
-            elif view_class is not None and any(
-                isinstance(tour, Tour)
-                for tour in (
-                    getattr(callback, "view_initkwargs", {}).get("tour"),
-                    getattr(view_class, "tour", None),
-                )
-            ):
-                names.add(declaring_view_name(view_class))
-    return names
+from page_tours.tours import declared_tours
 
 
 @checks.register(checks.Tags.urls)
 def check_overrides_name_declared_tours(app_configs, **kwargs):
-    """Warn about each ``PAGE_TOURS_OVERRIDES`` key that no routed view declares.
+    """Warn about each ``PAGE_TOURS_OVERRIDES`` key that names no declared tour.
 
-    A key goes stale when the view it named is renamed, moved or removed. Only
+    A key goes stale when the tour it named is renamed or removed. The URLconf is
+    loaded first, so every tour declared in a routed view's module is known. Only
     the keys are read; the values are resolved once, at start-up.
 
     Args:
@@ -94,23 +28,58 @@ def check_overrides_name_declared_tours(app_configs, **kwargs):
     overrides = getattr(settings, "PAGE_TOURS_OVERRIDES", {})
     if not overrides:
         return []
-    declared = declared_tour_names(get_resolver().url_patterns)
+    get_resolver().url_patterns  # noqa: B018 - importing the views declares their tours
+    declared = declared_tours()
     return [
         checks.Warning(
             _(
-                "No routed view declares the tour %(name)s, so its entry in "
+                "No tour is declared with the name %(name)s, so its entry in "
                 "PAGE_TOURS_OVERRIDES changes nothing."
             )
             % {"name": name},
-            hint=_(
-                "A view that was renamed or moved gives its tour a new name. "
-                "Update the key to match."
-            ),
+            hint=_("A tour that was renamed has a new name. Update the key to match."),
             obj=name,
             id="page_tours.W002",
         )
         for name in overrides
         if name not in declared
+    ]
+
+
+@checks.register(checks.Tags.urls)
+def check_tour_names_are_unique(app_configs, **kwargs):
+    """Warn about each name that tours with different steps are declared with.
+
+    Two tours with one name share what a browser remembers about them and the
+    entry ``PAGE_TOURS_OVERRIDES`` changes them by. Tours with the same steps are
+    one tour, whatever their version or autoplay, so one tour used on several
+    views, or routed at two versions, is not reported.
+
+    Args:
+        app_configs: The app configs being checked, supplied by Django.
+        **kwargs: Other arguments Django passes to every check.
+
+    Returns:
+        One warning per name shared by tours with different steps, or an empty
+        list.
+    """
+    get_resolver().url_patterns  # noqa: B018 - importing the views declares their tours
+    return [
+        checks.Warning(
+            _(
+                "%(count)d tours with different steps are declared with the name "
+                "%(name)s, so a browser that saw one counts them all as seen."
+            )
+            % {"count": len(steps), "name": name},
+            hint=_(
+                "Give each tour its own name. A reusable app names its tours "
+                "'<app_label>.<tour>'."
+            ),
+            obj=name,
+            id="page_tours.W005",
+        )
+        for name, tours in declared_tours().items()
+        if len(steps := {tour.steps for tour in tours}) > 1
     ]
 
 

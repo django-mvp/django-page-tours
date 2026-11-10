@@ -130,12 +130,14 @@ action, and that every control the page offers works afterwards.
 - **FR-001**: A developer MUST be able to declare a tour for a page in Python, attached to the
   view that renders the page, as an ordered list of tour steps, without writing JavaScript.
   (US1)
-- **FR-002**: The package MUST support tours on both class-based and function-based views. (US1)
+- **FR-002**: The package MUST support tours on both class-based and function-based views. A
+  class-based view declares its tour as an attribute; a function-based view passes it in its
+  template context. Neither needs a decorator or a setting beyond the one-time setup. (US1)
 - **FR-003**: Each tour step MUST have a title and a text, and MAY name one element of the page it
   is attached to. A step that names no element MUST be shown on its own, attached to nothing.
   (US1)
-- **FR-004**: A tour with no steps, or a step missing its title or its text, MUST be reported to
-  the developer as an error before any visitor is shown the page. (US1)
+- **FR-004**: A tour with no name or no steps, or a step missing its title or its text, MUST be
+  reported to the developer as an error before any visitor is shown the page. (US1)
 - **FR-005**: Step titles and texts MUST accept strings marked for translation, and MUST be shown
   in the language the page is served in when a translation exists. (US1)
 - **FR-006**: Step titles and texts MUST reach the visitor as text, escaped, and never be
@@ -171,8 +173,8 @@ action, and that every control the page offers works afterwards.
 
 ### Key Entities
 
-- **Tour**: A short, guided walk through one page, made of an ordered list of tour steps. It
-  belongs to the view that renders the page.
+- **Tour**: A short, guided walk through one page, made of an ordered list of tour steps, with a
+  name the developer gives it (ADR 0006). It belongs to the view that renders the page.
 - **Tour step**: One stop in a tour. A title and a text, and optionally the element of the page it
   is attached to.
 

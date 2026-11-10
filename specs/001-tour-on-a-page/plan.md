@@ -52,7 +52,8 @@ on a page without a tour the tag emits nothing but whitespace.
 class TourStep:
     title: str | Promise
     text: str | Promise
-    element: str = ""          # a CSS selector; empty means attached to nothing
+    element: str = ""  # a CSS selector; empty means attached to nothing
+
 
 @dataclass(frozen=True)
 class Tour:
@@ -61,6 +62,7 @@ class Tour:
     @classmethod
     def for_page(cls, context) -> "Tour | None": ...
     def as_driver_steps(self) -> list[dict]: ...
+
 
 def with_tour(tour: Tour) -> Callable[[F], F]: ...
 ```

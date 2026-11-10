@@ -74,7 +74,7 @@ class TestTourPage:
 class TestDemoTourPages:
     """The demo pages that show how a tour is started and when it plays again."""
 
-    PAGES = ["plays-once", "on-request", "changed-tour"]
+    PAGES = ["plays-once", "on-request", "changed-tour", "function-view"]
 
     def payload(self, page):
         """Return the payload the page hands to the browser."""
@@ -110,7 +110,7 @@ class TestDemoTourPages:
         assert self.payload(page)["autoplay"] is False
 
     def test_the_changed_tour_is_routed_at_two_versions_of_one_tour(self, client):
-        """Both addresses carry the same tour id, at versions 1 and 2."""
+        """Both addresses carry the same tour name, at versions 1 and 2."""
         first = self.payload(client.get(reverse("changed-tour")).content.decode())
         new = self.payload(
             client.get(reverse("changed-tour-new-version")).content.decode()
@@ -188,11 +188,11 @@ class TestLibraryPages:
         assert self.payload(page)["steps"] == BookListView.tour.as_driver_steps()
 
     def test_the_book_page_plays_the_projects_replacement(self, client):
-        """Its payload carries the replacement's steps under the app view's id."""
+        """Its payload carries the replacement's steps under the app tour's name."""
         payload = self.payload(client.get(reverse("library-book")).content.decode())
 
         assert payload["steps"] == book_tour.as_driver_steps()
-        assert payload["id"] == "demo.library.views.BookDetailView"
+        assert payload["id"] == BookDetailView.tour.name
 
     def test_the_replacement_differs_from_the_apps_tour(self):
         """The project reworded a step, so the two tours are not the same."""
@@ -235,8 +235,17 @@ class TestLibraryPages:
         assert f'href="{reverse("library-books")}"' in self.bar(page)
 
     def test_the_demo_raises_no_page_tours_warning(self):
-        """Both override keys are routed, so the check is silent."""
-        found = [m for m in run_checks() if m.id.startswith("page_tours.")]
+        """Both override keys name declared tours, and no two tours share a name.
+
+        The test suite's own tours declare a name twice on purpose, so only the
+        warnings about the demo's tours are read.
+        """
+        found = [
+            m
+            for m in run_checks()
+            if m.id.startswith("page_tours.")
+            and str(m.obj).partition(".")[0] in {"demo", "library"}
+        ]
 
         assert found == []
 

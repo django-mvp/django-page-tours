@@ -1,6 +1,6 @@
 # ADR 0002 — A tour is seen per the view that declares it
 
-**Status:** accepted
+**Status:** superseded by ADR 0006
 
 ## Decision
 

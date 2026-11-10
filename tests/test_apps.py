@@ -39,8 +39,8 @@ class TestPageToursConfigReady:
     def test_it_is_silent_with_a_valid_setting(self, settings):
         """A replacement and a tour turned off both start."""
         settings.PAGE_TOURS_OVERRIDES = {
-            "tests.views.OverriddenTourView": "tests.views.REPLACEMENT_TOUR",
-            "tests.views.OffTourView": None,
+            "app.page": "tests.views.REPLACEMENT_TOUR",
+            "app.off": None,
         }
 
         self.ready()
@@ -51,16 +51,14 @@ class TestPageToursConfigReady:
     )
     def test_it_refuses_a_bad_entry(self, settings, value):
         """A mistake in the setting stops the project at start-up."""
-        settings.PAGE_TOURS_OVERRIDES = {"tests.views.OverriddenTourView": value}
+        settings.PAGE_TOURS_OVERRIDES = {"app.page": value}
 
         with pytest.raises(ImproperlyConfigured):
             self.ready()
 
     def test_it_refuses_a_replacement_module_whose_tour_is_invalid(self, settings):
         """The module's own error stops the project at start-up."""
-        settings.PAGE_TOURS_OVERRIDES = {
-            "tests.views.OverriddenTourView": "tests.invalid_tour.BROKEN_TOUR"
-        }
+        settings.PAGE_TOURS_OVERRIDES = {"app.page": "tests.invalid_tour.BROKEN_TOUR"}
 
         with pytest.raises(ImproperlyConfigured):
             self.ready()

@@ -5,6 +5,7 @@ from page_tours import Tour, TourStep
 
 # The library app's first step, then its second one reworded for this project.
 book_tour = Tour(
+    name="demo.book",
     steps=(
         *BookDetailView.tour.steps[:1],
         TourStep(
@@ -12,5 +13,5 @@ book_tour = Tour(
             text="This library lends each book for a week. Press the button.",
             element="#library-borrow",
         ),
-    )
+    ),
 )

@@ -93,6 +93,6 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # The library app stands for a reusable app. Its files are untouched: the project
 # replaces one of its tours and turns another off from here.
 PAGE_TOURS_OVERRIDES = {
-    "demo.library.views.BookDetailView": "demo.tours.book_tour",
-    "demo.library.views.LoansView": None,
+    "library.book": "demo.tours.book_tour",
+    "library.loans": None,
 }

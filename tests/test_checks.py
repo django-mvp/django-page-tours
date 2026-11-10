@@ -1,7 +1,5 @@
 """Tests for page_tours.checks."""
 
-import copy
-
 import pytest
 from django.apps import apps
 from django.core import checks
@@ -9,116 +7,119 @@ from django.core.checks import run_checks
 from django.core.management import call_command
 
 from page_tours.parts import TourParts
+from page_tours.tours import Tour, TourStep
+from tests import views
 
-REQUEST_PROCESSOR = "django.template.context_processors.request"
-
-
-def check_ids():
-    """Return the ids of the issues the system checks raise."""
-    return {issue.id for issue in run_checks()}
+STEP = TourStep(title="Title", text="Body")
 
 
-class TestRequestContextProcessorCheck:
-    """The warning for a project whose templates cannot see the request."""
-
-    def test_it_warns_when_the_request_processor_is_missing(self, settings):
-        """Without the processor a function-based view's tour cannot be found."""
-        templates = copy.deepcopy(settings.TEMPLATES)
-        templates[0]["OPTIONS"]["context_processors"].remove(REQUEST_PROCESSOR)
-        settings.TEMPLATES = templates
-
-        assert "page_tours.W001" in check_ids()
-
-    def test_it_is_silent_when_the_request_processor_is_listed(self, settings):
-        """A project with the processor gets no warning."""
-        assert (
-            REQUEST_PROCESSOR in settings.TEMPLATES[0]["OPTIONS"]["context_processors"]
-        )
-
-        assert "page_tours.W001" not in check_ids()
-
-    def test_it_warns_when_no_django_templates_backend_is_configured(self, settings):
-        """Another template engine alone cannot supply the processor."""
-        settings.TEMPLATES = [
-            {"BACKEND": "django.template.backends.dummy.TemplateStrings", "DIRS": []}
-        ]
-
-        assert "page_tours.W001" in check_ids()
-
-
-def overrides_warnings():
-    """Return the issues of the overrides check, by the key each is about."""
-    return {issue.obj: issue for issue in run_checks() if issue.id == "page_tours.W002"}
+def warnings_of(check_id):
+    """Return the issues one check raises, by the name each is about."""
+    return {issue.obj: issue for issue in run_checks() if issue.id == check_id}
 
 
 class TestOverridesCheck:
-    """The warning for a setting key that no routed view declares."""
+    """The warning for a setting key that names no declared tour."""
 
-    @pytest.fixture(autouse=True)
-    def urls(self, settings):
-        """Route the views that declare tours in the app-like test module."""
-        settings.ROOT_URLCONF = "tests.urls_checks"
+    def test_it_warns_for_a_key_that_names_no_tour(self, settings):
+        """A tour that was renamed or removed leaves its key behind."""
+        settings.PAGE_TOURS_OVERRIDES = {"app.gone": None}
 
-    def test_it_warns_for_a_key_no_routed_view_declares(self, settings):
-        """A view that was renamed or moved leaves its key behind."""
-        settings.PAGE_TOURS_OVERRIDES = {"tests.views.GoneView": None}
-
-        assert set(overrides_warnings()) == {"tests.views.GoneView"}
+        assert set(warnings_of("page_tours.W002")) == {"app.gone"}
 
     @pytest.mark.parametrize(
-        "key",
-        [
-            "tests.views.UntouchedTourView",
-            "tests.views.OverriddenTourView",
-            "tests.views.overridden_function_view",
-            "tests.views.OffTourView",
-        ],
-        ids=["class", "inherited by a routed subclass", "function view", "include"],
+        "tour",
+        [views.UNTOUCHED_TOUR, views.APP_TOUR, views.OWN_TOUR],
+        ids=["class attribute", "function view context", "given through as_view"],
     )
-    def test_it_is_silent_for_a_key_a_routed_view_declares(self, settings, key):
-        """The name a routed view gives its tour is a name that exists."""
-        settings.PAGE_TOURS_OVERRIDES = {key: None}
+    def test_it_is_silent_for_the_name_of_a_declared_tour(self, settings, tour):
+        """However a view supplies its tour, the tour's name exists."""
+        settings.PAGE_TOURS_OVERRIDES = {tour.name: None}
 
-        assert overrides_warnings() == {}
+        assert warnings_of("page_tours.W002") == {}
 
-    def test_it_is_silent_for_the_name_of_a_tour_given_through_as_view(self, settings):
-        """A subclass that sets no tour is named by the class that declares one."""
-        settings.ROOT_URLCONF = "tests.urls_checks_as_view"
+    def test_it_is_silent_for_a_tour_no_view_routes_to(self, settings):
+        """A tour is declared when it is made, routed or not."""
+        tour = Tour(name="tests.unrouted", steps=[STEP])
+        settings.PAGE_TOURS_OVERRIDES = {tour.name: None}
+
+        assert warnings_of("page_tours.W002") == {}
+
+    def test_it_warns_for_the_path_of_a_view(self, settings):
+        """A view's dotted path is not a tour's name."""
         settings.PAGE_TOURS_OVERRIDES = {"tests.views.OverriddenTourView": None}
 
-        assert overrides_warnings() == {}
-
-    def test_it_warns_for_the_name_of_the_subclass_given_a_tour_through_as_view(
-        self, settings
-    ):
-        """The subclass's own name is not the name its tour is remembered by."""
-        settings.ROOT_URLCONF = "tests.urls_checks_as_view"
-        settings.PAGE_TOURS_OVERRIDES = {"tests.views.OverriddenTourSubclassView": None}
-
-        assert set(overrides_warnings()) == {"tests.views.OverriddenTourSubclassView"}
+        assert set(warnings_of("page_tours.W002")) == {"tests.views.OverriddenTourView"}
 
     def test_it_warns_once_for_each_key_that_is_not_declared(self, settings):
         """Each stale key is one warning, and the others stay quiet."""
         settings.PAGE_TOURS_OVERRIDES = {
-            "tests.views.GoneView": None,
-            "tests.views.AlsoGoneView": "tests.views.REPLACEMENT_TOUR",
-            "tests.views.UntouchedTourView": None,
+            "app.gone": None,
+            "app.also-gone": "tests.views.REPLACEMENT_TOUR",
+            views.UNTOUCHED_TOUR.name: None,
         }
 
-        assert set(overrides_warnings()) == {
-            "tests.views.GoneView",
-            "tests.views.AlsoGoneView",
+        assert set(warnings_of("page_tours.W002")) == {
+            "app.gone",
+            "app.also-gone",
         }
 
     def test_it_is_silent_without_the_setting(self):
         """A project that changes no tour has nothing to go stale."""
-        assert overrides_warnings() == {}
+        assert warnings_of("page_tours.W002") == {}
 
     def test_it_does_not_resolve_the_values(self, settings):
         """A bad value is reported once, when the project starts, not here."""
-        settings.PAGE_TOURS_OVERRIDES = {"tests.views.UntouchedTourView": 42}
+        settings.PAGE_TOURS_OVERRIDES = {views.UNTOUCHED_TOUR.name: 42}
 
-        assert overrides_warnings() == {}
+        assert warnings_of("page_tours.W002") == {}
+
+
+class TestUniqueNamesCheck:
+    """The warning for tours with different steps declared with one name."""
+
+    def test_it_warns_for_two_tours_with_one_name_and_different_steps(self):
+        """They would share what a browser remembers and one override."""
+        first = Tour(name="tests.clash", steps=[STEP])
+        second = Tour(name="tests.clash", steps=[TourStep(title="Other", text="X")])
+
+        found = warnings_of("page_tours.W005")
+
+        assert "tests.clash" in found
+        assert found["tests.clash"].level == checks.WARNING
+        assert first != second
+
+    @pytest.mark.parametrize(
+        "change", [{"version": 2}, {"autoplay": False}], ids=["version", "autoplay"]
+    )
+    def test_the_same_steps_at_another_version_or_autoplay_are_one_tour(self, change):
+        """One tour routed at two versions is how a new version is tried out."""
+        first = Tour(name="tests.versions", steps=[STEP])
+        second = Tour(name="tests.versions", steps=[STEP], **change)
+
+        assert "tests.versions" not in warnings_of("page_tours.W005")
+        assert first != second
+
+    def test_it_is_silent_for_one_tour_used_on_several_views(self):
+        """A subclass, a second route or a second view sharing a tour is one tour."""
+        assert views.APP_TOUR.name not in warnings_of("page_tours.W005")
+
+    def test_it_is_silent_for_two_equal_declarations(self):
+        """A tour made twice with the same values is still one tour."""
+        first = Tour(name="tests.twins", steps=[STEP])
+        second = Tour(name="tests.twins", steps=[STEP])
+
+        assert "tests.twins" not in warnings_of("page_tours.W005")
+        assert first == second
+
+    def test_it_is_silent_for_tours_with_their_own_names(self):
+        """Different names never clash."""
+        first = Tour(name="tests.one", steps=[STEP])
+        second = Tour(name="tests.two", steps=[STEP])
+
+        found = warnings_of("page_tours.W005")
+
+        assert {first.name, second.name}.isdisjoint(found)
 
 
 class TestClassesCheck:
@@ -129,7 +130,9 @@ class TestClassesCheck:
         """Return the issues raised for a PAGE_TOURS_CLASSES of this value."""
         settings.PAGE_TOURS_CLASSES = value
         return [
-            issue for issue in run_checks() if issue.id.startswith("page_tours.W00")
+            issue
+            for issue in run_checks()
+            if issue.id in {"page_tours.W003", "page_tours.W004"}
         ]
 
     def test_an_unknown_part_gives_w002_naming_the_part_and_the_setting(self, settings):
@@ -180,7 +183,9 @@ class TestClassesCheck:
         """The setting is optional."""
         del settings.PAGE_TOURS_CLASSES
 
-        assert [i for i in run_checks() if i.id.startswith("page_tours.W00")] == []
+        assert [
+            i for i in run_checks() if i.id in {"page_tours.W003", "page_tours.W004"}
+        ] == []
 
     def test_both_are_warnings_so_the_checks_still_pass(self, settings):
         """A styling mistake never stops the project from running."""

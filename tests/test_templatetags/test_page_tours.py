@@ -100,7 +100,7 @@ class TestPageTourTag:
         assert first == second
 
     def test_a_function_based_page_carries_its_tour(self, client):
-        """A page rendered by a ``with_tour`` view carries the tour."""
+        """A function-based view that passes its tour in the context shows it."""
         response = client.get(reverse("function-tour"))
 
         assert tour_steps(response) == FUNCTION_TOUR.as_driver_steps()
@@ -158,17 +158,22 @@ class TestPageTourPayload:
         assert payload["controls"]["previous"] == "Zurück"
         assert payload["controls"]["done"] == "Fertig"
 
-    def test_the_payload_names_the_view_that_declares_the_tour(self, client):
-        """The id is the dotted path of the view class."""
-        payload = tour_payload(client.get(reverse("class-tour")))
+    @pytest.mark.parametrize(
+        ("url", "tour"),
+        [("class-tour", CLASS_TOUR), ("function-tour", FUNCTION_TOUR)],
+        ids=["class-based view", "function-based view"],
+    )
+    def test_the_payload_carries_the_tours_name(self, client, url, tour):
+        """The browser remembers the tour by the name it is declared with."""
+        payload = tour_payload(client.get(reverse(url)))
 
-        assert payload["id"] == "tests.views.ClassTourView"
+        assert payload["id"] == tour.name
 
-    def test_the_payload_names_a_function_based_view(self, client):
-        """The id of a ``with_tour`` view is its dotted path."""
-        payload = tour_payload(client.get(reverse("function-tour")))
+    def test_the_page_does_not_carry_the_views_path(self, client):
+        """Where the view lives in the code stays out of the page source."""
+        content = client.get(reverse("class-tour")).content.decode()
 
-        assert payload["id"] == "tests.views.function_tour_view"
+        assert "tests.views" not in content
 
     def test_a_tour_plays_by_itself_unless_told_otherwise(self, client):
         """``autoplay`` is true for a tour that does not say."""
@@ -422,7 +427,7 @@ class TestPageTourReplayTag:
             render_replay('{% page_tour_replay "first" %}Go{% endpage_tour_replay %}')
 
 
-OVERRIDDEN = "tests.views.OverriddenTourView"
+OVERRIDDEN = views.APP_TOUR.name
 
 
 class TestOverriddenTourPayload:
@@ -471,7 +476,7 @@ class TestOverriddenTourPayload:
         self, client, settings
     ):
         """Nothing about the tour reaches the page."""
-        settings.PAGE_TOURS_OVERRIDES = {"tests.views.OffTourView": None}
+        settings.PAGE_TOURS_OVERRIDES = {views.OFF_TOUR.name: None}
 
         response = client.get(reverse("overridden-off"))
 

@@ -237,7 +237,8 @@ confirm it stays quiet.
 ### Key Entities
 
 - **Seen tour**: the browser's record that one tour has played there, and at which version.
-  Identified by the tour, held only in that browser, with nothing on the server.
+  Identified by the tour's name, which the developer gives it (ADR 0006), held only in that
+  browser, with nothing on the server.
 - **Tour version**: a whole number the developer gives a tour, 1 unless they say otherwise. A new
   number marks a change that people who saw the tour should see.
 - **Replay control**: an element the developer places on the page that starts the page's tour on

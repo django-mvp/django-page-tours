@@ -45,9 +45,8 @@ used: every page that extends the template is served by it, and a page with no t
 from it. The one tag a visitor sees is the [replay control](replaying-a-tour.md), which you place
 where its button should appear.
 
-The tag needs `django.template.context_processors.request` in the `context_processors` option of
-your `TEMPLATES` setting, and Django's `check` command warns with `page_tours.W001` when it is
-missing. [Adding a tour to a page](tours.md) shows how to declare a tour.
+The tag needs nothing else from your settings. [Adding a tour to a page](tours.md) shows how to
+declare a tour.
 
 ## Settings
 
