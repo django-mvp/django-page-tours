@@ -609,3 +609,29 @@ class TestTourOverridesRefused:
 
         with pytest.raises(ImproperlyConfigured):
             tour_overrides()
+
+
+class TestWithTourName:
+    """A decorated view carries the name its tour is remembered by."""
+
+    def test_a_view_wrapper_carries_the_name(self, tour):
+        """The path ``with_tour`` puts on the request is also on the wrapper."""
+
+        @with_tour(tour)
+        def view(request):
+            return request
+
+        assert (
+            view.page_tour_view == f"{view.__module__}.{view.__wrapped__.__qualname__}"
+        )
+
+    def test_an_async_view_wrapper_carries_the_name(self, tour):
+        """The wrapper of an async view carries it as well."""
+
+        @with_tour(tour)
+        async def view(request):
+            return request
+
+        assert (
+            view.page_tour_view == f"{view.__module__}.{view.__wrapped__.__qualname__}"
+        )

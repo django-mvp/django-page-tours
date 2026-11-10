@@ -239,7 +239,9 @@ def with_tour(tour: Tour) -> Callable[[F], F]:
 
     The tour is on ``request.page_tour`` while the view runs, and the view's dotted
     path on ``request.page_tour_view``. Both are removed again if the view raises, so
-    the error page that follows does not play the tour.
+    the error page that follows does not play the tour. The returned view carries
+    the same path as ``page_tour_view``, so the system checks can name its tour
+    without calling it.
 
     Args:
         tour: The tour to show on the page the view renders.
@@ -268,6 +270,7 @@ def with_tour(tour: Tour) -> Callable[[F], F]:
                     del request.page_tour, request.page_tour_view
                     raise
 
+            async_wrapper.page_tour_view = path  # type: ignore[attr-defined]
             return async_wrapper  # type: ignore[return-value]
 
         @wraps(view)
@@ -280,6 +283,7 @@ def with_tour(tour: Tour) -> Callable[[F], F]:
                 del request.page_tour, request.page_tour_view
                 raise
 
+        wrapper.page_tour_view = path  # type: ignore[attr-defined]
         return wrapper  # type: ignore[return-value]
 
     return decorator
