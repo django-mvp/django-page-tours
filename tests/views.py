@@ -587,6 +587,57 @@ PARTS_CHECKLIST = replace(
     ITEMS_CHECKLIST, name="tests.browser.parts-checklist", completed=("plain",)
 )
 
+TICKS_CHECKLIST = Checklist(
+    name="tests.browser.ticks-checklist",
+    allowManualComplete=True,
+    completeTitle="Every item done",
+    items=[
+        ChecklistItem(id="a", title="Item a"),
+        ChecklistItem(id="b", title="Item b"),
+        ChecklistItem(id="c", title="Item c"),
+    ],
+)
+RAISED_TICKS_CHECKLIST = replace(TICKS_CHECKLIST, version=2, completed=("a",))
+REMOVED_TICKS_CHECKLIST = replace(
+    TICKS_CHECKLIST, items=[TICKS_CHECKLIST.items[0], TICKS_CHECKLIST.items[2]]
+)
+REWORDED_TICKS_CHECKLIST = replace(
+    TICKS_CHECKLIST,
+    items=[
+        ChecklistItem(id="c", title="Item c, first now"),
+        ChecklistItem(id="b", title="Item b, reworded"),
+        ChecklistItem(id="a", title="Item a, last now"),
+    ],
+)
+# Driver.js knows the step it shows only once its move to the step has ended, and a
+# tour ended before that does not tick its item, so these tours do not animate.
+STILL_TOUR = replace(
+    steps_for("tests.browser.still-tour", "h1", "#absent", "#control"), animate=False
+)
+KINDS_CHECKLIST = Checklist(
+    name="tests.browser.kinds-checklist",
+    items=[
+        ChecklistItem(id="tour", title="Take the tour", tour=STILL_TOUR),
+        ChecklistItem(id="link", title="Read the hints", href="/hints/"),
+        ChecklistItem(id="plain", title="Borrow a book"),
+    ],
+)
+TWO_TOURS_CHECKLIST = Checklist(
+    name="tests.browser.two-tours-checklist",
+    items=[
+        ChecklistItem(
+            id="first",
+            title="First tour",
+            tour=replace(steps_for("tests.browser.first", "h1"), animate=False),
+        ),
+        ChecklistItem(
+            id="second",
+            title="Second tour",
+            tour=replace(steps_for("tests.browser.second", "h1"), animate=False),
+        ),
+    ],
+)
+
 
 class ChecklistView(TemplateView):
     """A page with a checklist of one item of each kind."""
@@ -645,3 +696,61 @@ class NoChecklistView(ChecklistView):
     """A page with a toggle control and no checklist."""
 
     extra_context = {}
+
+
+class TicksChecklistView(ChecklistView):
+    """A page whose checklist lets the visitor tick any of three items."""
+
+    extra_context = {"checklist": TICKS_CHECKLIST}
+
+
+class TicksAgainChecklistView(TicksChecklistView):
+    """The checklist of the ticks page, at another address."""
+
+
+class ReportedATicksChecklistView(TicksChecklistView):
+    """The ticks page, its view reporting the first item done."""
+
+    extra_context = {"checklist": replace(TICKS_CHECKLIST, completed=("a",))}
+
+
+class ReportedBTicksChecklistView(TicksChecklistView):
+    """The ticks page, its view reporting the second item done."""
+
+    extra_context = {"checklist": replace(TICKS_CHECKLIST, completed=("b",))}
+
+
+class RaisedTicksChecklistView(TicksChecklistView):
+    """The ticks page at a higher version, its view reporting the first item."""
+
+    extra_context = {"checklist": RAISED_TICKS_CHECKLIST}
+
+
+class RemovedTicksChecklistView(TicksChecklistView):
+    """The ticks page with its second item removed."""
+
+    extra_context = {"checklist": REMOVED_TICKS_CHECKLIST}
+
+
+class RewordedTicksChecklistView(TicksChecklistView):
+    """The ticks page with every item reworded and in another order."""
+
+    extra_context = {"checklist": REWORDED_TICKS_CHECKLIST}
+
+
+class KindsChecklistView(ChecklistView):
+    """A page with a checklist of one item of each kind, its tour not animated."""
+
+    extra_context = {"checklist": KINDS_CHECKLIST}
+
+
+class TwoToursChecklistView(ChecklistView):
+    """A page whose checklist has two items, each with a tour."""
+
+    extra_context = {"checklist": TWO_TOURS_CHECKLIST}
+
+
+class OwnTourChecklistView(ChecklistView):
+    """A page with a checklist whose tour item is also the page's own tour."""
+
+    extra_context = {"checklist": KINDS_CHECKLIST, "tour": STILL_TOUR}

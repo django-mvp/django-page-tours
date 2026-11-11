@@ -356,12 +356,25 @@
 
   // Shows the checklist a payload describes. An item that names a tour starts
   // it through the tour's Driver.js instance, which Driver.js drives as it is.
+  // What the app reports done is ticked on every request. What the visitor
+  // ticked is kept in the browser, and only that: a report the app stops making
+  // takes its tick with it, unless the visitor had ticked the item too.
   function playChecklist(payload, checklistDriver, tourDriver) {
     var config = payload.config;
+    var ticked = memory("ticked", payload);
+    var reported = config.completed || [];
     var instance = checklistDriver(
       Object.assign({}, config, {
         id: payload.id,
-        completed: config.completed,
+        completed: reported.concat(ticked.get()),
+        onProgress: function (progress) {
+          var kept = ticked.get();
+          ticked.set(
+            progress.completed.filter(function (id) {
+              return reported.indexOf(id) === -1 || kept.indexOf(id) !== -1;
+            })
+          );
+        },
         items: config.items.map(function (item) {
           if (!item.tour) {
             return item;

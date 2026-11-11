@@ -2086,3 +2086,251 @@ class TestChecklistToggleControl:
             expect(page.locator(self.TOGGLE)).to_be_hidden()
         finally:
             context.close()
+
+
+def open_checklist(page, live_server, name):
+    """Open a page of the checklist tests and its checklist."""
+    page.goto(live_server.url + reverse(name))
+    page.click(LAUNCHER)
+
+
+def done_ids(page):
+    """Return the ids of the items the checklist shows ticked."""
+    return page.eval_on_selector_all(
+        f"{DONE_ITEM} .driver-checklist-item-trigger",
+        "els => els.map(el => el.dataset.itemId)",
+    )
+
+
+def step_is_active(page, selector):
+    """Wait until Driver.js has finished showing the step on the element."""
+    expect(page.locator(f"{selector}.driver-active-element")).to_have_count(1)
+
+
+def tick(page, item_id):
+    """Tick or untick an item with its control."""
+    page.click(f"{ITEM}:has({trigger(item_id)}) button.driver-checklist-check")
+
+
+class TestChecklistProgress:
+    """The checklist says which items are done, out of how many."""
+
+    PROGRESS = ".driver-checklist-progress-text"
+
+    def test_the_reported_item_counts_out_of_every_item(self, page, live_server):
+        """One of three items is done."""
+        open_checklist(page, live_server, "checklist-reported")
+
+        assert item_ids(page) == ["tour", "link", "plain"]
+        assert done_ids(page) == ["plain"]
+        expect(page.locator(self.PROGRESS)).to_contain_text(re.compile(r"1\D+3"))
+
+    def test_ticking_and_unticking_moves_the_count(self, page, live_server):
+        """The count follows each change."""
+        open_checklist(page, live_server, "checklist-ticks")
+
+        tick(page, "a")
+        expect(page.locator(self.PROGRESS)).to_contain_text(re.compile(r"1\D+3"))
+        tick(page, "a")
+
+        expect(page.locator(self.PROGRESS)).to_contain_text(re.compile(r"0\D+3"))
+
+    def test_every_item_ticked_shows_the_completed_state(self, page, live_server):
+        """The root is marked complete and the title is the declared one."""
+        open_checklist(page, live_server, "checklist-ticks")
+
+        for item_id in ("a", "b", "c"):
+            tick(page, item_id)
+
+        expect(page.locator(CHECKLIST)).to_have_class(
+            re.compile(r"driver-checklist-complete")
+        )
+        expect(page.locator(".driver-checklist-title")).to_have_text(
+            views.TICKS_CHECKLIST.completeTitle
+        )
+
+
+class TestChecklistTicksFromItems:
+    """Finishing an item's tour or following its link ticks it."""
+
+    def test_finishing_the_tour_ticks_the_item(self, page, live_server):
+        """The item's tour ends on its last step and the item shows ticked."""
+        open_checklist(page, live_server, "checklist-kinds")
+        page.click(trigger("tour"))
+        step_is_active(page, "h1")
+        page.click(NEXT)
+        step_is_active(page, "#control")
+        page.click(NEXT)
+
+        expect(page.locator(".driver-popover")).to_have_count(0)
+        assert done_ids(page) == ["tour"]
+
+    def test_the_second_tour_finished_first_ticks_only_the_second(
+        self, page, live_server
+    ):
+        """Items are ticked by the tour that finished, not by position."""
+        open_checklist(page, live_server, "checklist-two-tours")
+        page.click(trigger("second"))
+        step_is_active(page, "h1")
+        page.click(NEXT)
+
+        expect(page.locator(".driver-popover")).to_have_count(0)
+        assert done_ids(page) == ["second"]
+
+    def test_closing_the_tour_early_leaves_the_item_unticked(self, page, live_server):
+        """A tour closed before its last step does not tick the item."""
+        open_checklist(page, live_server, "checklist-kinds")
+        page.click(trigger("tour"))
+        step_is_active(page, "h1")
+
+        page.click(CLOSE)
+
+        expect(page.locator(".driver-popover")).to_have_count(0)
+        assert done_ids(page) == []
+
+    def test_a_followed_link_ticks_the_item(self, page, live_server):
+        """The item is ticked on the next page that carries the checklist."""
+        open_checklist(page, live_server, "checklist-kinds")
+        page.click(trigger("link"))
+        expect(page).to_have_url(live_server.url + reverse("hints"))
+
+        open_checklist(page, live_server, "checklist-kinds")
+
+        assert done_ids(page) == ["link"]
+
+
+class TestChecklistTourSeen:
+    """A tour started from an item is seen as the page's own tour is."""
+
+    def test_the_page_does_not_play_it_by_itself_afterwards(self, page, live_server):
+        """The item's tour was finished, so the same tour on a page stays quiet."""
+        open_checklist(page, live_server, "checklist-kinds")
+        page.click(trigger("tour"))
+        step_is_active(page, "h1")
+        page.click(NEXT)
+        step_is_active(page, "#control")
+        page.click(NEXT)
+        expect(page.locator(".driver-popover")).to_have_count(0)
+
+        page.goto(live_server.url + reverse("checklist-own-tour"))
+
+        expect(page.locator(LAUNCHER)).to_have_count(1)
+        expect(page.locator(".driver-popover")).to_have_count(0)
+
+
+class TestChecklistKeptInTheBrowser:
+    """What the visitor ticked is kept in the browser, under the item's id."""
+
+    def test_ticks_stay_on_reload_and_on_another_page(self, page, live_server):
+        """Reloading and opening another page with the checklist keeps them."""
+        open_checklist(page, live_server, "checklist-ticks")
+        tick(page, "a")
+        tick(page, "c")
+
+        open_checklist(page, live_server, "checklist-ticks")
+        assert done_ids(page) == ["a", "c"]
+        open_checklist(page, live_server, "checklist-ticks-again")
+
+        assert done_ids(page) == ["a", "c"]
+
+    def test_an_unticked_item_stays_unticked(self, page, live_server):
+        """Unticking is kept as ticking is."""
+        open_checklist(page, live_server, "checklist-ticks")
+        tick(page, "a")
+        tick(page, "b")
+        tick(page, "a")
+
+        open_checklist(page, live_server, "checklist-ticks")
+
+        assert done_ids(page) == ["b"]
+
+    def test_a_tick_is_kept_when_the_item_is_reworded_and_moved(
+        self, page, live_server
+    ):
+        """Ticks are kept against the id, not the text or the position."""
+        open_checklist(page, live_server, "checklist-ticks")
+        tick(page, "b")
+
+        open_checklist(page, live_server, "checklist-ticks-reworded")
+
+        assert item_ids(page) == ["c", "b", "a"]
+        assert done_ids(page) == ["b"]
+
+    def test_a_tick_for_a_removed_item_does_not_count(self, page, live_server):
+        """Only the declared items are counted."""
+        open_checklist(page, live_server, "checklist-ticks")
+        tick(page, "a")
+        tick(page, "b")
+
+        open_checklist(page, live_server, "checklist-ticks-removed")
+
+        assert done_ids(page) == ["a"]
+        expect(page.locator(TestChecklistProgress.PROGRESS)).to_contain_text(
+            re.compile(r"1\D+2")
+        )
+
+    def test_a_raised_version_forgets_the_browsers_ticks(self, page, live_server):
+        """Ticks of the earlier version go, and the app's report still ticks."""
+        open_checklist(page, live_server, "checklist-ticks")
+        tick(page, "b")
+
+        open_checklist(page, live_server, "checklist-ticks-raised")
+
+        assert done_ids(page) == ["a"]
+
+    def test_blocked_storage_still_ticks_for_the_page_view(self, page, live_server):
+        """Nothing is remembered and nothing is raised."""
+        problems = []
+        page.on("pageerror", lambda error: problems.append(str(error)))
+        page.add_init_script(STORAGE_BLOCKED)
+        open_checklist(page, live_server, "checklist-ticks")
+
+        tick(page, "a")
+
+        assert done_ids(page) == ["a"]
+        assert problems == []
+
+
+class TestChecklistReportAndBrowser:
+    """The app's report and the browser's ticks are shown together."""
+
+    def test_the_report_and_a_browser_tick_are_both_shown(self, page, live_server):
+        """The reported item and the visitor's tick are both ticked, also later."""
+        open_checklist(page, live_server, "checklist-ticks-reported-a")
+        tick(page, "b")
+
+        open_checklist(page, live_server, "checklist-ticks-reported-a")
+
+        assert done_ids(page) == ["a", "b"]
+
+    def test_an_item_the_app_stops_reporting_is_unticked(self, page, live_server):
+        """Without a tick in the browser the item goes when the report does."""
+        open_checklist(page, live_server, "checklist-ticks-reported-a")
+        assert done_ids(page) == ["a"]
+
+        open_checklist(page, live_server, "checklist-ticks")
+
+        assert done_ids(page) == []
+
+    def test_the_reported_item_is_ticked_again_after_unticking(self, page, live_server):
+        """The report wins: unticking lasts until the next request."""
+        open_checklist(page, live_server, "checklist-ticks-reported-a")
+        tick(page, "a")
+        assert done_ids(page) == []
+
+        open_checklist(page, live_server, "checklist-ticks-reported-a")
+
+        assert done_ids(page) == ["a"]
+
+    def test_a_tick_made_before_the_report_survives_another_tick(
+        self, page, live_server
+    ):
+        """Ticked, then reported, then another ticked, then no longer reported."""
+        open_checklist(page, live_server, "checklist-ticks")
+        tick(page, "a")
+        open_checklist(page, live_server, "checklist-ticks-reported-a")
+        tick(page, "b")
+
+        open_checklist(page, live_server, "checklist-ticks")
+
+        assert done_ids(page) == ["a", "b"]
