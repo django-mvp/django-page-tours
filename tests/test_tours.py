@@ -115,7 +115,7 @@ class TestTourDriverOptions:
         assert payload_of(tour)["options"]["overlayOpacity"] == 0.4
 
     def test_a_tour_that_sets_nothing_renders_driverjs_defaults(self):
-        """The defaults of the fields are the defaults of Driver.js 1.10.2."""
+        """The defaults of the fields are the defaults of Driver.js 1.11.0."""
         options = payload_of(views.CLASS_TOUR)["options"]
 
         assert options == {
@@ -129,7 +129,7 @@ class TestTourDriverOptions:
             "smoothScroll": False,
             "disableActiveInteraction": False,
             "allowKeyboardControl": True,
-            "advanceOnClick": False,
+            "advanceOn": False,
             "waitForElement": 0,
             "stagePadding": 10,
             "stageRadius": 5,
@@ -228,7 +228,7 @@ class TestTourAsDriverSteps:
                     element="#menu",
                     title="Title",
                     description="Body",
-                    advanceOnClick=True,
+                    advanceOn=("click", "keydown"),
                     waitForElement=500,
                     side="left",
                     popoverClass="wide",
@@ -241,7 +241,7 @@ class TestTourAsDriverSteps:
 
         assert step == {
             "element": "#menu",
-            "advanceOnClick": True,
+            "advanceOn": ("click", "keydown"),
             "waitForElement": 500,
             "popover": {
                 "title": "Title",

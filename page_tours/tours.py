@@ -30,11 +30,15 @@ PACKAGE_FIELDS = {"name", "steps", "autoplay", "version"}
 STEP_LEVEL_FIELDS = {
     "element",
     "disableActiveInteraction",
-    "advanceOnClick",
+    "advanceOn",
     "waitForElement",
 }
 
 Button = Literal["next", "previous", "close"]
+
+# Driver.js's advanceOn: no event, or the event or events on the element that
+# move to the next step.
+AdvanceOn = Literal[False] | str | tuple[str, ...]
 
 # Driver.js's own default progress text.
 PROGRESS_TEXT = "{{current}} of {{total}}"
@@ -63,7 +67,7 @@ def _forget(name: str, ref: weakref.ref["Tour"]) -> None:
 
 @dataclass(frozen=True)
 class TourStep:
-    """One step of a tour, as Driver.js 1.10.2 takes it.
+    """One step of a tour, as Driver.js 1.11.0 takes it.
 
     The fields are named as Driver.js names them. See
     https://driverjs.com/docs/configuration for what each one does. An option left
@@ -79,7 +83,8 @@ class TourStep:
             the step is attached to nothing.
         disableActiveInteraction: Whether the highlighted element ignores clicks
             on this step.
-        advanceOnClick: Whether clicking the element moves to the next step.
+        advanceOn: The event on the element that moves to the next step, such as
+            ``"click"``, a tuple of events, or ``False`` for none.
         waitForElement: How long to wait for the element to appear, in
             milliseconds.
         side: Which side of the element the popover sits on.
@@ -101,7 +106,7 @@ class TourStep:
     description: str | Promise = ""
     element: str = ""
     disableActiveInteraction: bool | None = None
-    advanceOnClick: bool | None = None
+    advanceOn: AdvanceOn | None = None
     waitForElement: int | None = None
     side: Literal["top", "right", "bottom", "left"] | None = None
     align: Literal["start", "center", "end"] | None = None
@@ -125,7 +130,7 @@ class Tour:
     ``PAGE_TOURS_OVERRIDES`` key that names no tour.
 
     The fields after ``version`` are Driver.js's configuration options, named and
-    defaulting to the value Driver.js 1.10.2 itself uses. See
+    defaulting to the value Driver.js 1.11.0 itself uses. See
     https://driverjs.com/docs/configuration for what each one does. Options that
     take a JavaScript function are not available. Driver.js writes the button
     texts and the progress text into the page as HTML, so they are passed on as
@@ -146,15 +151,16 @@ class Tour:
         duration: How long the animation takes, in milliseconds.
         allowClose: Whether a visitor can close the tour before its last step.
         allowScroll: Whether the page can be scrolled while the tour shows.
-        overlayClickBehavior: What clicking the overlay does: ``"close"`` the tour
-            or go to the ``"nextStep"``.
+        overlayClickBehavior: What clicking the overlay does: ``"close"`` the tour,
+            go to the ``"nextStep"``, or ``"none"``.
         overlayColor: The colour of the overlay.
         overlayOpacity: The opacity of the overlay, from 0 to 1.
         smoothScroll: Whether to scroll smoothly to each step's element.
         disableActiveInteraction: Whether the highlighted element ignores clicks.
         allowKeyboardControl: Whether the arrow and escape keys move through and
             close the tour.
-        advanceOnClick: Whether clicking a step's element moves to the next step.
+        advanceOn: The event on a step's element that moves to the next step,
+            such as ``"click"``, a tuple of events, or ``False`` for none.
         waitForElement: How long to wait for a step's element to appear, in
             milliseconds.
         stagePadding: The space around the highlighted element, in pixels.
@@ -189,13 +195,13 @@ class Tour:
     duration: int = 400
     allowClose: bool = True
     allowScroll: bool = True
-    overlayClickBehavior: Literal["close", "nextStep"] = "close"
+    overlayClickBehavior: Literal["close", "nextStep", "none"] = "close"
     overlayColor: str = "#000"
     overlayOpacity: float = 0.7
     smoothScroll: bool = False
     disableActiveInteraction: bool = False
     allowKeyboardControl: bool = True
-    advanceOnClick: bool = False
+    advanceOn: AdvanceOn = False
     waitForElement: int = 0
     stagePadding: int = 10
     stageRadius: int = 5
