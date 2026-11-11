@@ -27,6 +27,9 @@ PACKAGE_FIELDS = {"name", "steps", "autoplay", "version"}
 
 Button = Literal["next", "previous", "close"]
 
+# Driver.js's own default progress text.
+PROGRESS_TEXT = "{{current}} of {{total}}"
+
 # The default labels of the controls: lazy, so the active language applies when
 # the tour renders.
 NEXT_LABEL = pgettext_lazy("page tour control", "Next")
@@ -178,7 +181,7 @@ class Tour:
     show_buttons: tuple[Button, ...] = ("next", "previous", "close")
     disable_buttons: tuple[Button, ...] = ()
     show_progress: bool = False
-    progress_text: str = "{{current}} of {{total}}"
+    progress_text: str = PROGRESS_TEXT
     next_btn_text: str | Promise = NEXT_LABEL
     prev_btn_text: str | Promise = PREVIOUS_LABEL
     done_btn_text: str | Promise = DONE_LABEL
