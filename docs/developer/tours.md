@@ -288,7 +288,8 @@ and `/changed-tour/new-version/`. Open one and then the other to see a new versi
 more in a browser that saw the first.
 
 The function-view page at `/function-view/` is rendered by a function-based view that passes its
-tour in the template context. Every demo page outputs its tour with `{{ tour }}` in its own
+tour in the template context. The Driver.js options page at `/driver-options/` plays a tour that
+turns on Driver.js's step count through `driver_options`. Every demo page outputs its tour with `{{ tour }}` in its own
 template, and the demo's base template includes the package's files.
 
 ## Why a visitor can always use the page

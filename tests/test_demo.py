@@ -74,7 +74,13 @@ class TestTourPage:
 class TestDemoTourPages:
     """The demo pages that show how a tour is started and when it plays again."""
 
-    PAGES = ["plays-once", "on-request", "changed-tour", "function-view"]
+    PAGES = [
+        "plays-once",
+        "on-request",
+        "changed-tour",
+        "function-view",
+        "driver-options",
+    ]
 
     def payload(self, page):
         """Return the payload the page hands to the browser."""
