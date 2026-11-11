@@ -389,7 +389,8 @@
     });
 
     // A toggle control is the developer's own element, written with `hidden`.
-    document.querySelectorAll("[data-page-checklist-toggle]").forEach(function (control) {
+    var toggles = document.querySelectorAll("[data-page-checklist-toggle]");
+    toggles.forEach(function (control) {
       control.addEventListener("click", function () {
         instance.toggle();
       });
