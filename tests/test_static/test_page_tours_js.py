@@ -2042,3 +2042,47 @@ class TestChecklistBesideTourAndHints:
         expect(page.locator(TITLE)).to_have_text(views.HINTS_TOUR.steps[0].title)
         expect(page.locator(BEACON)).to_have_count(len(views.THREE_HINTS.hints))
         expect(page.locator(LAUNCHER)).to_have_count(1)
+
+
+class TestChecklistToggleControl:
+    """The developer's own control opens the checklist and closes it again."""
+
+    TOGGLE = "[data-page-checklist-toggle]"
+
+    def test_the_control_opens_and_closes_a_checklist_with_no_launcher(
+        self, page, live_server
+    ):
+        """With no launcher, pressing the control twice opens then closes the panel."""
+        page.goto(live_server.url + reverse("checklist-no-launcher"))
+        expect(page.locator(LAUNCHER)).to_have_count(0)
+
+        page.click(self.TOGGLE)
+        expect(page.locator(PANEL)).to_be_visible()
+        page.click(self.TOGGLE)
+
+        expect(page.locator(PANEL)).to_be_hidden()
+
+    def test_the_control_shows_on_a_page_with_a_checklist(self, page, live_server):
+        """The control is written hidden and shows once the checklist plays."""
+        page.goto(live_server.url + reverse("checklist"))
+
+        expect(page.locator(self.TOGGLE)).to_be_visible()
+
+    def test_the_control_stays_hidden_on_a_page_with_no_checklist(
+        self, page, live_server
+    ):
+        """Nothing plays, so nothing shows the control."""
+        page.goto(live_server.url + reverse("no-checklist"))
+        page.wait_for_load_state("load")
+
+        expect(page.locator(self.TOGGLE)).to_be_hidden()
+
+    def test_the_control_stays_hidden_with_javascript_off(self, browser, live_server):
+        """A page with a checklist, with no script run, leaves the control hidden."""
+        context = browser.new_context(java_script_enabled=False)
+        try:
+            page = context.new_page()
+            page.goto(live_server.url + reverse("checklist"))
+            expect(page.locator(self.TOGGLE)).to_be_hidden()
+        finally:
+            context.close()

@@ -387,6 +387,14 @@
         addClasses(payload.parts, element, pair[0]);
       });
     });
+
+    // A toggle control is the developer's own element, written with `hidden`.
+    document.querySelectorAll("[data-page-checklist-toggle]").forEach(function (control) {
+      control.addEventListener("click", function () {
+        instance.toggle();
+      });
+      control.hidden = false;
+    });
   }
 
   // Plays every kind of declaration the page carries, each from its own element
