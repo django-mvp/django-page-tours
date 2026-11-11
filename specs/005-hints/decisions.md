@@ -194,3 +194,13 @@ cited code.
   standard. The hints page documents the options left out (T011).
 
 **ADR:** none — review outcome, recorded
+
+D19 was passed at the specification gate on 2026-11-11.
+
+## D21 — A declaration's payload takes the name it plays under
+
+`Declaration.payload(name, version)` takes the name as well as the version, so a replacement from
+`PAGE_TOURS_OVERRIDES` renders under the original's name without a second declaration being made
+(which would record itself under that name). Taken while building the shared bases.
+
+**ADR:** none — a signature inside the base, covered by D14's ADR
