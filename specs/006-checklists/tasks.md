@@ -112,3 +112,11 @@ reload and see every tick kept; see the completed state.
 - [ ] T012 [US2] Tests, and any fix they show: US2 scenarios 11 (with the checklist open, a
   button on the page beside it still takes a click, and closing it uncovers everything) and 12
   (keyboard alone opens the checklist, starts an item and closes it) (FR-015).
+
+## Review fixes
+
+- [x] T013 [US1] The duplicate-name check compares declarations of one name for equality, so a
+  checklist whose item's tour sets a list option no longer stops `manage.py check`.
+- [x] T014 [US1] The checklist guide says which module the checks see a checklist in and what a
+  reported item stores; the hints and reusable-app pages and ADR 0009 name every kind they cover.
+- [x] T015 [US1] Three checklist tests pin literal defaults or are removed, so each can fail.

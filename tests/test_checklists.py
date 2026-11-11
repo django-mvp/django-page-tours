@@ -11,11 +11,6 @@ from django.utils.translation import pgettext
 
 import page_tours
 from page_tours import Checklist, ChecklistItem, Offset, Tour, TourStep
-from page_tours.checklists import (
-    CHECKLIST_PROGRESS_TEXT,
-    GET_STARTED_LABEL,
-    LAUNCHER_PROGRESS_TEXT,
-)
 from page_tours.parts import TourParts
 from tests import checklists as checklist_declarations
 
@@ -221,35 +216,28 @@ class TestChecklistCompleted:
 
         assert config["completed"] == []
 
-    def test_two_checklists_that_differ_only_in_completed_are_different_objects(self):
-        """The ids are what the app reports, so the checklist holds them."""
-        first = Checklist(name="tests.reported", items=[ITEM])
-        second = replace(first, completed=("first",))
-
-        assert first != second
-        assert first.items == second.items
-
 
 class TestChecklistOptions:
     """The options of the checklist itself."""
 
     def test_the_defaults_are_driverjs_own(self):
         """A checklist that sets nothing renders Driver.js's defaults."""
-        config = payload_of(checklist_declarations.ONBOARDING)["config"]
+        with translation.override("en"):
+            config = payload_of(checklist_declarations.ONBOARDING)["config"]
         config.pop("items")
         title = config.pop("title")
         progress = config.pop("progressText")
 
         assert config == {
-            "launcherProgressText": LAUNCHER_PROGRESS_TEXT,
+            "launcherProgressText": "{{done}}/{{total}}",
             "position": "bottom-right",
             "launcher": True,
             "className": "",
             "allowManualComplete": False,
             "completed": [],
         }
-        assert title == str(GET_STARTED_LABEL)
-        assert progress == str(CHECKLIST_PROGRESS_TEXT)
+        assert title == "Get started"
+        assert progress == "{{done}} of {{total}}"
 
     def test_the_options_left_out_are_not_sent(self):
         """A null would override Driver.js's own value."""
@@ -301,16 +289,6 @@ class TestChecklistOptions:
 
         assert payload_of(checklist)["config"]["offset"] == {"x": 5}
 
-    def test_no_option_value_is_checked(self):
-        """The design rule: text and values are passed to Driver.js as they are."""
-        checklist = Checklist(
-            name="tests.unchecked",
-            items=[ITEM],
-            position="nowhere",  # type: ignore[arg-type]
-        )
-
-        assert payload_of(checklist)["config"]["position"] == "nowhere"
-
 
 class TestChecklistTranslation:
     """The default text follows the language of the request."""
@@ -330,7 +308,7 @@ class TestChecklistTranslation:
         with translation.override("de"):
             config = payload_of(checklist_declarations.ONBOARDING)["config"]
 
-        assert config["launcherProgressText"] == LAUNCHER_PROGRESS_TEXT
+        assert config["launcherProgressText"] == "{{done}}/{{total}}"
 
 
 class TestChecklistOverrides:
