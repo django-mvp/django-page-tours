@@ -83,3 +83,62 @@ The feature adds three terms to the glossary: *checklist*, *checklist item* and 
 defined in the specification's Key Entities. They go into `CONTEXT.md` in the build.
 
 **ADR:** none
+
+## D10 — The override lookup moves into `Declaration.playing()`
+
+`Declaration.__html__` looks a declaration up in `PAGE_TOURS_OVERRIDES` inline. A checklist item's
+tour needs the same lookup without rendering the tour, so the lookup moves, unchanged, into
+`playing()`, which returns the declaration that plays under the name and its version, or `None`
+when turned off. `__html__` calls it, and so does the checklist for each item's tour.
+
+**ADR:** none — a method extracted from ADR 0004's rule, which it does not change
+
+## D11 — An item's tour reaches the browser as a tour's own payload
+
+`ChecklistItem.tour` is a package field. `Checklist.as_driver()` puts the played tour's
+`payload(name, version)` in its place, so the script builds an item's tour from exactly what it
+builds a page's own tour from, under the tour's own name and version. An item whose tour is turned
+off is left out of the items.
+
+**ADR:** none — follows from D5 and the shared tour builder (D15)
+
+## D12 — The browser keeps its own ticks, never the app's
+
+The script stores the ticked ids less the ones the app reported for this request, and shows the
+app's report followed by the stored ticks. An item the app stops reporting is then unticked unless
+the visitor ticked it in the browser, as the Edge Cases say, and unticking an item the app reports
+lasts only until the next request, as clarification 2 says.
+
+**ADR:** none — local to the checklist's script
+
+## D13 — `completed` is the field the app reports through
+
+Driver.js takes the items already done as `completed`, so the field has that name and reaches
+Driver.js as it is. W005 compares a checklist's items, never `completed`, so a checklist made per
+request with what the app knows is the same checklist as the one declared.
+
+**ADR:** none — the design rule applied to one option
+
+## D14 — The checklist's part classes are added once, after it is shown
+
+Driver.js's checklist build makes its whole widget in `show()` and afterwards only changes text and
+classes inside it, so classes added once stay. No event hook is needed, unlike the prototype's.
+
+**ADR:** none — local to the checklist's script
+
+## D15 — One function builds a tour in the browser, wherever it is started
+
+`buildTour(payload, driver)` is cut out of `playTour` and returns the Driver.js instance, whose
+`drive` is the package's start. The page's own tour and a checklist item's tour are built by it,
+so a tour finds its elements, carries its part classes, cleans up and is recorded as seen the same
+way wherever it plays (SC-003). Driver.js's checklist drives the instance it is given.
+
+**ADR:** decided at converge
+
+## D16 — The toggle control follows the replay and restore controls
+
+A control carrying `data-page-checklist-toggle` is the developer's own element, written `hidden`,
+and the script shows it and makes it open and close the checklist when a checklist plays. It
+works with or without a launcher.
+
+**ADR:** none — the existing control pattern
