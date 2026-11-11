@@ -6,7 +6,7 @@
     <title>{% block title %}Django Page Tours demo{% endblock title %}</title>
     <style>
       body { font-family: system-ui, sans-serif; line-height: 1.5; margin: 0; }
-      header, main { max-width: 48rem; margin: 0 auto; padding: 1rem 1.5rem; }
+      header, main { max-width: 48rem; margin: 0 auto; padding: 1rem 1.5rem 6rem; }
       header { border-bottom: 1px solid #ddd; }
       header a { margin-right: 1rem; }
       nav { display: flex; flex-wrap: wrap; gap: .25rem 0; align-items: center; }
@@ -18,6 +18,7 @@
     <link rel="stylesheet" href="{% static 'page_tours/page-tours.css' %}">
     <script src="{% static 'page_tours/vendor/driver.js-1.11.0/driver.js.iife.js' %}" defer></script>
     <script src="{% static 'page_tours/vendor/driver.js-1.11.0/hints.iife.js' %}" defer></script>
+    <script src="{% static 'page_tours/vendor/driver.js-1.11.0/checklist.iife.js' %}" defer></script>
     <script src="{% static 'page_tours/page-tours.js' %}" defer></script>
     {% block head %}{% endblock head %}
   </head>
@@ -40,5 +41,6 @@
     <main>
       {% block content %}{% endblock content %}
     </main>
+    {{ checklist }}
   </body>
 </html>

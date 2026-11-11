@@ -1,4 +1,4 @@
-"""The parts of a tour or hints a site can style, and the classes each carries."""
+"""The parts of a tour, hints or checklist a site can style, and their classes."""
 
 from django.apps import apps
 from django.conf import settings
@@ -8,12 +8,13 @@ from django.utils.translation import gettext_lazy
 class TourParts:
     """The parts a site can style and the classes each one carries.
 
-    The nine parts of a shown tour step, which a hint's popover also uses, and
-    the beacon of a hint.
+    The nine parts of a shown tour step, which a hint's popover and a checklist's
+    panel also use, the beacon of a hint, and the launcher and an item of a
+    checklist.
 
     Attributes:
         parts: Every part: the step's, in the order it shows them, then the
-            beacon.
+            beacon, the launcher and the item.
     """
 
     parts = (
@@ -27,6 +28,8 @@ class TourParts:
         "close",
         "highlight",
         "beacon",
+        "launcher",
+        "item",
     )
 
     @classmethod

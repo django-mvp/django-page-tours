@@ -332,6 +332,33 @@ class TestDeclarationOverrides:
         assert payload_of(original)["config"] == {"items": ["own"]}
 
 
+class TestDeclarationPlaying:
+    """Which declaration plays under a declaration's name, and at what version."""
+
+    def test_the_declaration_plays_at_its_own_version_when_nothing_names_it(
+        self, settings
+    ):
+        """No entry in the setting means the declaration itself."""
+        settings.PAGE_TOURS_OVERRIDES = {}
+        original = Thing(name="tests.driver.plays", version=2)
+
+        assert original.playing() == (original, 2)
+
+    def test_the_replacement_plays_at_the_combined_version(self, settings):
+        """The original's version plus the replacement's, less one."""
+        original = Thing(name="tests.driver.plays-replaced", version=2)
+        settings.PAGE_TOURS_OVERRIDES = {original.name: PATH + "REPLACEMENT"}
+
+        assert original.playing() == (REPLACEMENT, 2 + 3 - 1)
+
+    def test_nothing_plays_when_the_setting_turns_it_off(self, settings):
+        """An entry of None turns the declaration off."""
+        original = Thing(name="tests.driver.plays-off")
+        settings.PAGE_TOURS_OVERRIDES = {original.name: None}
+
+        assert original.playing() is None
+
+
 class TestResolveOverride:
     """Resolving one entry of the setting."""
 

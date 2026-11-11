@@ -38,7 +38,7 @@ see the new one once.
   page, and nothing more. A site gives the tour its look with its own CSS.
 - **Not a store of progress per account.** Whether someone has seen a tour is kept in their
   browser. The package adds no database tables.
-- **Not tours across several pages,** and not a getting-started checklist.
+- **Not tours across several pages.**
 - **Not dependent on a CDN.** Driver.js ships inside the package, so a tour works on a site with a
   strict content security policy or no outside network access.
 
@@ -123,6 +123,11 @@ Options that take a function are not available.
 The package also puts hints on a page: markers a visitor opens in any order and dismisses for good
 in their browser. `Hints` declares them, and `{{ hints }}` renders them. See the
 [documentation](https://django-mvp.github.io/django-page-tours/developer/hints.html).
+
+It also puts a checklist on a page: a panel of items a visitor works through, each starting a
+tour, opening a page or ticked by the app, with the visitor's ticks kept in their browser.
+`Checklist` declares it, and `{{ checklist }}` renders it. See the
+[documentation](https://django-mvp.github.io/django-page-tours/developer/checklists.html).
 
 A project can replace the tour of an installed app, or turn it off, from its own settings with
 `PAGE_TOURS_OVERRIDES`, keyed by the tour's name, without editing the app.

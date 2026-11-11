@@ -5,7 +5,8 @@ This page shows how to give a tour the look of your site. Every piece of a shown
 from your own stylesheet. You can also give a piece classes of your own, for example classes from
 your CSS framework.
 
-A piece of a shown step is called a part. A step has nine parts.
+A piece of a shown step is called a part. A step has nine parts. A hint adds one more and a
+checklist two.
 
 ## The parts
 
@@ -39,6 +40,26 @@ beacon with `Beacon(className=...)`.
 ```css
 .page-tour-beacon {
   --driver-hint-color: #059669;
+}
+```
+
+## Style a checklist
+
+A [checklist](checklists.md) takes the parts of a tour step, for each part it shows: its panel is
+the box, with a title, the text, the progress and the close control. It adds two parts of its own:
+
+| Part | Documented name | What it is |
+|---|---|---|
+| `launcher` | `page-tour-launcher` | The control shown while the checklist's panel is closed. |
+| `item` | `page-tour-item` | Each item of the checklist. |
+
+Your rules against the documented names and the classes in `PAGE_TOURS_CLASSES` apply to a
+checklist as they do to a step. `launcher` and `item` take classes from the setting and from an
+app's `page_tour_classes` as the other parts do.
+
+```css
+.page-tour-launcher {
+  border-radius: 9999px;
 }
 ```
 
@@ -151,7 +172,7 @@ Django's `check` command warns about an entry that cannot work, in the setting o
 `page_tour_classes`:
 
 - `page_tours.W003` says the entry names something that is not a part. The message lists the
-  nine parts.
+  parts.
 - `page_tours.W004` says a value is not a string of class names, or that the setting or the app's
   attribute is not a dict.
 
@@ -168,7 +189,7 @@ that renders a step in its own way can read them from it:
 ```python
 from page_tours.parts import TourParts
 
-TourParts.parts          # the nine parts, in the order a step shows them
+TourParts.parts          # every part, the step's first
 TourParts.name("box")    # "page-tour-box"
 TourParts.classes()      # {"box": ["page-tour-box", "rounded-lg", ...], ...}
 ```

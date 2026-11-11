@@ -75,8 +75,11 @@
     };
   }
 
-  // Plays the tour a payload describes.
-  function playTour(payload, driver) {
+  // Builds the tour a payload describes. `instance()` is the Driver.js instance,
+  // made on its first call, whose `drive` is the package's start; `start()` does
+  // nothing for a tour with nothing to show and otherwise drives that instance,
+  // after ending a run that is still going.
+  function buildTour(payload, driver) {
     var seen = memory("seen", payload);
     var nameParts = popoverParts(payload.parts);
     var steps = payload.config.steps.map(function (step) {
@@ -212,25 +215,13 @@
       restoreFocus();
     }
 
-    function start() {
+    // The package's start, which the instance's `drive` runs whoever calls it.
+    function run(driveOwn, args) {
       if (!showable()) {
         return;
       }
       try {
-        if (tour && tour.isActive()) {
-          tour.destroy();
-        }
         returnFocusTo = document.activeElement;
-        // The tour's own options go first, so the settings the package
-        // depends on below replace any of the same name.
-        tour = driver(Object.assign({}, payload.config, {
-          steps: steps,
-          skipMissingElement: true,
-          onPopoverRender: guarded(nameParts),
-          onDestroyed: function () {
-            queueMicrotask(finished);
-          },
-        }));
         window.addEventListener("error", endTour);
         stopWatchingOverlay();
         // A tour closed while a step is still opening never reaches onDestroyed,
@@ -242,12 +233,51 @@
           })
         );
         overlayWatcher.observe(document.body, { childList: true });
-        tour.drive();
+        driveOwn.apply(tour, args);
         seen.set([payload.id]);
       } catch (error) {
         endTour();
       }
     }
+
+    function instance() {
+      if (!tour) {
+        // The tour's own options go first, so the settings the package
+        // depends on below replace any of the same name.
+        tour = driver(Object.assign({}, payload.config, {
+          steps: steps,
+          skipMissingElement: true,
+          onPopoverRender: guarded(nameParts),
+          onDestroyed: function () {
+            queueMicrotask(finished);
+          },
+        }));
+        var driveOwn = tour.drive;
+        tour.drive = function () {
+          run(driveOwn, arguments);
+        };
+      }
+      return tour;
+    }
+
+    function start() {
+      if (!showable()) {
+        return;
+      }
+      var playing = instance();
+      if (playing.isActive()) {
+        playing.destroy();
+      }
+      playing.drive();
+    }
+
+    return { start: start, instance: instance };
+  }
+
+  // Plays the tour a payload describes.
+  function playTour(payload, driver) {
+    var seen = memory("seen", payload);
+    var start = buildTour(payload, driver).start;
 
     // A replay control is the developer's own element. One written with `hidden`,
     // as in a shared template, shows only where this point is reached: on a page
@@ -324,18 +354,77 @@
     });
   }
 
+  // Shows the checklist a payload describes. An item that names a tour starts
+  // it through the tour's Driver.js instance, which Driver.js drives as it is.
+  // What the app reports done is ticked on every request. What the visitor
+  // ticked is kept in the browser, and only that: a report the app stops making
+  // takes its tick with it, unless the visitor had ticked the item too.
+  function playChecklist(payload, checklistDriver, tourDriver) {
+    var config = payload.config;
+    var ticked = memory("ticked", payload);
+    var reported = config.completed || [];
+    var instance = checklistDriver(
+      Object.assign({}, config, {
+        id: payload.id,
+        completed: reported.concat(ticked.get()),
+        onProgress: function (progress) {
+          var kept = ticked.get();
+          ticked.set(
+            progress.completed.filter(function (id) {
+              return reported.indexOf(id) === -1 || kept.indexOf(id) !== -1;
+            })
+          );
+        },
+        items: config.items.map(function (item) {
+          if (!item.tour) {
+            return item;
+          }
+          return Object.assign({}, item, {
+            tour: buildTour(item.tour, tourDriver).instance(),
+          });
+        }),
+      })
+    );
+    instance.show();
+
+    [
+      ["box", ".driver-checklist-panel"],
+      ["title", ".driver-checklist-title"],
+      ["text", ".driver-checklist-description"],
+      ["progress", ".driver-checklist-progress"],
+      ["close", ".driver-checklist-close-btn"],
+      ["launcher", ".driver-checklist-launcher"],
+      ["item", ".driver-checklist-item"],
+    ].forEach(function (pair) {
+      document.querySelectorAll(pair[1]).forEach(function (element) {
+        addClasses(payload.parts, element, pair[0]);
+      });
+    });
+
+    // A toggle control is the developer's own element, written with `hidden`.
+    var toggles = document.querySelectorAll("[data-page-checklist-toggle]");
+    toggles.forEach(function (control) {
+      control.addEventListener("click", function () {
+        instance.toggle();
+      });
+      control.hidden = false;
+    });
+  }
+
   // Plays every kind of declaration the page carries, each from its own element
   // and each in its own try, so one that fails neither stops the other nor
-  // raises on the page. Hints come first, so they are on the page before a tour
-  // starts. The page is looked at only once it is parsed, so an element may sit
-  // anywhere in it and the scripts may load in any way. A page has one of each
-  // kind: should an element appear twice, the first is played and the other is
-  // left alone.
+  // raises on the page. Hints and the checklist come first, so they are on the
+  // page before a tour starts and one of its steps can point at them. The page
+  // is looked at only once it is parsed, so an element may sit anywhere in it and
+  // the scripts may load in any way. A page has one of each kind: should an
+  // element appear twice, the first is played and the other is left alone.
   function play() {
     var tourDriver = window.driver && window.driver.js && window.driver.js.driver;
     var hintsDriver = window.driverHints && window.driverHints.hints;
+    var checklistDriver = window.driverChecklist && window.driverChecklist.checklist;
     var kinds = [
       ["hints", playHints, hintsDriver],
+      ["checklist", playChecklist, checklistDriver],
       ["tour", playTour, tourDriver],
     ];
     var present = kinds.filter(function (kind) {
@@ -357,7 +446,7 @@
     present.forEach(function (kind) {
       try {
         var script = document.getElementById("page-tours-" + kind[0]);
-        kind[1](JSON.parse(script.textContent), kind[2]);
+        kind[1](JSON.parse(script.textContent), kind[2], tourDriver);
       } catch (error) {
         // A declaration that cannot be played leaves the page as it was.
       }

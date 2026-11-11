@@ -1809,3 +1809,582 @@ class TestHintsWherePagesDiffer:
             expect(page.locator(BEACON)).to_have_count(0)
         finally:
             context.close()
+
+
+CHECKLIST = ".driver-checklist"
+PANEL = ".driver-checklist-panel"
+LAUNCHER = ".driver-checklist-launcher"
+ITEM = ".driver-checklist-item"
+DONE_ITEM = ".driver-checklist-item-done"
+CHECKLIST_PART_SELECTORS = {
+    "box": PANEL,
+    "title": ".driver-checklist-title",
+    "text": ".driver-checklist-description",
+    "progress": ".driver-checklist-progress",
+    "close": ".driver-checklist-close-btn",
+    "launcher": LAUNCHER,
+    "item": ITEM,
+}
+
+
+def trigger(item_id):
+    """Return the selector of the control that starts a checklist item."""
+    return f'.driver-checklist-item-trigger[data-item-id="{item_id}"]'
+
+
+def item_ids(page):
+    """Return the ids of the checklist's items in the order the page shows them."""
+    return page.eval_on_selector_all(
+        ".driver-checklist-item-trigger", "els => els.map(el => el.dataset.itemId)"
+    )
+
+
+class TestChecklistPlays:
+    """The checklist a page carries shows its items in the declared order."""
+
+    def test_every_item_is_shown_in_order(self, page, live_server):
+        """The launcher is on the page, and opening it lists the declared items."""
+        page.goto(live_server.url + reverse("checklist"))
+
+        page.click(LAUNCHER)
+
+        expect(page.locator(PANEL)).to_be_visible()
+        assert item_ids(page) == [item.id for item in views.ITEMS_CHECKLIST.items]
+
+
+class TestChecklistItemTour:
+    """An item that names a tour plays it as a tour on a page of its own."""
+
+    @pytest.fixture
+    def site_classes(self, settings):
+        """Configure a class of the site's own for every part."""
+        settings.PAGE_TOURS_CLASSES = SITE_CLASSES
+
+    @pytest.mark.usefixtures("site_classes")
+    def test_the_item_plays_the_steps_of_its_tour(self, page, live_server):
+        """Starting the item shows the first step with its part classes."""
+        page.goto(live_server.url + reverse("checklist"))
+        page.click(LAUNCHER)
+
+        page.click(trigger("tour"))
+
+        expect(page.locator(TITLE)).to_have_text(views.ITEM_TOUR.steps[0].title)
+        assert "page-tour-title" in classes_of(page, TITLE)
+        assert "site-title" in classes_of(page, TITLE)
+
+    def test_a_step_whose_element_is_missing_is_skipped(self, page, live_server):
+        """The step after the first is the third; the missing one is passed over."""
+        page.goto(live_server.url + reverse("checklist"))
+        page.click(LAUNCHER)
+        page.click(trigger("tour"))
+        expect(page.locator(TITLE)).to_have_text(views.ITEM_TOUR.steps[0].title)
+
+        page.click(NEXT)
+
+        expect(page.locator(TITLE)).to_have_text(views.ITEM_TOUR.steps[2].title)
+
+    def test_the_tour_is_recorded_seen_under_its_name(self, page, live_server):
+        """Finishing the item's tour stores the tour's version entry."""
+        page.goto(live_server.url + reverse("checklist"))
+        page.click(LAUNCHER)
+        page.click(trigger("tour"))
+        expect(page.locator(TITLE)).to_have_text(views.ITEM_TOUR.steps[0].title)
+
+        page.click(NEXT)
+        expect(page.locator(TITLE)).to_have_text(views.ITEM_TOUR.steps[2].title)
+        page.click(NEXT)
+
+        expect(page.locator(".driver-popover")).to_have_count(0)
+        stored = page.evaluate(
+            "(key) => window.localStorage.getItem(key)",
+            f"page-tours:seen:{views.ITEM_TOUR.name}",
+        )
+        entry = json.loads(stored)
+        assert entry["version"] == views.ITEM_TOUR.version
+        assert entry["ids"] == [views.ITEM_TOUR.name]
+
+    def test_a_tour_with_nothing_to_show_leaves_the_item_unticked(
+        self, page, live_server
+    ):
+        """No step shows, and the item is not ticked."""
+        page.goto(live_server.url + reverse("checklist-nothing-showable"))
+        page.click(LAUNCHER)
+
+        page.click(trigger("tour"))
+
+        expect(page.locator(".driver-popover")).to_have_count(0)
+        expect(page.locator(DONE_ITEM)).to_have_count(0)
+
+
+class TestChecklistLinkItem:
+    """An item that names a link takes the visitor there."""
+
+    def test_the_browser_follows_the_link(self, page, live_server):
+        """Choosing the item opens the page of its link."""
+        page.goto(live_server.url + reverse("checklist"))
+        page.click(LAUNCHER)
+
+        page.click(trigger("link"))
+
+        expect(page).to_have_url(live_server.url + reverse("hints"))
+
+
+class TestChecklistReported:
+    """An item the view reports done shows ticked."""
+
+    def test_only_the_reported_item_is_ticked(self, page, live_server):
+        """The reported item has the done class and the others do not."""
+        page.goto(live_server.url + reverse("checklist-reported"))
+        page.click(LAUNCHER)
+
+        expect(page.locator(DONE_ITEM)).to_have_count(1)
+        expect(page.locator(DONE_ITEM).locator(trigger("plain"))).to_have_count(1)
+
+
+class TestChecklistManualComplete:
+    """The visitor can tick the items the developer allows, and no others."""
+
+    CHECK = ".driver-checklist-check"
+
+    def test_an_item_allowed_on_its_own_can_be_ticked_and_unticked(
+        self, page, live_server
+    ):
+        """Only the allowed item has a control, and it toggles the item."""
+        page.goto(live_server.url + reverse("checklist-manual"))
+        page.click(LAUNCHER)
+        controls = page.locator(f"button{self.CHECK}")
+        expect(controls).to_have_count(1)
+
+        controls.click()
+        expect(page.locator(DONE_ITEM)).to_have_count(1)
+        controls.click()
+
+        expect(page.locator(DONE_ITEM)).to_have_count(0)
+
+    def test_the_checklist_allowing_all_leaves_out_an_item_that_refuses(
+        self, page, live_server
+    ):
+        """One item of two has no control when it opts out."""
+        page.goto(live_server.url + reverse("checklist-all-manual"))
+        page.click(LAUNCHER)
+
+        expect(page.locator(f"button{self.CHECK}")).to_have_count(1)
+
+
+class TestChecklistParts:
+    """The checklist's parts carry their name and the site's classes."""
+
+    @pytest.fixture
+    def site_classes(self, settings):
+        """Configure a class of the site's own for every part."""
+        settings.PAGE_TOURS_CLASSES = {
+            part: f"site-{part}" for part in CHECKLIST_PART_SELECTORS
+        }
+
+    @pytest.mark.usefixtures("site_classes")
+    def test_each_part_carries_its_name_and_class(self, page, live_server):
+        """Panel, title, description, progress, close, launcher and item."""
+        page.goto(live_server.url + reverse("checklist-parts"))
+        page.click(LAUNCHER)
+
+        for part, selector in CHECKLIST_PART_SELECTORS.items():
+            tokens = classes_of(page, selector)
+            assert f"page-tour-{part}" in tokens, part
+            assert f"site-{part}" in tokens, part
+
+    @pytest.mark.usefixtures("site_classes")
+    def test_every_item_carries_the_item_classes(self, page, live_server):
+        """The classes are on each item, not on the first only."""
+        page.goto(live_server.url + reverse("checklist-parts"))
+        page.click(LAUNCHER)
+
+        expect(page.locator(".page-tour-item")).to_have_count(
+            len(views.PARTS_CHECKLIST.items)
+        )
+
+
+class TestChecklistWithoutJavaScript:
+    """Without JavaScript a page with a checklist shows none."""
+
+    def test_the_page_shows_no_checklist(self, browser, live_server):
+        """No checklist markup is on the page."""
+        context = browser.new_context(java_script_enabled=False)
+        try:
+            page = context.new_page()
+            page.goto(live_server.url + reverse("checklist"))
+            expect(page.locator(CHECKLIST)).to_have_count(0)
+        finally:
+            context.close()
+
+
+class TestChecklistScriptMissing:
+    """Without the checklist script the page is as it would be without one."""
+
+    def test_the_page_shows_no_checklist_and_raises_no_error(self, page, live_server):
+        """A checklist script that does not load shows nothing and raises nothing."""
+        problems = []
+        page.on("pageerror", lambda error: problems.append(str(error)))
+        page.route("**/checklist.iife.js", lambda route: route.fulfill(status=404))
+        page.goto(live_server.url + reverse("checklist"))
+        page.wait_for_load_state("load")
+
+        expect(page.locator(CHECKLIST)).to_have_count(0)
+        assert problems == []
+
+
+class TestChecklistBesideTourAndHints:
+    """A tour, hints and a checklist on one page each play."""
+
+    def test_each_kind_plays(self, page, live_server):
+        """The tour's step, the hints' beacons and the checklist's launcher show."""
+        page.goto(live_server.url + reverse("everything"))
+
+        expect(page.locator(TITLE)).to_have_text(views.HINTS_TOUR.steps[0].title)
+        expect(page.locator(BEACON)).to_have_count(len(views.THREE_HINTS.hints))
+        expect(page.locator(LAUNCHER)).to_have_count(1)
+
+
+class TestChecklistToggleControl:
+    """The developer's own control opens the checklist and closes it again."""
+
+    TOGGLE = "[data-page-checklist-toggle]"
+
+    def test_the_control_opens_and_closes_a_checklist_with_no_launcher(
+        self, page, live_server
+    ):
+        """With no launcher, pressing the control twice opens then closes the panel."""
+        page.goto(live_server.url + reverse("checklist-no-launcher"))
+        expect(page.locator(LAUNCHER)).to_have_count(0)
+
+        page.click(self.TOGGLE)
+        expect(page.locator(PANEL)).to_be_visible()
+        page.click(self.TOGGLE)
+
+        expect(page.locator(PANEL)).to_be_hidden()
+
+    def test_the_control_shows_on_a_page_with_a_checklist(self, page, live_server):
+        """The control is written hidden and shows once the checklist plays."""
+        page.goto(live_server.url + reverse("checklist"))
+
+        expect(page.locator(self.TOGGLE)).to_be_visible()
+
+    def test_the_control_stays_hidden_on_a_page_with_no_checklist(
+        self, page, live_server
+    ):
+        """Nothing plays, so nothing shows the control."""
+        page.goto(live_server.url + reverse("no-checklist"))
+        page.wait_for_load_state("load")
+
+        expect(page.locator(self.TOGGLE)).to_be_hidden()
+
+    def test_the_control_stays_hidden_with_javascript_off(self, browser, live_server):
+        """A page with a checklist, with no script run, leaves the control hidden."""
+        context = browser.new_context(java_script_enabled=False)
+        try:
+            page = context.new_page()
+            page.goto(live_server.url + reverse("checklist"))
+            expect(page.locator(self.TOGGLE)).to_be_hidden()
+        finally:
+            context.close()
+
+
+def open_checklist(page, live_server, name):
+    """Open a page of the checklist tests and its checklist."""
+    page.goto(live_server.url + reverse(name))
+    page.click(LAUNCHER)
+
+
+def done_ids(page):
+    """Return the ids of the items the checklist shows ticked."""
+    return page.eval_on_selector_all(
+        f"{DONE_ITEM} .driver-checklist-item-trigger",
+        "els => els.map(el => el.dataset.itemId)",
+    )
+
+
+def step_is_active(page, selector):
+    """Wait until Driver.js has finished showing the step on the element."""
+    expect(page.locator(f"{selector}.driver-active-element")).to_have_count(1)
+
+
+def tick(page, item_id):
+    """Tick or untick an item with its control."""
+    page.click(f"{ITEM}:has({trigger(item_id)}) button.driver-checklist-check")
+
+
+class TestChecklistProgress:
+    """The checklist says which items are done, out of how many."""
+
+    PROGRESS = ".driver-checklist-progress-text"
+
+    def test_the_reported_item_counts_out_of_every_item(self, page, live_server):
+        """One of three items is done."""
+        open_checklist(page, live_server, "checklist-reported")
+
+        assert item_ids(page) == ["tour", "link", "plain"]
+        assert done_ids(page) == ["plain"]
+        expect(page.locator(self.PROGRESS)).to_contain_text(re.compile(r"1\D+3"))
+
+    def test_ticking_and_unticking_moves_the_count(self, page, live_server):
+        """The count follows each change."""
+        open_checklist(page, live_server, "checklist-ticks")
+
+        tick(page, "a")
+        expect(page.locator(self.PROGRESS)).to_contain_text(re.compile(r"1\D+3"))
+        tick(page, "a")
+
+        expect(page.locator(self.PROGRESS)).to_contain_text(re.compile(r"0\D+3"))
+
+    def test_every_item_ticked_shows_the_completed_state(self, page, live_server):
+        """The root is marked complete and the title is the declared one."""
+        open_checklist(page, live_server, "checklist-ticks")
+
+        for item_id in ("a", "b", "c"):
+            tick(page, item_id)
+
+        expect(page.locator(CHECKLIST)).to_have_class(
+            re.compile(r"driver-checklist-complete")
+        )
+        expect(page.locator(".driver-checklist-title")).to_have_text(
+            views.TICKS_CHECKLIST.completeTitle
+        )
+
+
+class TestChecklistTicksFromItems:
+    """Finishing an item's tour or following its link ticks it."""
+
+    def test_finishing_the_tour_ticks_the_item(self, page, live_server):
+        """The item's tour ends on its last step and the item shows ticked."""
+        open_checklist(page, live_server, "checklist-kinds")
+        page.click(trigger("tour"))
+        step_is_active(page, "h1")
+        page.click(NEXT)
+        step_is_active(page, "#control")
+        page.click(NEXT)
+
+        expect(page.locator(".driver-popover")).to_have_count(0)
+        assert done_ids(page) == ["tour"]
+
+    def test_the_second_tour_finished_first_ticks_only_the_second(
+        self, page, live_server
+    ):
+        """Items are ticked by the tour that finished, not by position."""
+        open_checklist(page, live_server, "checklist-two-tours")
+        page.click(trigger("second"))
+        step_is_active(page, "h1")
+        page.click(NEXT)
+
+        expect(page.locator(".driver-popover")).to_have_count(0)
+        assert done_ids(page) == ["second"]
+
+    def test_closing_the_tour_early_leaves_the_item_unticked(self, page, live_server):
+        """A tour closed before its last step does not tick the item."""
+        open_checklist(page, live_server, "checklist-kinds")
+        page.click(trigger("tour"))
+        step_is_active(page, "h1")
+
+        page.click(CLOSE)
+
+        expect(page.locator(".driver-popover")).to_have_count(0)
+        assert done_ids(page) == []
+
+    def test_a_followed_link_ticks_the_item(self, page, live_server):
+        """The item is ticked on the next page that carries the checklist."""
+        open_checklist(page, live_server, "checklist-kinds")
+        page.click(trigger("link"))
+        expect(page).to_have_url(live_server.url + reverse("hints"))
+
+        open_checklist(page, live_server, "checklist-kinds")
+
+        assert done_ids(page) == ["link"]
+
+
+class TestChecklistTourSeen:
+    """A tour started from an item is seen as the page's own tour is."""
+
+    def test_the_page_does_not_play_it_by_itself_afterwards(self, page, live_server):
+        """The item's tour was finished, so the same tour on a page stays quiet."""
+        open_checklist(page, live_server, "checklist-kinds")
+        page.click(trigger("tour"))
+        step_is_active(page, "h1")
+        page.click(NEXT)
+        step_is_active(page, "#control")
+        page.click(NEXT)
+        expect(page.locator(".driver-popover")).to_have_count(0)
+
+        page.goto(live_server.url + reverse("checklist-own-tour"))
+
+        expect(page.locator(LAUNCHER)).to_have_count(1)
+        expect(page.locator(".driver-popover")).to_have_count(0)
+
+
+class TestChecklistKeptInTheBrowser:
+    """What the visitor ticked is kept in the browser, under the item's id."""
+
+    def test_ticks_stay_on_reload_and_on_another_page(self, page, live_server):
+        """Reloading and opening another page with the checklist keeps them."""
+        open_checklist(page, live_server, "checklist-ticks")
+        tick(page, "a")
+        tick(page, "c")
+
+        open_checklist(page, live_server, "checklist-ticks")
+        assert done_ids(page) == ["a", "c"]
+        open_checklist(page, live_server, "checklist-ticks-again")
+
+        assert done_ids(page) == ["a", "c"]
+
+    def test_an_unticked_item_stays_unticked(self, page, live_server):
+        """Unticking is kept as ticking is."""
+        open_checklist(page, live_server, "checklist-ticks")
+        tick(page, "a")
+        tick(page, "b")
+        tick(page, "a")
+
+        open_checklist(page, live_server, "checklist-ticks")
+
+        assert done_ids(page) == ["b"]
+
+    def test_a_tick_is_kept_when_the_item_is_reworded_and_moved(
+        self, page, live_server
+    ):
+        """Ticks are kept against the id, not the text or the position."""
+        open_checklist(page, live_server, "checklist-ticks")
+        tick(page, "b")
+
+        open_checklist(page, live_server, "checklist-ticks-reworded")
+
+        assert item_ids(page) == ["c", "b", "a"]
+        assert done_ids(page) == ["b"]
+
+    def test_a_tick_for_a_removed_item_does_not_count(self, page, live_server):
+        """Only the declared items are counted."""
+        open_checklist(page, live_server, "checklist-ticks")
+        tick(page, "a")
+        tick(page, "b")
+
+        open_checklist(page, live_server, "checklist-ticks-removed")
+
+        assert done_ids(page) == ["a"]
+        expect(page.locator(TestChecklistProgress.PROGRESS)).to_contain_text(
+            re.compile(r"1\D+2")
+        )
+
+    def test_a_raised_version_forgets_the_browsers_ticks(self, page, live_server):
+        """Ticks of the earlier version go, and the app's report still ticks."""
+        open_checklist(page, live_server, "checklist-ticks")
+        tick(page, "b")
+
+        open_checklist(page, live_server, "checklist-ticks-raised")
+
+        assert done_ids(page) == ["a"]
+
+    def test_blocked_storage_still_ticks_for_the_page_view(self, page, live_server):
+        """Nothing is remembered and nothing is raised."""
+        problems = []
+        page.on("pageerror", lambda error: problems.append(str(error)))
+        page.add_init_script(STORAGE_BLOCKED)
+        open_checklist(page, live_server, "checklist-ticks")
+
+        tick(page, "a")
+
+        assert done_ids(page) == ["a"]
+        assert problems == []
+
+
+class TestChecklistReportAndBrowser:
+    """The app's report and the browser's ticks are shown together."""
+
+    def test_the_report_and_a_browser_tick_are_both_shown(self, page, live_server):
+        """The reported item and the visitor's tick are both ticked, also later."""
+        open_checklist(page, live_server, "checklist-ticks-reported-a")
+        tick(page, "b")
+
+        open_checklist(page, live_server, "checklist-ticks-reported-a")
+
+        assert done_ids(page) == ["a", "b"]
+
+    def test_an_item_the_app_stops_reporting_is_unticked(self, page, live_server):
+        """Without a tick in the browser the item goes when the report does."""
+        open_checklist(page, live_server, "checklist-ticks-reported-a")
+        assert done_ids(page) == ["a"]
+
+        open_checklist(page, live_server, "checklist-ticks")
+
+        assert done_ids(page) == []
+
+    def test_the_reported_item_is_ticked_again_after_unticking(self, page, live_server):
+        """The report wins: unticking lasts until the next request."""
+        open_checklist(page, live_server, "checklist-ticks-reported-a")
+        tick(page, "a")
+        assert done_ids(page) == []
+
+        open_checklist(page, live_server, "checklist-ticks-reported-a")
+
+        assert done_ids(page) == ["a"]
+
+    def test_a_tick_made_before_the_report_survives_another_tick(
+        self, page, live_server
+    ):
+        """Ticked, then reported, then another ticked, then no longer reported."""
+        open_checklist(page, live_server, "checklist-ticks")
+        tick(page, "a")
+        open_checklist(page, live_server, "checklist-ticks-reported-a")
+        tick(page, "b")
+
+        open_checklist(page, live_server, "checklist-ticks")
+
+        assert done_ids(page) == ["a", "b"]
+
+
+PAGE_BUTTONS = ["#control", "#first", "#second", "#third", "#toggle"]
+
+
+def tab_to(page, selector):
+    """Press Tab until the element of the selector has focus."""
+    for _ in range(20):
+        if page.evaluate("(sel) => document.activeElement.matches(sel)", selector):
+            return
+        page.keyboard.press("Tab")
+    raise AssertionError(f"Tab never reached {selector}")
+
+
+class TestChecklistBesidePage:
+    """The page stays usable with the checklist open, and closing uncovers it."""
+
+    def test_a_button_beside_the_open_checklist_takes_a_click(self, page, live_server):
+        """Every button of the page can be clicked with the panel open."""
+        open_checklist(page, live_server, "checklist")
+        expect(page.locator(PANEL)).to_be_visible()
+
+        for button in PAGE_BUTTONS:
+            page.click(button, timeout=2000)
+
+    def test_closing_the_checklist_uncovers_the_page(self, page, live_server):
+        """Every button of the page can be clicked once the panel is closed."""
+        open_checklist(page, live_server, "checklist")
+        page.click(".driver-checklist-close-btn")
+        expect(page.locator(PANEL)).to_be_hidden()
+
+        for button in PAGE_BUTTONS:
+            page.click(button, timeout=2000)
+
+
+class TestChecklistKeyboard:
+    """Keyboard alone opens the checklist, starts an item and closes it."""
+
+    def test_keys_open_start_and_close(self, page, live_server):
+        """Enter opens the panel and starts an item; Escape ends the tour and closes."""
+        page.goto(live_server.url + reverse("checklist-kinds"))
+        expect(page.locator(LAUNCHER)).to_have_count(1)
+        tab_to(page, LAUNCHER)
+
+        page.keyboard.press("Enter")
+        expect(page.locator(PANEL)).to_be_visible()
+        tab_to(page, trigger("tour"))
+        page.keyboard.press("Enter")
+        expect(page.locator(TITLE)).to_have_text(views.STILL_TOUR.steps[0].title)
+        page.keyboard.press("Escape")
+        expect(page.locator(".driver-popover")).to_have_count(0)
+        page.keyboard.press("Escape")
+
+        expect(page.locator(PANEL)).to_be_hidden()

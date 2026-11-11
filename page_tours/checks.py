@@ -13,9 +13,10 @@ from page_tours.parts import TourParts
 def check_overrides_name_declarations(app_configs, **kwargs):
     """Warn about each ``PAGE_TOURS_OVERRIDES`` key that names nothing declared.
 
-    A key goes stale when the tour or hints it named are renamed or removed. The
-    URLconf is loaded first, so every declaration in a routed view's module is
-    known. Only the keys are read; the values are resolved once, at start-up.
+    A key goes stale when the tour, hints or checklist it named are renamed or
+    removed.
+    The URLconf is loaded first, so every declaration in a routed view's module
+    is known. Only the keys are read; the values are resolved once, at start-up.
 
     Args:
         app_configs: The app configs being checked, supplied by Django.
@@ -33,13 +34,13 @@ def check_overrides_name_declarations(app_configs, **kwargs):
     return [
         checks.Warning(
             _(
-                "No tour or hints are declared with the name %(name)s, so its entry "
-                "in PAGE_TOURS_OVERRIDES changes nothing."
+                "No tour, hints or checklist are declared with the name %(name)s, so "
+                "its entry in PAGE_TOURS_OVERRIDES changes nothing."
             )
             % {"name": name},
             hint=_(
-                "A tour or hints that were renamed have a new name. Update the key "
-                "to match."
+                "A tour, hints or checklist that were renamed have a new name. "
+                "Update the key to match."
             ),
             obj=name,
             id="page_tours.W002",
@@ -55,9 +56,10 @@ def check_declaration_names_are_unique(app_configs, **kwargs):
 
     Two declarations with one name share what a browser remembers about them and
     the entry ``PAGE_TOURS_OVERRIDES`` changes them by. Declarations of one class
-    with the same content are one declaration, whatever their version or
-    autoplay, so one tour used on several views, or routed at two versions, is
-    not reported. A tour and hints under one name are always reported.
+    with the same content are one declaration, whatever their version, autoplay
+    or the ids a checklist's app reports done, so one tour used on several
+    views, or routed at two versions, is not reported. Declarations of different
+    kinds under one name are always reported.
 
     Args:
         app_configs: The app configs being checked, supplied by Django.
@@ -71,9 +73,9 @@ def check_declaration_names_are_unique(app_configs, **kwargs):
     return [
         checks.Warning(
             _(
-                "%(count)d tours or sets of hints with different content are "
-                "declared with the name %(name)s, so a browser that saw one counts "
-                "them all as seen."
+                "%(count)d tours, sets of hints or checklists with different content "
+                "are declared with the name %(name)s, so a browser that saw one "
+                "counts them all as seen."
             )
             % {"count": len(contents), "name": name},
             hint=_(
@@ -84,13 +86,28 @@ def check_declaration_names_are_unique(app_configs, **kwargs):
             id="page_tours.W005",
         )
         for name, found in declarations().items()
-        if len(
-            contents := {
-                (type(item), getattr(item, item.content_field)) for item in found
-            }
-        )
-        > 1
+        if len(contents := distinct_contents(found)) > 1
     ]
+
+
+def distinct_contents(found):
+    """Return the different contents among declarations of one name.
+
+    Contents are compared for equality, never hashed, because a declaration may
+    hold a list, such as a tour's ``showButtons``.
+
+    Args:
+        found: The declarations under one name.
+
+    Returns:
+        Each different ``(class, content)`` pair once, in the order first found.
+    """
+    contents = []
+    for item in found:
+        content = (type(item), getattr(item, item.content_field))
+        if content not in contents:
+            contents.append(content)
+    return contents
 
 
 @checks.register()

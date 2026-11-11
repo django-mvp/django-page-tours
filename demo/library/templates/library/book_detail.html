@@ -2,6 +2,12 @@
 {% block content %}
   <h1 id="library-book-title">A book about tours</h1>
   <p>A short book about guiding a visitor through a page.</p>
-  <button id="library-borrow" type="button">Borrow</button>
+  <form method="post" action="{% url 'library-borrow' %}">
+    {% csrf_token %}
+    <button id="library-borrow" type="submit">Borrow</button>
+  </form>
+  {% if request.session.borrowed %}
+    <p>You have borrowed this book. The checklist ticked its item.</p>
+  {% endif %}
   {{ tour }}
 {% endblock content %}

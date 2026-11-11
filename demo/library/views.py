@@ -4,6 +4,8 @@ The app names each tour ``"library.<tour>"``, after its app label, so its names
 cannot clash with the tours of the project or of another app.
 """
 
+from django.shortcuts import redirect
+from django.views.decorators.http import require_POST
 from django.views.generic import TemplateView
 
 from page_tours import Tour, TourStep
@@ -54,6 +56,13 @@ class BookDetailView(TemplateView):
 
     template_name = "library/book_detail.html"
     extra_context = {"tour": BOOK_TOUR}
+
+
+@require_POST
+def borrow(request):
+    """Note in the session that the visitor borrowed the book."""
+    request.session["borrowed"] = True
+    return redirect("library-book")
 
 
 LOANS_TOUR = Tour(

@@ -47,7 +47,7 @@ not seen this one.
 
 ### Declaration
 
-What a page renders: a [tour](#tour) or [hints](#hints). Each has a name and a version, and all
+What a page renders: a [tour](#tour), [hints](#hints) or a [checklist](#checklist). Each has a name and a version, and all
 share one namespace of names, so a name belongs to one declaration whichever kind it is. A browser
 remembers what a visitor did under the name.
 
@@ -90,6 +90,37 @@ _Avoid:_ closed, seen (seen is a tour that has played).
 
 An element of the developer's own, marked `data-page-hints-restore`, that shows every
 [dismissed hint](#dismissed-hint) again. Written `hidden`, it is shown only on a page with hints.
+
+### Checklist
+
+The panel a page shows in the corner of the window, listing what a visitor can do there. It is
+declared in Python as `Checklist` with a [name](#tour-name), a version and a list of
+[items](#checklist-item). The view or a context processor puts it in the template context under
+`checklist`, and the page outputs it with `{{ checklist }}`. A page has one checklist, and may have
+a tour and hints as well.
+
+_Avoid:_ onboarding, to-do list, guide.
+
+### Checklist item
+
+One entry of a [checklist](#checklist): an id, a title and a description. Choosing it starts a
+tour, opens an address, or does nothing, and it is [ticked](#ticked) by the app or by the visitor.
+
+_Avoid:_ task, step (a step belongs to a tour).
+
+### Ticked
+
+A [checklist item](#checklist-item) is ticked once it is done. The app reports an item done when
+the page is built, and a visitor ticks an item that allows it. The browser keeps the visitor's
+ticks under the checklist's name and version, and never the app's report.
+
+_Avoid:_ completed, checked (`completed` is the field the app reports ids in).
+
+### Toggle control
+
+An element of the developer's own, marked `data-page-checklist-toggle`, that opens a
+[checklist](#checklist)'s panel and closes it again. Written `hidden`, it is shown only on a page
+with a checklist.
 
 ### Tour version
 

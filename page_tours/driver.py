@@ -200,18 +200,40 @@ class Declaration(DriverObject):
             "config": self.as_driver(),
         }
 
+    def playing(self) -> tuple["Declaration", int] | None:
+        """Return the declaration that plays under this one's name, and its version.
+
+        The replacement the ``PAGE_TOURS_OVERRIDES`` setting names, at this
+        declaration's version plus the replacement's, less one, so a browser that
+        saw this one does not see the replacement until the replacement's own
+        version is raised. This declaration at its own version when the setting
+        does not name it. The setting is read every time.
+
+        Returns:
+            The declaration to play and the version to play it at, or ``None``
+            when the setting turns this declaration off.
+
+        Raises:
+            ImproperlyConfigured: If the setting's entry for this declaration is
+                not valid or names a replacement of another class.
+        """
+        overrides = getattr(settings, "PAGE_TOURS_OVERRIDES", {})
+        if self.name not in overrides:
+            return self, self.version
+        replacement = resolve_override(self.name, overrides[self.name], type(self))
+        if replacement is None:
+            return None
+        return replacement, self.version + replacement.version - 1
+
     def __html__(self) -> SafeString:
         """Render the declaration as the element the package's script plays it from.
 
         This is what ``{{ declaration }}`` outputs in a template: a
         ``<script id="page-tours-<kind>" type="application/json">`` element.
 
-        When the ``PAGE_TOURS_OVERRIDES`` setting names the declaration, the
-        replacement is rendered in its place, or nothing when the setting turns it
-        off. The replacement keeps this declaration's name, and plays at this
-        declaration's version plus its own, less one, so a browser that saw this
-        one does not see the replacement until the replacement's own version is
-        raised. The setting is read every time the declaration renders.
+        What plays is what ``playing()`` returns: the replacement the
+        ``PAGE_TOURS_OVERRIDES`` setting names, under this declaration's name, or
+        nothing when the setting turns the declaration off.
 
         Returns:
             The element, marked safe so the template does not escape it, or an
@@ -221,15 +243,10 @@ class Declaration(DriverObject):
             ImproperlyConfigured: If the setting's entry for this declaration is
                 not valid or names a replacement of another class.
         """
-        played = self
-        version = self.version
-        overrides = getattr(settings, "PAGE_TOURS_OVERRIDES", {})
-        if self.name in overrides:
-            replacement = resolve_override(self.name, overrides[self.name], type(self))
-            if replacement is None:
-                return SafeString("")
-            played = replacement
-            version = self.version + replacement.version - 1
+        playing = self.playing()
+        if playing is None:
+            return SafeString("")
+        played, version = playing
         return json_script(
             played.payload(self.name, version), f"page-tours-{self.kind}"
         )

@@ -1,0 +1,12 @@
+{% extends "test_base.html" %}
+{% block content %}
+  <h1>Page</h1>
+  <button id="control" type="button">Control</button>
+  <button id="first" type="button">First</button>
+  <button id="second" type="button">Second</button>
+  <button id="third" type="button">Third</button>
+  <button id="toggle" type="button" data-page-checklist-toggle hidden>Checklist</button>
+  {{ checklist }}
+  {{ hints }}
+  {{ tour }}
+{% endblock content %}

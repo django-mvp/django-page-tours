@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: django-page-tours\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 14:03+0000\n"
+"POT-Creation-Date: 2026-11-11 15:55+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -20,52 +20,64 @@ msgstr ""
 msgid "Page tours"
 msgstr ""
 
-#: checks.py:36
+#: checklists.py:17
+msgctxt "page checklist"
+msgid "Get started"
+msgstr ""
+
+#: checklists.py:18
+msgctxt "page checklist"
+msgid "{{done}} of {{total}}"
+msgstr ""
+
+#: checks.py:37
 #, python-format
 msgid ""
-"No tour or hints are declared with the name %(name)s, so its entry in "
-"PAGE_TOURS_OVERRIDES changes nothing."
+"No tour, hints or checklist are declared with the name %(name)s, so its "
+"entry in PAGE_TOURS_OVERRIDES changes nothing."
 msgstr ""
 
-#: checks.py:41
+#: checks.py:42
 msgid ""
-"A tour or hints that were renamed have a new name. Update the key to match."
+"A tour, hints or checklist that were renamed have a new name. Update the key "
+"to match."
 msgstr ""
 
-#: checks.py:74
+#: checks.py:76
 #, python-format
 msgid ""
-"%(count)d tours or sets of hints with different content are declared with "
-"the name %(name)s, so a browser that saw one counts them all as seen."
+"%(count)d tours, sets of hints or checklists with different content are "
+"declared with the name %(name)s, so a browser that saw one counts them all "
+"as seen."
 msgstr ""
 
-#: checks.py:80
+#: checks.py:82
 msgid ""
 "Give each its own name. A reusable app names its declarations '<app_label>."
 "<name>'."
 msgstr ""
 
-#: checks.py:116
+#: checks.py:118
 #, python-format
 msgid "%(source)s must be a dict from part to a string of class names."
 msgstr ""
 
-#: checks.py:126
+#: checks.py:128
 #, python-format
 msgid "%(source)s names '%(part)s', which is not a part of a tour."
 msgstr ""
 
-#: checks.py:128
+#: checks.py:130
 #, python-format
 msgid "The parts are: %(parts)s."
 msgstr ""
 
-#: checks.py:136
+#: checks.py:138
 #, python-format
 msgid "%(source)s gives '%(part)s' a value that is not a string."
 msgstr ""
 
-#: checks.py:138
+#: checks.py:140
 msgid "Write the class names as one string."
 msgstr ""
 
@@ -79,18 +91,18 @@ msgstr ""
 msgid "The version of %(cls)s must be a whole number of 1 or more."
 msgstr ""
 
-#: driver.py:274
+#: driver.py:291
 #, python-format
 msgid ""
 "PAGE_TOURS_OVERRIDES[%(name)s] must be the dotted path of a %(cls)s or None."
 msgstr ""
 
-#: driver.py:283
+#: driver.py:300
 #, python-format
 msgid "PAGE_TOURS_OVERRIDES[%(name)s]: %(path)s cannot be imported."
 msgstr ""
 
-#: driver.py:288
+#: driver.py:305
 #, python-format
 msgid "PAGE_TOURS_OVERRIDES[%(name)s]: %(path)s is not a %(cls)s."
 msgstr ""
@@ -100,11 +112,11 @@ msgctxt "page hint control"
 msgid "Got it"
 msgstr ""
 
-#: parts.py:57
+#: parts.py:60
 msgid "the PAGE_TOURS_CLASSES setting"
 msgstr ""
 
-#: parts.py:63
+#: parts.py:66
 #, python-format
 msgid "the app '%(label)s'"
 msgstr ""

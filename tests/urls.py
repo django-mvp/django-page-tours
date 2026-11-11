@@ -137,4 +137,85 @@ urlpatterns = [
         views.HintsWithoutScriptView.as_view(),
         name="hints-without-script",
     ),
+    path("checklist/", views.ChecklistView.as_view(), name="checklist"),
+    path(
+        "checklist-reported/",
+        views.ReportedChecklistView.as_view(),
+        name="checklist-reported",
+    ),
+    path(
+        "checklist-manual/",
+        views.ManualChecklistView.as_view(),
+        name="checklist-manual",
+    ),
+    path(
+        "checklist-all-manual/",
+        views.AllManualChecklistView.as_view(),
+        name="checklist-all-manual",
+    ),
+    path(
+        "checklist-nothing-showable/",
+        views.NothingShowableChecklistView.as_view(),
+        name="checklist-nothing-showable",
+    ),
+    path(
+        "checklist-parts/", views.PartsChecklistView.as_view(), name="checklist-parts"
+    ),
+    path(
+        "checklist-no-launcher/",
+        views.NoLauncherChecklistView.as_view(),
+        name="checklist-no-launcher",
+    ),
+    path(
+        "checklist-ticks/",
+        views.TicksChecklistView.as_view(),
+        name="checklist-ticks",
+    ),
+    path(
+        "checklist-ticks-again/",
+        views.TicksAgainChecklistView.as_view(),
+        name="checklist-ticks-again",
+    ),
+    path(
+        "checklist-ticks-reported-a/",
+        views.ReportedATicksChecklistView.as_view(),
+        name="checklist-ticks-reported-a",
+    ),
+    path(
+        "checklist-ticks-reported-b/",
+        views.ReportedBTicksChecklistView.as_view(),
+        name="checklist-ticks-reported-b",
+    ),
+    path(
+        "checklist-ticks-raised/",
+        views.RaisedTicksChecklistView.as_view(),
+        name="checklist-ticks-raised",
+    ),
+    path(
+        "checklist-ticks-removed/",
+        views.RemovedTicksChecklistView.as_view(),
+        name="checklist-ticks-removed",
+    ),
+    path(
+        "checklist-ticks-reworded/",
+        views.RewordedTicksChecklistView.as_view(),
+        name="checklist-ticks-reworded",
+    ),
+    path(
+        "checklist-two-tours/",
+        views.TwoToursChecklistView.as_view(),
+        name="checklist-two-tours",
+    ),
+    path(
+        "checklist-own-tour/",
+        views.OwnTourChecklistView.as_view(),
+        name="checklist-own-tour",
+    ),
+    path(
+        "checklist-kinds/",
+        views.KindsChecklistView.as_view(),
+        name="checklist-kinds",
+    ),
+    path("everything/", views.EverythingView.as_view(), name="everything"),
+    path("no-checklist/", views.NoChecklistView.as_view(), name="no-checklist"),
 ]
