@@ -28,7 +28,7 @@ surface of the package.
 
 A [hint](hints.md)'s popover takes the parts of a tour step, for each part it shows: the box, the
 title, the text, the close control and, in place of the next control, the button that dismisses
-the hint, which carries `page-tour-done`. Your rules against the documented names and the classes
+the hint, which carries `page-tour-next`. Your rules against the documented names and the classes
 in `PAGE_TOURS_CLASSES` apply to hints as they do to steps.
 
 The marker on the page is one more part, `beacon`, with the documented class name
