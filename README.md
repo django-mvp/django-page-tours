@@ -63,7 +63,7 @@ Include the package's stylesheet and scripts once, in the `<head>` of your base 
 <head>
   ...
   <link rel="stylesheet" href="{% static 'page_tours/page-tours.css' %}">
-  <script src="{% static 'page_tours/vendor/driver.js-1.10.2/driver.js.iife.js' %}" defer></script>
+  <script src="{% static 'page_tours/vendor/driver.js-1.11.0/driver.js.iife.js' %}" defer></script>
   <script src="{% static 'page_tours/page-tours.js' %}" defer></script>
 </head>
 ```

@@ -240,7 +240,7 @@ own labels, set them on the tour, as described in
 
 ## Set Driver.js options
 
-`Tour` mirrors the configuration object of Driver.js 1.10.2. Set an option as a field of the
+`Tour` mirrors the configuration object of Driver.js 1.11.0. Set an option as a field of the
 tour, under the same name Driver.js gives it. Every field defaults to the value Driver.js uses, so a tour sets only what it
 changes:
 
@@ -262,13 +262,13 @@ The fields, with the Driver.js option each one is:
 | `duration` | `400` | How long the animation takes, in milliseconds. |
 | `allowClose` | `True` | Whether a visitor can close the tour before its last step. |
 | `allowScroll` | `True` | Whether the page can be scrolled while the tour shows. |
-| `overlayClickBehavior` | `"close"` | What clicking the overlay does: `"close"` or `"nextStep"`. |
+| `overlayClickBehavior` | `"close"` | What clicking the overlay does: `"close"`, `"nextStep"` or `"none"`. |
 | `overlayColor` | `"#000"` | The colour of the overlay. |
 | `overlayOpacity` | `0.7` | The opacity of the overlay, from 0 to 1. |
 | `smoothScroll` | `False` | Whether to scroll smoothly to each step's element. |
 | `disableActiveInteraction` | `False` | Whether the highlighted element ignores clicks. |
 | `allowKeyboardControl` | `True` | Whether the arrow and escape keys move through and close the tour. |
-| `advanceOnClick` | `False` | Whether clicking a step's element moves to the next step. |
+| `advanceOn` | `False` | The event on a step's element that moves to the next step, such as `"click"`, a tuple of events such as `("click", "keydown")`, or `False` for none. |
 | `waitForElement` | `0` | How long to wait for a step's element to appear, in milliseconds. |
 | `stagePadding` | `10` | The space around the highlighted element, in pixels. |
 | `stageRadius` | `5` | The corner radius of the highlight, in pixels. |
@@ -305,7 +305,7 @@ options:
 | Field | What it does on this step |
 |-------|---------------------------|
 | `disableActiveInteraction` | Whether the highlighted element ignores clicks. |
-| `advanceOnClick` | Whether clicking the element moves to the next step. |
+| `advanceOn` | The event or tuple of events on the element that moves to the next step, or `False` for none. |
 | `waitForElement` | How long to wait for the element to appear, in milliseconds. |
 | `side` | Which side of the element the popover sits on: `"top"`, `"right"`, `"bottom"` or `"left"`. |
 | `align` | How the popover lines up along that side: `"start"`, `"center"` or `"end"`. |
@@ -329,7 +329,7 @@ Tour(
             title="Your projects",
             description="Press one to open it.",
             side="left",
-            advanceOnClick=True,
+            advanceOn="click",
         ),
     ],
     showProgress=True,
