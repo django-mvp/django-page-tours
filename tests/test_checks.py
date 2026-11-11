@@ -237,6 +237,25 @@ class TestClassesCheck:
         assert [issue.id for issue in found] == ["page_tours.W004"]
         assert "PAGE_TOURS_CLASSES" in found[0].msg
 
+    def test_the_beacon_is_a_known_part(self, settings):
+        """The beacon of a hint is not reported as an unknown part."""
+        assert self.issues(settings, {"beacon": "dot"}) == []
+
+    def test_a_beacon_value_that_is_not_a_string_gives_w004_naming_the_beacon(
+        self, settings
+    ):
+        """A list of class names is not a string of them, for the beacon too."""
+        found = self.issues(settings, {"beacon": ["dot"]})
+
+        assert [issue.id for issue in found] == ["page_tours.W004"]
+        assert "beacon" in found[0].msg
+
+    def test_an_unknown_part_is_still_reported_beside_the_beacon(self, settings):
+        """Adding the beacon leaves the unknown-part warning in place."""
+        found = self.issues(settings, {"beacon": "dot", "footer": "x"})
+
+        assert [issue.id for issue in found] == ["page_tours.W003"]
+
     def test_each_wrong_entry_gets_its_own_warning(self, settings):
         """Two mistakes are two warnings."""
         found = self.issues(settings, {"footer": "x", "box": 3})
