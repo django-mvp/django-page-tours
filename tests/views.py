@@ -438,6 +438,32 @@ MISSING_ELEMENT_HINTS = Hints(
         Hint(element="#third", title="Third hint", description="Three."),
     ],
 )
+RAISED_HINTS = Hints(name=THREE_HINTS.name, hints=THREE_HINTS.hints, version=2)
+OVERLAY_HINTS = Hints(
+    name="tests.browser.overlay", overlay=True, hints=list(THREE_HINTS.hints)
+)
+IDENTIFIED_HINTS = Hints(
+    name="tests.browser.identified",
+    hints=[
+        Hint(element="#first", id="alpha", title="Alpha", description="One."),
+        Hint(element="#second", id="beta", title="Beta", description="Two."),
+    ],
+)
+MOVED_HINTS = Hints(
+    name=IDENTIFIED_HINTS.name,
+    hints=[
+        Hint(element="#third", id="alpha", title="Alpha", description="One."),
+        Hint(element="#second", id="beta", title="Beta", description="Two."),
+    ],
+)
+SHARED_ELEMENT_HINTS = Hints(
+    name="tests.browser.shared-element",
+    hints=[
+        Hint(element="#first", title="Left", description="One."),
+        Hint(element="#first", title="Right", description="Two."),
+        Hint(element="#second", title="Other", description="Three."),
+    ],
+)
 HINTS_TOUR = Tour(
     name="tests.browser.hints-tour",
     steps=[
@@ -482,3 +508,37 @@ class HintsWithoutScriptView(TemplateView):
 
     template_name = "test_hints_no_script.html"
     extra_context = {"hints": THREE_HINTS}
+
+
+class HintsAgainView(HintsView):
+    """The same hints as the hints page, rendered at another address."""
+
+
+class RaisedHintsView(HintsView):
+    """The hints of the hints page, declared at a higher version."""
+
+    extra_context = {"hints": RAISED_HINTS}
+
+
+class OverlayHintsView(HintsView):
+    """A page whose hints dim the page while a popover is open."""
+
+    extra_context = {"hints": OVERLAY_HINTS}
+
+
+class IdentifiedHintsView(HintsView):
+    """A page whose hints have identifiers."""
+
+    extra_context = {"hints": IDENTIFIED_HINTS}
+
+
+class MovedHintsView(HintsView):
+    """The identified hints, one of them now pointing at another element."""
+
+    extra_context = {"hints": MOVED_HINTS}
+
+
+class SharedElementHintsView(HintsView):
+    """A page with two hints on one element, neither with an identifier."""
+
+    extra_context = {"hints": SHARED_ELEMENT_HINTS}

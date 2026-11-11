@@ -268,6 +268,12 @@
   function playHints(payload, hintsDriver) {
     var config = payload.config;
     var shared = config.beacon || {};
+    var dismissed = memory("dismissed", payload);
+
+    function keyOf(hint) {
+      return hint.id || hint.element;
+    }
+
     var hints = config.hints.map(function (hint) {
       var own = hint.beacon || {};
       var beacon = Object.assign({}, own);
@@ -285,10 +291,35 @@
       });
     });
 
-    hintsDriver(Object.assign({}, config, { hints: hints })).show();
+    function undismissed() {
+      var keys = dismissed.get();
+      return hints.filter(function (hint) {
+        return keys.indexOf(keyOf(hint)) === -1;
+      });
+    }
+
+    // Where nothing can be remembered, Driver.js still keeps a dismissed hint
+    // hidden until the page is left.
+    var instance = hintsDriver(
+      Object.assign({}, config, {
+        hints: undismissed(),
+        onDismiss: function (element, hint) {
+          var keys = dismissed.get();
+          if (keys.indexOf(keyOf(hint)) === -1) {
+            dismissed.set(keys.concat(keyOf(hint)));
+          }
+        },
+      })
+    );
+    instance.show();
 
     // A restore control is the developer's own element, written with `hidden`.
     document.querySelectorAll("[data-page-hints-restore]").forEach(function (control) {
+      control.addEventListener("click", function () {
+        dismissed.clear();
+        instance.setHints(hints);
+        instance.show();
+      });
       control.hidden = false;
     });
   }

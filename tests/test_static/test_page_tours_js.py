@@ -1376,3 +1376,221 @@ class TestHintsScriptMissing:
         expect(page.locator(BEACON)).to_have_count(0)
         expect(page.locator("[data-page-hints-restore]")).to_be_hidden()
         assert problems == []
+
+
+def dismiss(page, index):
+    """Open the beacon at a position and press the button of its popover."""
+    page.locator(BEACON).nth(index).click()
+    page.click(HINT_BUTTON)
+    expect(page.locator(".driver-popover")).to_have_count(0)
+
+
+def dismissed_key(hints):
+    """Return the key a browser keeps dismissed hints under."""
+    return f"page-tours:dismissed:{hints.name}"
+
+
+class TestHintsOpenInAnyOrder:
+    """A visitor opens whichever hint they like, and the page stays usable."""
+
+    def test_hints_opened_in_reverse_order_each_show_their_own_popover(
+        self, page, live_server
+    ):
+        """The last hint opens first, then the first, each with its own title."""
+        page.goto(live_server.url + reverse("hints"))
+        beacons = page.locator(BEACON)
+        expect(beacons).to_have_count(len(views.THREE_HINTS.hints))
+
+        beacons.nth(2).click()
+        expect(page.locator(TITLE)).to_have_text(views.THREE_HINTS.hints[2].title)
+        beacons.nth(0).click()
+
+        expect(page.locator(TITLE)).to_have_text(views.THREE_HINTS.hints[0].title)
+
+    def click_the_third_button(self, page):
+        """Click the middle of a page button and return how often it took a click."""
+        page.evaluate(
+            """() => {
+                window.clicks = 0;
+                document.getElementById("third")
+                    .addEventListener("click", () => { window.clicks += 1; });
+            }"""
+        )
+        box = page.locator("#third").bounding_box()
+        page.mouse.click(box["x"] + box["width"] / 2, box["y"] + box["height"] / 2)
+        return page.evaluate("window.clicks")
+
+    def test_a_page_button_takes_a_click_while_a_hint_is_open(self, page, live_server):
+        """With a popover open, a button of the page still responds."""
+        page.goto(live_server.url + reverse("hints"))
+        page.locator(BEACON).nth(0).click()
+        expect(page.locator(TITLE)).to_be_visible()
+
+        assert self.click_the_third_button(page) == 1
+
+    def test_the_overlay_stops_the_click_when_it_is_turned_on(self, page, live_server):
+        """With overlay=True the same click does not reach the button."""
+        page.goto(live_server.url + reverse("hints-overlay"))
+        page.locator(BEACON).nth(0).click()
+        expect(page.locator(TITLE)).to_be_visible()
+
+        assert self.click_the_third_button(page) == 0
+
+
+class TestDismissedHints:
+    """A hint whose button was pressed stays gone in that browser."""
+
+    def titles_of_the_beacons(self, page):
+        """Open each beacon in turn and return the titles of their popovers."""
+        titles = []
+        beacons = page.locator(BEACON)
+        for index in range(beacons.count()):
+            beacons.nth(index).click()
+            expect(page.locator(TITLE)).to_be_visible()
+            titles.append(page.locator(TITLE).inner_text())
+            page.keyboard.press("Escape")
+            expect(page.locator(".driver-popover")).to_have_count(0)
+        return titles
+
+    def test_the_dismissal_is_remembered_under_the_hints_name(self, page, live_server):
+        """The browser keeps one entry holding the version and the hint's key."""
+        page.goto(live_server.url + reverse("hints"))
+        expect(page.locator(BEACON)).to_have_count(3)
+
+        dismiss(page, 1)
+
+        stored = page.evaluate(
+            f"JSON.parse(localStorage.getItem({dismissed_key(views.THREE_HINTS)!r}))"
+        )
+        assert stored == {"version": 1, "ids": ["#second"]}
+
+    def test_a_dismissed_beacon_stays_gone_after_a_reload(self, page, live_server):
+        """The other beacons are still there."""
+        url = live_server.url + reverse("hints")
+        page.goto(url)
+        expect(page.locator(BEACON)).to_have_count(3)
+        dismiss(page, 1)
+        expect(page.locator(BEACON)).to_have_count(2)
+
+        page.goto(url)
+
+        expect(page.locator(BEACON)).to_have_count(2)
+        hints = views.THREE_HINTS.hints
+        assert self.titles_of_the_beacons(page) == [hints[0].title, hints[2].title]
+
+    def test_the_same_hints_at_another_address_stay_dismissed(self, page, live_server):
+        """What is dismissed under the hints' name holds wherever they are rendered."""
+        page.goto(live_server.url + reverse("hints"))
+        expect(page.locator(BEACON)).to_have_count(3)
+        dismiss(page, 0)
+
+        page.goto(live_server.url + reverse("hints-again"))
+
+        expect(page.locator(BEACON)).to_have_count(2)
+
+    def test_a_fresh_browser_shows_every_beacon(self, page, browser, live_server):
+        """What one browser dismissed, another has not."""
+        url = live_server.url + reverse("hints")
+        page.goto(url)
+        expect(page.locator(BEACON)).to_have_count(3)
+        dismiss(page, 0)
+        other = browser.new_context()
+        try:
+            other_page = other.new_page()
+
+            other_page.goto(url)
+
+            expect(other_page.locator(BEACON)).to_have_count(3)
+        finally:
+            other.close()
+
+    def test_a_raised_version_shows_dismissed_hints_again(self, page, live_server):
+        """Hints dismissed at version 1 all show at version 2."""
+        page.goto(live_server.url + reverse("hints"))
+        expect(page.locator(BEACON)).to_have_count(3)
+        dismiss(page, 0)
+
+        page.goto(live_server.url + reverse("hints-raised"))
+
+        expect(page.locator(BEACON)).to_have_count(3)
+
+    def test_a_hint_with_an_id_stays_dismissed_on_another_element(
+        self, page, live_server
+    ):
+        """The key is the id, so moving the hint to another element keeps it gone."""
+        page.goto(live_server.url + reverse("hints-identified"))
+        expect(page.locator(BEACON)).to_have_count(2)
+        dismiss(page, 0)
+
+        page.goto(live_server.url + reverse("hints-moved"))
+
+        expect(page.locator(BEACON)).to_have_count(1)
+        page.locator(BEACON).click()
+        expect(page.locator(TITLE)).to_have_text(views.MOVED_HINTS.hints[1].title)
+
+    def test_two_hints_on_one_element_are_drawn_and_dismissed_together(
+        self, page, live_server
+    ):
+        """Without ids they share a key, so one dismissal removes both."""
+        url = live_server.url + reverse("hints-shared-element")
+        page.goto(url)
+        expect(page.locator(BEACON)).to_have_count(3)
+        page.locator(BEACON).nth(1).click()
+        page.click(HINT_BUTTON)
+
+        page.goto(url)
+
+        expect(page.locator(BEACON)).to_have_count(1)
+
+    def test_a_stored_id_no_hint_declares_is_ignored(self, page, live_server):
+        """A record of a hint that is gone neither hides another nor raises."""
+        errors = []
+        page.on("pageerror", lambda error: errors.append(str(error)))
+        page.goto(live_server.url + reverse("no-hints"))
+        page.evaluate(
+            f"localStorage.setItem({dismissed_key(views.THREE_HINTS)!r}, "
+            '\'{"version": 1, "ids": ["gone"]}\')'
+        )
+
+        page.goto(live_server.url + reverse("hints"))
+
+        expect(page.locator(BEACON)).to_have_count(3)
+        assert errors == []
+
+
+class TestHintsRestored:
+    """The restore control brings dismissed hints back."""
+
+    RESTORE = "[data-page-hints-restore]"
+
+    def test_every_beacon_is_back_without_a_reload(self, page, live_server):
+        """The page is not reloaded, and the dismissal is forgotten."""
+        page.goto(live_server.url + reverse("hints"))
+        expect(page.locator(BEACON)).to_have_count(3)
+        dismiss(page, 0)
+        dismiss(page, 0)
+        expect(page.locator(BEACON)).to_have_count(1)
+        page.evaluate("window.sameDocument = true")
+
+        page.click(self.RESTORE)
+
+        expect(page.locator(BEACON)).to_have_count(3)
+        assert page.evaluate("window.sameDocument") is True
+        stored = page.evaluate(
+            f"localStorage.getItem({dismissed_key(views.THREE_HINTS)!r})"
+        )
+        assert stored is None
+
+    def test_a_restored_hint_opens_and_can_be_dismissed_again(self, page, live_server):
+        """The hints are fully working after being brought back."""
+        url = live_server.url + reverse("hints")
+        page.goto(url)
+        expect(page.locator(BEACON)).to_have_count(3)
+        dismiss(page, 0)
+        page.click(self.RESTORE)
+        expect(page.locator(BEACON)).to_have_count(3)
+
+        dismiss(page, 2)
+
+        page.goto(url)
+        expect(page.locator(BEACON)).to_have_count(2)

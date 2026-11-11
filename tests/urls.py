@@ -117,6 +117,20 @@ urlpatterns = [
         name="hints-missing-element",
     ),
     path("hints-and-tour/", views.HintsAndTourView.as_view(), name="hints-and-tour"),
+    path("hints-again/", views.HintsAgainView.as_view(), name="hints-again"),
+    path("hints-raised/", views.RaisedHintsView.as_view(), name="hints-raised"),
+    path("hints-overlay/", views.OverlayHintsView.as_view(), name="hints-overlay"),
+    path(
+        "hints-identified/",
+        views.IdentifiedHintsView.as_view(),
+        name="hints-identified",
+    ),
+    path("hints-moved/", views.MovedHintsView.as_view(), name="hints-moved"),
+    path(
+        "hints-shared-element/",
+        views.SharedElementHintsView.as_view(),
+        name="hints-shared-element",
+    ),
     path("no-hints/", views.NoHintsView.as_view(), name="no-hints"),
     path(
         "hints-without-script/",
