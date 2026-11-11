@@ -108,3 +108,54 @@ Driver.js 1.11.0 hints build whether it hides the beacons itself or only closes 
 only closes the hint, the package meets FR-015 itself.
 
 **ADR:** none — passed to research
+
+## D13 — Every declaration class is keyword-only
+
+`Declaration` gives `version` a default ahead of the subclass fields that have none (`steps`,
+`hints`), which a dataclass allows only when the fields are keyword-only. Every class is
+keyword-only, as in the prototype. Every tour in the docs, the demo and the tests is declared with
+keywords, so FR-021 holds for them. A step or tour written with positional arguments stops
+working, and the changelog says so. Taken at research.
+
+**ADR:** none — follows from the shared base, stated in the changelog
+
+## D14 — Tours and hints share one base, one namespace of names and one browser record
+
+`Declaration` is what a page renders. It owns the name, the version, the registry of declared
+names, `PAGE_TOURS_OVERRIDES`, the payload and its element `page-tours-<kind>`. In the browser one
+function keeps what a visitor did as a version and a list of ids under the declaration's name.
+The checklist (FS-006) is its third kind. Taken at research, from the hand-over.
+
+**ADR:** to graduate at converge — it binds every later kind of declaration
+
+## D15 — The base is named `Declaration` (answers D11)
+
+`CONTEXT.md` already says a tour is declared when it is made, and the specification calls a tour
+or a set of hints a declaration (FR-009, D5, D7). The word is the repo's own and avoids "guide".
+`CONTEXT.md` gains the term. Taken at research.
+
+**ADR:** none — a name, recorded in `CONTEXT.md`
+
+## D16 — Driver.js hides the beacons during a tour (answers D12)
+
+`hints.css` hides `.driver-hint` under `.driver-active`, the class Driver.js puts on the body while
+a tour plays. The package imports `hints.css` into its stylesheet's lowest layer and adds no code
+for FR-015. A browser test asserts it. Taken at research.
+
+**ADR:** none — Driver.js's behaviour, asserted by a test
+
+## D17 — An override's replacement must be of the original's class
+
+At start-up a replacement must be a declaration, because the original may not be imported yet.
+When the original renders, the replacement must be of its class, or rendering raises
+`ImproperlyConfigured` naming the entry (FR-010). Taken at research.
+
+**ADR:** none — a behaviour fixed by the specification
+
+## D18 — A beacon keeps the hints' class when the hint sets none
+
+The prototype put the beacon part's classes and the hint's own class on each hint's beacon, which
+replaced the hints' beacon class for a hint that set none. The rebuild writes the part's classes,
+then the hint's class, else the hints' class (FR-019). Taken at research.
+
+**ADR:** none — a defect of the prototype, not a design change
