@@ -261,7 +261,7 @@ The fields, with the Driver.js option each one is:
 |-------|---------|--------------|
 | `animate` | `True` | Whether to animate the tour. |
 | `duration` | `400` | How long the animation takes, in milliseconds. |
-| `allow_close` | `True` | Whether clicking the overlay closes the tour. |
+| `allow_close` | `True` | Whether a visitor can close the tour before its last step. |
 | `allow_scroll` | `True` | Whether the page can be scrolled while the tour shows. |
 | `overlay_click_behavior` | `"close"` | What clicking the overlay does: `"close"` or `"nextStep"`. |
 | `overlay_color` | `"#000"` | The colour of the overlay. |

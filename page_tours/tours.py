@@ -121,7 +121,7 @@ class Tour:
             another version plays it by itself once more.
         animate: Whether to animate the tour.
         duration: How long the animation takes, in milliseconds.
-        allow_close: Whether clicking the overlay closes the tour.
+        allow_close: Whether a visitor can close the tour before its last step.
         allow_scroll: Whether the page can be scrolled while the tour shows.
         overlay_click_behavior: What clicking the overlay does: ``"close"`` the tour
             or go to the ``"nextStep"``.
