@@ -77,11 +77,6 @@ msgstr ""
 msgid "the app '%(label)s'"
 msgstr ""
 
-#: tours.py:88
-#, python-format
-msgid "A tour step needs a %(name)s."
-msgstr ""
-
 #: tours.py:190
 msgid "A tour needs a name."
 msgstr ""

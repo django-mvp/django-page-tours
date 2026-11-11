@@ -82,7 +82,6 @@ urlpatterns = [
     path("tour/", views.ClassTourView.as_view(), name="class-tour"),
     path("tour-again/", views.ClassTourView.as_view(), name="class-tour-again"),
     path("function-tour/", views.function_tour_view, name="function-tour"),
-    path("markup-tour/", views.MarkupTourView.as_view(), name="markup-tour"),
     path(
         "translated-tour/", views.TranslatedTourView.as_view(), name="translated-tour"
     ),

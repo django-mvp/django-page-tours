@@ -9,7 +9,7 @@ from typing import Any, Literal
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.functional import Promise
-from django.utils.html import escape, json_script
+from django.utils.html import json_script
 from django.utils.module_loading import import_string
 from django.utils.safestring import SafeString
 from django.utils.translation import gettext_lazy as _
@@ -24,6 +24,15 @@ _declared: dict[str, list[weakref.ref["Tour"]]] = {}
 # The fields of Tour that are the package's own. Every other field is a
 # Driver.js option, passed to the browser under its own name.
 PACKAGE_FIELDS = {"name", "steps", "autoplay", "version"}
+
+# The fields of TourStep that Driver.js reads from the step itself. Every other
+# field is read from the step's popover.
+STEP_LEVEL_FIELDS = {
+    "element",
+    "disableActiveInteraction",
+    "advanceOnClick",
+    "waitForElement",
+}
 
 Button = Literal["next", "previous", "close"]
 
@@ -54,29 +63,56 @@ def _forget(name: str, ref: weakref.ref["Tour"]) -> None:
 
 @dataclass(frozen=True)
 class TourStep:
-    """One step of a tour.
+    """One step of a tour, as Driver.js 1.10.2 takes it.
+
+    The fields are named as Driver.js names them. See
+    https://driverjs.com/docs/configuration for what each one does. An option left
+    as ``None`` falls back to the tour's value of the same name. Title,
+    description and the button texts are passed to Driver.js as they are, and it
+    writes them into the page as HTML.
 
     Args:
-        title: The heading of the step. Plain text, never empty.
-        text: The body of the step. Plain text, never empty.
         element: A CSS selector for the element the step points at. Empty means
             the step is attached to nothing.
-
-    Raises:
-        ImproperlyConfigured: If ``title`` or ``text`` is empty or only whitespace.
+        title: The heading of the popover. Without one, the popover shows no
+            heading.
+        description: The body of the popover.
+        disableActiveInteraction: Whether the highlighted element ignores clicks
+            on this step.
+        advanceOnClick: Whether clicking the element moves to the next step.
+        waitForElement: How long to wait for the element to appear, in
+            milliseconds.
+        side: Which side of the element the popover sits on.
+        align: How the popover lines up along that side.
+        popoverClass: A class added to this step's popover.
+        showButtons: The buttons this step's popover shows, from ``"next"``,
+            ``"previous"`` and ``"close"``.
+        disableButtons: The buttons that show but cannot be pressed on this step.
+        showProgress: Whether this step's popover shows how far through the tour
+            it is.
+        progressText: The progress text, with ``{{current}}`` and ``{{total}}``
+            standing for the step's number and the number of steps.
+        nextBtnText: The text of the next button on this step.
+        prevBtnText: The text of the previous button on this step.
+        doneBtnText: The text of the button when this is the last step.
     """
 
-    title: str | Promise
-    text: str | Promise
     element: str = ""
-
-    def __post_init__(self):
-        """Refuse a step with no title or no text."""
-        for name in ("title", "text"):
-            if not str(getattr(self, name)).strip():
-                raise ImproperlyConfigured(
-                    _("A tour step needs a %(name)s.") % {"name": name}
-                )
+    title: str | Promise = ""
+    description: str | Promise = ""
+    disableActiveInteraction: bool | None = None
+    advanceOnClick: bool | None = None
+    waitForElement: int | None = None
+    side: Literal["top", "right", "bottom", "left"] | None = None
+    align: Literal["start", "center", "end"] | None = None
+    popoverClass: str | None = None
+    showButtons: tuple[Button, ...] | None = None
+    disableButtons: tuple[Button, ...] | None = None
+    showProgress: bool | None = None
+    progressText: str | None = None
+    nextBtnText: str | Promise | None = None
+    prevBtnText: str | Promise | None = None
+    doneBtnText: str | Promise | None = None
 
 
 @dataclass(frozen=True)
@@ -250,24 +286,31 @@ class Tour:
         """
         return self.__html__()
 
-    def as_driver_steps(self) -> list[dict[str, str]]:
+    def as_driver_steps(self) -> list[dict[str, Any]]:
         """Convert the steps to the form Driver.js takes.
 
-        Title and text are converted with ``str()`` when this is called, so the
-        active language applies, and escaped because Driver.js writes them as HTML.
+        Title, description and button texts are converted with ``str()`` when this
+        is called, so the active language applies. Fields left as ``None``, and an
+        empty ``element``, are left out so that the tour's value applies.
 
         Returns:
-            One dict per step, in the declared order. A step that names an element
-            carries an ``element`` key; the others do not.
+            One Driver.js step per step, in the declared order.
         """
-        driver_steps: list[dict[str, str]] = []
+        driver_steps: list[dict[str, Any]] = []
         for step in self.steps:
-            driver_step: dict[str, str] = {
-                "title": escape(str(step.title)),
-                "text": escape(str(step.text)),
-            }
-            if step.element:
-                driver_step["element"] = step.element
+            driver_step: dict[str, Any] = {"popover": {}}
+            for field in fields(step):
+                value = getattr(step, field.name)
+                if value in (None, ""):
+                    continue
+                if isinstance(value, Promise):
+                    value = str(value)
+                level = (
+                    driver_step
+                    if field.name in STEP_LEVEL_FIELDS
+                    else driver_step["popover"]
+                )
+                level[field.name] = value
             driver_steps.append(driver_step)
         return driver_steps
 

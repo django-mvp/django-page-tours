@@ -8,24 +8,21 @@ from django.views.generic import TemplateView
 
 from page_tours import Tour, TourStep
 
-MARKUP_TITLE = "<b>bold</b> & co"
-
 CLASS_TOUR = Tour(
     name="tests.class",
     steps=[
-        TourStep(title="Welcome", text="Start here."),
-        TourStep(title="The heading", text="What the page is.", element="h1"),
-        TourStep(title="The control", text="Press it.", element="#control"),
+        TourStep(title="Welcome", description="Start here."),
+        TourStep(title="The heading", description="What the page is.", element="h1"),
+        TourStep(title="The control", description="Press it.", element="#control"),
     ],
 )
 FUNCTION_TOUR = Tour(
-    name="tests.function", steps=[TourStep(title="From a function", text="Plain view.")]
-)
-MARKUP_TOUR = Tour(
-    name="tests.markup", steps=[TourStep(title=MARKUP_TITLE, text="<i>text</i> & more")]
+    name="tests.function",
+    steps=[TourStep(title="From a function", description="Plain view.")],
 )
 TRANSLATED_TOUR = Tour(
-    name="tests.translated", steps=[TourStep(title=gettext_lazy("Yes"), text="Body.")]
+    name="tests.translated",
+    steps=[TourStep(title=gettext_lazy("Yes"), description="Body.")],
 )
 
 
@@ -42,7 +39,7 @@ def steps_for(name, *selectors):
     return Tour(
         name=name,
         steps=[
-            TourStep(title=f"Step {number}", text="Text.", element=selector)
+            TourStep(title=f"Step {number}", description="Text.", element=selector)
             for number, selector in enumerate(selectors, start=1)
         ],
     )
@@ -67,12 +64,6 @@ class OptionsTourView(ClassTourView):
     """A page whose tour passes options of its own to Driver.js."""
 
     extra_context = {"tour": OPTIONS_TOUR}
-
-
-class MarkupTourView(ClassTourView):
-    """A page whose step carries markup characters."""
-
-    extra_context = {"tour": MARKUP_TOUR}
 
 
 class TranslatedTourView(ClassTourView):
@@ -252,8 +243,8 @@ def on_request_tour():
     return Tour(
         name="tests.on-request",
         steps=[
-            TourStep(title="Step 1", text="Text.", element="h1"),
-            TourStep(title="Step 2", text="Text.", element="#control"),
+            TourStep(title="Step 1", description="Text.", element="h1"),
+            TourStep(title="Step 2", description="Text.", element="#control"),
         ],
         autoplay=False,
     )
@@ -277,7 +268,9 @@ class VersionedTourView(ControlsTourView):
 VERSION_TWO = Tour(name="tests.versioned", steps=VERSIONED_TOUR.steps, version=2)
 VERSION_TWO_EDITED = Tour(
     name="tests.versioned",
-    steps=[TourStep(title="Step 1", text="Text, with a typo fixed.", element="h1")],
+    steps=[
+        TourStep(title="Step 1", description="Text, with a typo fixed.", element="h1")
+    ],
     version=2,
 )
 ON_REQUEST_VERSION_TWO = Tour(
@@ -311,9 +304,9 @@ class ControlInBaseNoTourView(TemplateView):
 APP_TOUR = Tour(
     name="app.page",
     steps=[
-        TourStep(title="Step 1", text="Text.", element="h1"),
-        TourStep(title="Step 2", text="Text.", element="#control"),
-        TourStep(title="Step 3", text="Text."),
+        TourStep(title="Step 1", description="Text.", element="h1"),
+        TourStep(title="Step 2", description="Text.", element="#control"),
+        TourStep(title="Step 3", description="Text."),
     ],
     version=2,
 )
@@ -323,15 +316,15 @@ OWN_TOUR = steps_for("tests.own", "h1")
 REPLACEMENT_TOUR = Tour(
     name="tests.replacement",
     steps=[
-        TourStep(title="Ours 1", text="Our first.", element="h1"),
-        TourStep(title="Ours 2", text="Our second.", element="#control"),
+        TourStep(title="Ours 1", description="Our first.", element="h1"),
+        TourStep(title="Ours 2", description="Our second.", element="#control"),
     ],
 )
 REWORDED_TOUR = Tour(
     name="tests.reworded",
     steps=[
         APP_TOUR.steps[0],
-        TourStep(title="Step 2", text="Reworded for us.", element="#control"),
+        TourStep(title="Step 2", description="Reworded for us.", element="#control"),
         APP_TOUR.steps[2],
     ],
 )

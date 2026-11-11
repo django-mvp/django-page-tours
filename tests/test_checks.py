@@ -10,7 +10,7 @@ from page_tours.parts import TourParts
 from page_tours.tours import Tour, TourStep
 from tests import views
 
-STEP = TourStep(title="Title", text="Body")
+STEP = TourStep(title="Title", description="Body")
 
 
 def warnings_of(check_id):
@@ -81,7 +81,9 @@ class TestUniqueNamesCheck:
     def test_it_warns_for_two_tours_with_one_name_and_different_steps(self):
         """They would share what a browser remembers and one override."""
         first = Tour(name="tests.clash", steps=[STEP])
-        second = Tour(name="tests.clash", steps=[TourStep(title="Other", text="X")])
+        second = Tour(
+            name="tests.clash", steps=[TourStep(title="Other", description="X")]
+        )
 
         found = warnings_of("page_tours.W005")
 

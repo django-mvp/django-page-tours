@@ -7,7 +7,7 @@ from django.urls import reverse
 from playwright.sync_api import expect
 
 from tests import views
-from tests.views import CLASS_TOUR, MARKUP_TITLE
+from tests.views import CLASS_TOUR
 
 TITLE = ".driver-popover-title"
 NEXT = ".driver-popover-next-btn"
@@ -44,14 +44,6 @@ class TestTourPlays:
 
         title = page.locator(TITLE)
         expect(title).to_have_text(CLASS_TOUR.steps[0].title)
-
-    def test_markup_characters_in_a_step_show_as_text(self, page, live_server):
-        """A title with markup characters shows exactly as written."""
-        page.goto(live_server.url + reverse("markup-tour"))
-
-        title = page.locator(TITLE)
-        expect(title).to_be_visible()
-        assert title.text_content() == MARKUP_TITLE
 
 
 class TestDriverOptions:

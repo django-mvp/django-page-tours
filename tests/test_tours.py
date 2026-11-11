@@ -10,7 +10,6 @@ from django.core.exceptions import ImproperlyConfigured
 from django.template import Context, Template
 from django.urls import reverse
 from django.utils import translation
-from django.utils.html import escape
 from django.utils.safestring import SafeString
 from django.utils.translation import gettext, gettext_lazy
 
@@ -24,29 +23,16 @@ from page_tours.tours import (
     tour_overrides,
 )
 from tests import views
-from tests.views import MARKUP_TITLE
 
-STEP = TourStep(title="Title", text="Body")
+STEP = TourStep(title="Title", description="Body")
 
 
 class TestTourStep:
     """Declaring a step of a tour."""
 
-    @pytest.mark.parametrize("title", ["", "   ", "\n\t"])
-    def test_an_empty_or_blank_title_is_an_error(self, title):
-        """A step without a title cannot be declared."""
-        with pytest.raises(ImproperlyConfigured):
-            TourStep(title=title, text="Body")
-
-    @pytest.mark.parametrize("text", ["", "   ", "\n\t"])
-    def test_an_empty_or_blank_text_is_an_error(self, text):
-        """A step without text cannot be declared."""
-        with pytest.raises(ImproperlyConfigured):
-            TourStep(title="Title", text=text)
-
     def test_the_element_is_optional(self):
         """A step may name no element."""
-        assert TourStep(title="Title", text="Body").element == ""
+        assert TourStep(title="Title", description="Body").element == ""
 
 
 class TestTour:
@@ -74,7 +60,7 @@ class TestTour:
 
     def test_steps_are_stored_as_a_tuple(self):
         """A declared tour cannot change later."""
-        step = TourStep(title="Title", text="Body")
+        step = TourStep(title="Title", description="Body")
 
         tour = Tour(name="test", steps=[step])
 
@@ -83,20 +69,25 @@ class TestTour:
     def test_a_tour_plays_by_itself_unless_told_otherwise(self):
         """Autoplay is on by default."""
         assert (
-            Tour(name="test", steps=[TourStep(title="Title", text="Body")]).autoplay
+            Tour(
+                name="test", steps=[TourStep(title="Title", description="Body")]
+            ).autoplay
             is True
         )
 
     def test_a_tour_is_at_version_one_unless_told_otherwise(self):
         """A tour declared without a version has version 1."""
         assert (
-            Tour(name="test", steps=[TourStep(title="Title", text="Body")]).version == 1
+            Tour(
+                name="test", steps=[TourStep(title="Title", description="Body")]
+            ).version
+            == 1
         )
 
     def test_a_tour_keeps_the_version_it_is_declared_with(self):
         """The developer sets the version."""
         tour = Tour(
-            name="test", steps=[TourStep(title="Title", text="Body")], version=3
+            name="test", steps=[TourStep(title="Title", description="Body")], version=3
         )
 
         assert tour.version == 3
@@ -109,7 +100,7 @@ class TestTour:
         with pytest.raises(ImproperlyConfigured):
             Tour(
                 name="test",
-                steps=[TourStep(title="Title", text="Body")],
+                steps=[TourStep(title="Title", description="Body")],
                 version=version,
             )
 
@@ -199,23 +190,27 @@ class TestTourAsDriverSteps:
         tour = Tour(
             name="test",
             steps=[
-                TourStep(title="First", text="One"),
-                TourStep(title="Second", text="Two"),
-                TourStep(title="Third", text="Three"),
+                TourStep(title="First", description="One"),
+                TourStep(title="Second", description="Two"),
+                TourStep(title="Third", description="Three"),
             ],
         )
 
         steps = tour.as_driver_steps()
 
-        assert [step["title"] for step in steps] == ["First", "Second", "Third"]
+        assert [step["popover"]["title"] for step in steps] == [
+            "First",
+            "Second",
+            "Third",
+        ]
 
     def test_the_element_key_is_present_only_for_a_step_that_names_one(self):
         """A step with no element has no element key."""
         tour = Tour(
             name="test",
             steps=[
-                TourStep(title="Attached", text="One", element="#menu"),
-                TourStep(title="Floating", text="Two"),
+                TourStep(title="Attached", description="One", element="#menu"),
+                TourStep(title="Floating", description="Two"),
             ],
         )
 
@@ -224,27 +219,69 @@ class TestTourAsDriverSteps:
         assert attached["element"] == "#menu"
         assert "element" not in floating
 
-    def test_title_and_text_are_escaped(self):
-        """Markup characters come out as text, not as markup."""
-        raw = "<b>&\"'"
-        tour = Tour(name="test", steps=[TourStep(title=raw, text=raw)])
+    def test_a_step_option_arrives_under_driverjs_name_where_driverjs_reads_it(self):
+        """Step-level options sit on the step, popover options inside ``popover``."""
+        tour = Tour(
+            name="test",
+            steps=[
+                TourStep(
+                    element="#menu",
+                    title="Title",
+                    description="Body",
+                    advanceOnClick=True,
+                    waitForElement=500,
+                    side="left",
+                    popoverClass="wide",
+                    showButtons=("next",),
+                )
+            ],
+        )
 
         (step,) = tour.as_driver_steps()
 
-        assert step["title"] == escape(raw)
-        assert step["text"] == escape(raw)
+        assert step == {
+            "element": "#menu",
+            "advanceOnClick": True,
+            "waitForElement": 500,
+            "popover": {
+                "title": "Title",
+                "description": "Body",
+                "side": "left",
+                "popoverClass": "wide",
+                "showButtons": ("next",),
+            },
+        }
+
+    def test_an_option_left_as_none_is_absent_so_the_tours_value_applies(self):
+        """A null in the step would override the tour's value in Driver.js."""
+        tour = Tour(name="test", steps=[TourStep(title="Title", description="Body")])
+
+        (step,) = tour.as_driver_steps()
+
+        assert step == {"popover": {"title": "Title", "description": "Body"}}
+
+    def test_title_and_description_are_passed_as_they_are(self):
+        """HTML in a title or description reaches Driver.js unescaped."""
+        tour = Tour(
+            name="test", steps=[TourStep(title="<b>A</b>", description="<i>B</i>")]
+        )
+
+        (step,) = tour.as_driver_steps()
+
+        assert step["popover"]["title"] == "<b>A</b>"
+        assert step["popover"]["description"] == "<i>B</i>"
 
     def test_a_lazy_title_is_translated_into_the_active_language(self):
         """The language active when the steps are built decides the text."""
         tour = Tour(
-            name="test", steps=[TourStep(title=gettext_lazy("Yes"), text="Body")]
+            name="test", steps=[TourStep(title=gettext_lazy("Yes"), description="Body")]
         )
 
         with translation.override("de"):
             (step,) = tour.as_driver_steps()
             expected = str(gettext("Yes"))
 
-        assert step["title"] == expected
+        assert step["popover"]["title"] == expected
 
 
 STEPS_SCRIPT = re.compile(
@@ -332,20 +369,13 @@ class TestTourRendering:
             views.CLASS_TOUR.as_driver_steps()
         )
 
-    def test_markup_characters_in_a_step_arrive_escaped(self):
-        """The step is plain text: its markup characters reach the page escaped."""
-        rendered = str(views.MARKUP_TOUR)
-
-        assert payload_of(rendered)["steps"][0]["title"] == escape(MARKUP_TITLE)
-        assert MARKUP_TITLE not in rendered
-
     def test_a_translated_step_is_in_the_active_language(self):
         """The tour is converted when it renders, in the language active then."""
         with translation.override("de"):
             payload = payload_of(views.TRANSLATED_TOUR)
             expected = str(gettext("Yes"))
 
-        assert payload["steps"][0]["title"] == expected != "Yes"
+        assert payload["steps"][0]["popover"]["title"] == expected != "Yes"
 
     def test_the_payload_carries_every_part_with_its_name(self):
         """Each part is a key, and its documented name is the first class."""

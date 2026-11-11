@@ -22,21 +22,21 @@ class TourView(TemplateView):
             steps=[
                 TourStep(
                     title="Welcome",
-                    text="This step points at nothing, so it shows mid-page.",
+                    description="This step points at nothing, so it shows mid-page.",
                 ),
                 TourStep(
                     title="A disclosure",
-                    text="Open it while this step shows. It stays usable.",
+                    description="Open it while this step shows. It stays usable.",
                     element="#demo-disclosure",
                 ),
                 TourStep(
                     title="An element that is not here",
-                    text="Nothing on this page matches, so this step is skipped.",
+                    description="Nothing on this page matches, so this step is skipped.",
                     element="#not-on-this-page",
                 ),
                 TourStep(
                     title="A text field",
-                    text="Type here and press Enter. The page reloads with your text.",
+                    description="Type here and press Enter. The page reloads with your text.",
                     element="#demo-field",
                 ),
             ],
@@ -54,14 +54,14 @@ class PlaysOnceView(TemplateView):
             steps=[
                 TourStep(
                     title="Plays once",
-                    text=(
+                    description=(
                         "This tour opened by itself. "
                         "It will not open again in this browser."
                     ),
                 ),
                 TourStep(
                     title="Play it again",
-                    text=(
+                    description=(
                         "The button in the page bar plays the tour again "
                         "from its first step."
                     ),
@@ -82,11 +82,11 @@ class OnRequestView(TemplateView):
             steps=[
                 TourStep(
                     title="Only on request",
-                    text="This tour did not open by itself. A control started it.",
+                    description="This tour did not open by itself. A control started it.",
                 ),
                 TourStep(
                     title="The page's own control",
-                    text="This button sits next to the heading and starts the same tour.",
+                    description="This button sits next to the heading and starts the same tour.",
                     element="#demo-replay",
                 ),
             ],
@@ -105,11 +105,11 @@ class OwnLookView(TemplateView):
             steps=[
                 TourStep(
                     title="A look of its own",
-                    text="This step points at nothing, so it shows mid-page.",
+                    description="This step points at nothing, so it shows mid-page.",
                 ),
                 TourStep(
                     title="An attached step",
-                    text="The rest of the page is dimmed, and this paragraph is not.",
+                    description="The rest of the page is dimmed, and this paragraph is not.",
                     element="#demo-own-look-target",
                 ),
             ],
@@ -120,11 +120,11 @@ class OwnLookView(TemplateView):
 CHANGED_TOUR_STEPS = [
     TourStep(
         title="A changed tour",
-        text="This browser has not seen this version of the tour, so it opened.",
+        description="This browser has not seen this version of the tour, so it opened.",
     ),
     TourStep(
         title="Its version",
-        text="The heading says which version of the tour this page is at.",
+        description="The heading says which version of the tour this page is at.",
         element="#demo-version",
     ),
 ]
@@ -148,11 +148,11 @@ FUNCTION_VIEW_TOUR = Tour(
     steps=[
         TourStep(
             title="From a function",
-            text="A function-based view rendered this page and passed this tour in its context.",
+            description="A function-based view rendered this page and passed this tour in its context.",
         ),
         TourStep(
             title="The same tour",
-            text="The page renders it with {{ tour }}, as a class-based view's page does.",
+            description="The page renders it with {{ tour }}, as a class-based view's page does.",
             element="#demo-function-view",
         ),
     ],
@@ -174,11 +174,11 @@ class DriverOptionsView(TemplateView):
             steps=[
                 TourStep(
                     title="Options of its own",
-                    text="This tour shows how far through it you are, below.",
+                    description="This tour shows how far through it you are, below.",
                 ),
                 TourStep(
                     title="Where they are set",
-                    text="Each is a field of the Tour, named like Driver.js's option.",
+                    description="Each is a field of the Tour, named like Driver.js's option.",
                     element="#demo-driver-options",
                 ),
             ],

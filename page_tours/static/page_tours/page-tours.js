@@ -39,7 +39,7 @@
     // tours had versions holds "1", which is the version a tour has by default.
     var seenVersion = String(payload.version);
     var steps = payload.steps.map(function (step) {
-      var driverStep = { popover: { title: step.title, description: step.text } };
+      var driverStep = Object.assign({}, step);
       if (step.element) {
         driverStep.element = function () {
           return visibleElement(step.element);
