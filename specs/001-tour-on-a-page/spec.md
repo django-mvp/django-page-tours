@@ -107,34 +107,33 @@ action, and that every control the page offers works afterwards.
     as a dialog named by the step's title and described by its text.
 11. **Given** a page served in a language the project has a translation for, **When** its tour
     plays, **Then** the tour's own controls (next, previous, done and the close button's name)
-    are in that language and shown as text.
+    are in that language.
 
 ---
 
-### User Story 3 - A developer passes Driver.js options of its own (Priority: P3)
+### User Story 3 - A developer sets Driver.js options on the tour (Priority: P3)
 
-A developer wants a tour to use something Driver.js already does that the package's own fields do
-not cover, such as showing the step count or turning the animation off. They pass those options
-with the tour, by Driver.js's own names, and the package hands them to Driver.js as they are.
-Whether an option works with the Driver.js the package ships is the developer's to check.
+A developer wants a tour to use something Driver.js already does, such as showing the step
+count, turning the animation off or wording a button differently. The tour has a field for each
+Driver.js configuration option that takes a plain value, named in snake_case after the option,
+and the package hands the values to Driver.js under Driver.js's own names. The fields default to
+Driver.js's own defaults. Options that take a JavaScript function are not available.
 
-**Why this priority**: The package leans on Driver.js for what it already does, rather than
-wrapping each option in its own field. Without this, every Driver.js option a developer wants
-waits on a release of the package (G1).
+**Why this priority**: The package leans on Driver.js for what it already does, so moving between
+Driver.js's documentation and a tour is one to one, and a developer gets type hints and linting
+for each option (G1).
 
-**Independent Test**: Declare a tour that turns on Driver.js's step count, open its page, and
-confirm the step count shows.
+**Independent Test**: Declare a tour with `show_progress=True`, open its page, and confirm the
+step count shows.
 
 **Acceptance Scenarios**:
 
-1. **Given** a tour declared with Driver.js options the package does not set, **When** the tour
-   plays, **Then** Driver.js plays it with those options.
-2. **Given** a tour declared with an option the package sets itself, such as the steps, the
-   skipping of missing elements or a control's label, **When** the tour plays, **Then** the
-   package's own setting applies and the option changes nothing.
-3. **Given** a tour declared with options that are not a mapping of names to values, or with a
-   value that has no JSON form, **When** the tour is declared, **Then** the developer is told
-   what is wrong, before any visitor sees the page.
+1. **Given** a tour with a Driver.js option set as a field, **When** the tour plays, **Then**
+   Driver.js plays it with that option.
+2. **Given** a tour that sets no option, **When** the tour plays, **Then** Driver.js plays it
+   with its own defaults, and the control labels are in the language the page is served in.
+3. **Given** a tour that sets a control's label, **When** the tour plays, **Then** the control
+   shows that label.
 4. **Given** a tour replaced through `PAGE_TOURS_OVERRIDES`, **When** it plays, **Then** it plays
    with the replacement's options.
 
@@ -200,19 +199,19 @@ confirm the step count shows.
   Focus MUST move into each step as it shows and, when the tour ends, MUST go back to where it
   was before the tour started. A screen reader MUST announce each step's title and text. (US2)
 - **FR-017**: The tour's own controls MUST be shown in the language the page is served in when a
-  translation exists, and in English otherwise, reaching the visitor as text. The package MUST
+  translation exists, and in English otherwise, unless the tour sets its own labels. The package MUST
   ship an English catalogue of its own strings. (US2)
-- **FR-018**: A developer MUST be able to pass a tour options of its own, by Driver.js's names,
-  which reach the Driver.js constructor unchanged. The options the package sets itself (the
-  steps, the skipping of missing elements, the control labels and the hooks the package uses)
-  MUST win over an option of the same name. Options that are not a mapping of names to values,
-  or a value with no JSON form, MUST be reported as an error when the tour is declared. The
+- **FR-018**: A tour MUST have a field for each Driver.js configuration option that takes a
+  plain value, named in snake_case after the option and defaulting to Driver.js's own default,
+  and the option MUST reach the Driver.js constructor under Driver.js's name. The options the
+  package sets itself (the steps, the skipping of missing elements and the hooks the package
+  uses) are not fields, and options that take a JavaScript function are not available. The
   package MUST NOT check what an option does. (US3)
 
 ### Key Entities
 
 - **Tour**: A short, guided walk through one page, made of an ordered list of tour steps, with a
-  name the developer gives it (ADR 0006) and any Driver.js options of its own. It belongs to the
+  name the developer gives it (ADR 0006) and Driver.js options as fields. It belongs to the
   view that renders the page.
 - **Tour step**: One stop in a tour. A title and a text, and optionally the element of the page it
   is attached to.
@@ -259,7 +258,7 @@ confirm the step count shows.
 - Tours look as Driver.js draws them by default (CONSTITUTION Article XIV). Giving tours a site's
   own look is a later feature (roadmap R5).
 - The tour's own controls are drawn by Driver.js, with labels from the package's own catalogue
-  (FR-017). Driver.js's step count is not shown unless the tour turns it on (User Story 3).
+  unless the tour sets its own (FR-017). Driver.js's step count is not shown unless the tour turns it on (User Story 3).
 - A tour belongs to one page. Tours across several pages are out of scope.
 - Tours shipped by reusable apps (R6) and tour versions (R7) are later features. This feature
   declares tours in a way that does not block either.

@@ -208,7 +208,7 @@ others keep the app's.
 - Driver.js's stylesheet always loads, because it places the step and draws the highlight. A
   site's look is laid over it, never instead of it.
 - The text of a step and its controls is not part of this feature. What a step says is declared
-  with the tour, and the controls' labels are translated by the package.
+  with the tour, and the controls' labels are the package's translations or set on the tour.
 - Styling a single tour or a single step differently from the rest of the site is out of scope.
 - A design system is a reusable Django app that the project installs. Tours shipped by reusable
   apps for their own pages are issue #23, and changing when a tour plays again after it changes is
