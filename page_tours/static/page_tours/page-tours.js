@@ -354,18 +354,55 @@
     });
   }
 
+  // Shows the checklist a payload describes. An item that names a tour starts
+  // it through the tour's Driver.js instance, which Driver.js drives as it is.
+  function playChecklist(payload, checklistDriver, tourDriver) {
+    var config = payload.config;
+    var instance = checklistDriver(
+      Object.assign({}, config, {
+        id: payload.id,
+        completed: config.completed,
+        items: config.items.map(function (item) {
+          if (!item.tour) {
+            return item;
+          }
+          return Object.assign({}, item, {
+            tour: buildTour(item.tour, tourDriver).instance(),
+          });
+        }),
+      })
+    );
+    instance.show();
+
+    [
+      ["box", ".driver-checklist-panel"],
+      ["title", ".driver-checklist-title"],
+      ["text", ".driver-checklist-description"],
+      ["progress", ".driver-checklist-progress"],
+      ["close", ".driver-checklist-close-btn"],
+      ["launcher", ".driver-checklist-launcher"],
+      ["item", ".driver-checklist-item"],
+    ].forEach(function (pair) {
+      document.querySelectorAll(pair[1]).forEach(function (element) {
+        addClasses(payload.parts, element, pair[0]);
+      });
+    });
+  }
+
   // Plays every kind of declaration the page carries, each from its own element
   // and each in its own try, so one that fails neither stops the other nor
-  // raises on the page. Hints come first, so they are on the page before a tour
-  // starts. The page is looked at only once it is parsed, so an element may sit
-  // anywhere in it and the scripts may load in any way. A page has one of each
-  // kind: should an element appear twice, the first is played and the other is
-  // left alone.
+  // raises on the page. Hints and the checklist come first, so they are on the
+  // page before a tour starts and one of its steps can point at them. The page
+  // is looked at only once it is parsed, so an element may sit anywhere in it and
+  // the scripts may load in any way. A page has one of each kind: should an
+  // element appear twice, the first is played and the other is left alone.
   function play() {
     var tourDriver = window.driver && window.driver.js && window.driver.js.driver;
     var hintsDriver = window.driverHints && window.driverHints.hints;
+    var checklistDriver = window.driverChecklist && window.driverChecklist.checklist;
     var kinds = [
       ["hints", playHints, hintsDriver],
+      ["checklist", playChecklist, checklistDriver],
       ["tour", playTour, tourDriver],
     ];
     var present = kinds.filter(function (kind) {
@@ -387,7 +424,7 @@
     present.forEach(function (kind) {
       try {
         var script = document.getElementById("page-tours-" + kind[0]);
-        kind[1](JSON.parse(script.textContent), kind[2]);
+        kind[1](JSON.parse(script.textContent), kind[2], tourDriver);
       } catch (error) {
         // A declaration that cannot be played leaves the page as it was.
       }

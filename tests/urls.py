@@ -137,4 +137,35 @@ urlpatterns = [
         views.HintsWithoutScriptView.as_view(),
         name="hints-without-script",
     ),
+    path("checklist/", views.ChecklistView.as_view(), name="checklist"),
+    path(
+        "checklist-reported/",
+        views.ReportedChecklistView.as_view(),
+        name="checklist-reported",
+    ),
+    path(
+        "checklist-manual/",
+        views.ManualChecklistView.as_view(),
+        name="checklist-manual",
+    ),
+    path(
+        "checklist-all-manual/",
+        views.AllManualChecklistView.as_view(),
+        name="checklist-all-manual",
+    ),
+    path(
+        "checklist-nothing-showable/",
+        views.NothingShowableChecklistView.as_view(),
+        name="checklist-nothing-showable",
+    ),
+    path(
+        "checklist-parts/", views.PartsChecklistView.as_view(), name="checklist-parts"
+    ),
+    path(
+        "checklist-no-launcher/",
+        views.NoLauncherChecklistView.as_view(),
+        name="checklist-no-launcher",
+    ),
+    path("everything/", views.EverythingView.as_view(), name="everything"),
+    path("no-checklist/", views.NoChecklistView.as_view(), name="no-checklist"),
 ]

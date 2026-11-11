@@ -1,12 +1,14 @@
 """Views that give the tests pages with and without a tour."""
 
+from dataclasses import replace
+
 from django.http import Http404
 from django.shortcuts import render
 from django.utils import translation
 from django.utils.translation import gettext_lazy
 from django.views.generic import TemplateView
 
-from page_tours import Beacon, Hint, Hints, Tour, TourStep
+from page_tours import Beacon, Checklist, ChecklistItem, Hint, Hints, Tour, TourStep
 
 CLASS_TOUR = Tour(
     name="tests.class",
@@ -542,3 +544,104 @@ class SharedElementHintsView(HintsView):
     """A page with two hints on one element, neither with an identifier."""
 
     extra_context = {"hints": SHARED_ELEMENT_HINTS}
+
+
+ITEM_TOUR = steps_for("tests.browser.item-tour", "h1", "#absent", "#control")
+ITEMS_CHECKLIST = Checklist(
+    name="tests.browser.checklist",
+    items=[
+        ChecklistItem(id="tour", title="Take the tour", tour=ITEM_TOUR),
+        ChecklistItem(id="link", title="Read the hints", href="/hints/"),
+        ChecklistItem(id="plain", title="Borrow a book"),
+    ],
+)
+MANUAL_CHECKLIST = Checklist(
+    name="tests.browser.manual-checklist",
+    items=[
+        ChecklistItem(id="ticks", title="Tick me", allowManualComplete=True),
+        ChecklistItem(id="stays", title="Leave me"),
+    ],
+)
+ALL_MANUAL_CHECKLIST = Checklist(
+    name="tests.browser.all-manual-checklist",
+    allowManualComplete=True,
+    items=[
+        ChecklistItem(id="ticks", title="Tick me"),
+        ChecklistItem(id="stays", title="Leave me", allowManualComplete=False),
+    ],
+)
+NOTHING_SHOWABLE_CHECKLIST = Checklist(
+    name="tests.browser.nothing-showable-checklist",
+    items=[
+        ChecklistItem(
+            id="tour",
+            title="Take the tour",
+            tour=steps_for("tests.browser.nothing-showable-item-tour", "#absent"),
+        ),
+    ],
+)
+NO_LAUNCHER_CHECKLIST = replace(
+    ITEMS_CHECKLIST, name="tests.browser.no-launcher-checklist", launcher=False
+)
+PARTS_CHECKLIST = replace(
+    ITEMS_CHECKLIST, name="tests.browser.parts-checklist", completed=("plain",)
+)
+
+
+class ChecklistView(TemplateView):
+    """A page with a checklist of one item of each kind."""
+
+    template_name = "test_checklist_page.html"
+    extra_context = {"checklist": ITEMS_CHECKLIST}
+
+
+class ReportedChecklistView(ChecklistView):
+    """A page whose view reports an item done."""
+
+    extra_context = {"checklist": replace(ITEMS_CHECKLIST, completed=("plain",))}
+
+
+class ManualChecklistView(ChecklistView):
+    """A page whose checklist lets the visitor tick one of two items."""
+
+    extra_context = {"checklist": MANUAL_CHECKLIST}
+
+
+class AllManualChecklistView(ChecklistView):
+    """A page whose checklist lets the visitor tick every item but one."""
+
+    extra_context = {"checklist": ALL_MANUAL_CHECKLIST}
+
+
+class NothingShowableChecklistView(ChecklistView):
+    """A page whose only item starts a tour with nothing to show."""
+
+    extra_context = {"checklist": NOTHING_SHOWABLE_CHECKLIST}
+
+
+class PartsChecklistView(ChecklistView):
+    """A page with a checklist that has an item the view reports done."""
+
+    extra_context = {"checklist": PARTS_CHECKLIST}
+
+
+class NoLauncherChecklistView(ChecklistView):
+    """A page whose checklist has no launcher."""
+
+    extra_context = {"checklist": NO_LAUNCHER_CHECKLIST}
+
+
+class EverythingView(ChecklistView):
+    """A page with a checklist, hints and a tour that plays by itself."""
+
+    extra_context = {
+        "checklist": ITEMS_CHECKLIST,
+        "hints": THREE_HINTS,
+        "tour": HINTS_TOUR,
+    }
+
+
+class NoChecklistView(ChecklistView):
+    """A page with a toggle control and no checklist."""
+
+    extra_context = {}
