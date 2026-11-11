@@ -43,14 +43,15 @@ list every tour the project knows, by name, from `manage.py shell`:
 
 ```python
 >>> from django.urls import get_resolver
->>> from page_tours.tours import declared_tours
+>>> from page_tours.driver import declarations
 >>> get_resolver().url_patterns  # imports the views, which declares their tours
->>> sorted(declared_tours())
+>>> sorted(declarations())
 ['library.book', 'library.book-list', 'library.loans', ...]
 ```
 
-`declared_tours()` returns the tours that exist under each name. A tour is declared when the
-module that holds it is imported, which is why the URLs are loaded first. You can also open the
+`declarations()` returns the declarations that exist under each name, tours among them. It reads
+the registry `page_tours.driver.declared`, from which `forget` removes a declaration once nothing
+refers to it. A tour is declared when the module that holds it is imported, which is why the URLs are loaded first. You can also open the
 page and read the name in the page source, where the tour's payload carries it as `id`.
 
 ## Replace a tour from the project
@@ -106,10 +107,11 @@ base template does not show on it.
 ## Check that the setting is right
 
 The setting is checked when the project starts, and read again each time a page renders.
-`PageToursConfig.ready` calls `page_tours.tours.tour_overrides()`, which resolves every entry with
-`page_tours.tours.resolve_override`. An entry whose value is neither a string nor `None`, whose
-path cannot be imported, or whose path names something that is not a `Tour` raises
-`ImproperlyConfigured` at start-up, naming the entry.
+`PageToursConfig.ready` calls `page_tours.driver.declaration_overrides()`, which resolves every
+entry with `page_tours.driver.resolve_override`. An entry whose value is neither a string nor
+`None`, whose path cannot be imported, or whose path names something that is not a declaration
+raises `ImproperlyConfigured` at start-up, naming the entry. When the tour renders, a replacement
+that is not a `Tour` raises it too, naming the entry and the class it has to be.
 
 Django's `check` command warns with `page_tours.W002` when a key names no declared tour. The
 usual cause is a misspelt name, or an app that renamed its tour. A tour is declared when the
