@@ -1,5 +1,6 @@
 """Tests for the starter script, page_tours/static/page_tours/page-tours.js."""
 
+import json
 import re
 
 import pytest
@@ -759,24 +760,28 @@ class TestTourVersion:
 
         self.assert_does_not_play(page)
 
-    def test_a_tour_seen_before_versions_counts_as_seen_at_version_one(
+    def test_a_bare_one_stored_by_an_earlier_release_plays_the_tour_once_more(
         self, page, live_server
     ):
-        """The entry a browser kept before tours had versions still hides version 1."""
+        """The entry a browser kept before the record held ids no longer counts."""
         page.goto(live_server.url + reverse("no-tour"))
         page.evaluate(f"localStorage.setItem({self.SEEN_KEY!r}, '1')")
 
         page.goto(live_server.url + reverse("versioned"))
 
-        self.assert_does_not_play(page)
+        expect(page.locator(TITLE)).to_have_text("Step 1")
 
     def test_the_browser_remembers_the_version_it_played(self, page, live_server):
-        """The one entry for the tour holds the version that played."""
+        """The one entry for the tour holds the version that played and the tour's id."""
         self.see(page, live_server.url + reverse("versioned-two"))
 
         stored = page.evaluate("({...localStorage})")
 
-        assert stored == {self.SEEN_KEY: "2"}
+        assert list(stored) == [self.SEEN_KEY]
+        assert json.loads(stored[self.SEEN_KEY]) == {
+            "version": 2,
+            "ids": [views.VERSIONED_TOUR.name],
+        }
 
     def test_a_new_version_of_a_tour_on_request_still_waits_for_the_control(
         self, page, live_server
@@ -1123,8 +1128,8 @@ class TestPartNames:
         expect(title).to_have_text("Step 1")
         label = page.evaluate(
             """() => JSON.parse(
-                document.getElementById("page-tour-steps").textContent
-            ).options.closeBtnLabel"""
+                document.getElementById("page-tours-tour").textContent
+            ).config.closeBtnLabel"""
         )
         expect(page.locator(CLOSE)).to_have_attribute("aria-label", label)
 
