@@ -263,19 +263,53 @@
     }
   }
 
+  // Shows the hints a payload describes. A hint's key is worked out in the
+  // script only, so the build's own `id` stays as declared.
+  function playHints(payload, hintsDriver) {
+    var config = payload.config;
+    var shared = config.beacon || {};
+    var hints = config.hints.map(function (hint) {
+      var own = hint.beacon || {};
+      var beacon = Object.assign({}, own);
+      var classes = ((payload.parts && payload.parts.beacon) || []).concat(
+        own.className || shared.className || []
+      );
+      if (classes.length) {
+        beacon.className = classes.join(" ");
+      }
+      return Object.assign({}, hint, {
+        beacon: beacon,
+        popover: Object.assign({}, hint.popover, {
+          onPopoverRender: popoverParts(payload.parts),
+        }),
+      });
+    });
+
+    hintsDriver(Object.assign({}, config, { hints: hints })).show();
+
+    // A restore control is the developer's own element, written with `hidden`.
+    document.querySelectorAll("[data-page-hints-restore]").forEach(function (control) {
+      control.hidden = false;
+    });
+  }
+
   // Plays every kind of declaration the page carries, each from its own element
   // and each in its own try, so one that fails neither stops the other nor
-  // raises on the page. The page is looked at only once it is parsed, so an
-  // element may sit anywhere in it and the scripts may load in any way. A page
-  // has one of each kind: should an element appear twice, the first is played
-  // and the other is left alone.
+  // raises on the page. Hints come first, so a tour step can point at one. The
+  // page is looked at only once it is parsed, so an element may sit anywhere in
+  // it and the scripts may load in any way. A page has one of each kind: should
+  // an element appear twice, the first is played and the other is left alone.
   function play() {
-    var driver = window.driver && window.driver.js && window.driver.js.driver;
-    var kinds = [["tour", playTour]];
+    var tourDriver = window.driver && window.driver.js && window.driver.js.driver;
+    var hintsDriver = window.driverHints && window.driverHints.hints;
+    var kinds = [
+      ["hints", playHints, hintsDriver],
+      ["tour", playTour, tourDriver],
+    ];
     var present = kinds.filter(function (kind) {
-      return document.getElementById("page-tours-" + kind[0]);
+      return kind[2] && document.getElementById("page-tours-" + kind[0]);
     });
-    if (!driver || present.length === 0) {
+    if (present.length === 0) {
       return;
     }
 
@@ -291,7 +325,7 @@
     present.forEach(function (kind) {
       try {
         var script = document.getElementById("page-tours-" + kind[0]);
-        kind[1](JSON.parse(script.textContent), driver);
+        kind[1](JSON.parse(script.textContent), kind[2]);
       } catch (error) {
         // A declaration that cannot be played leaves the page as it was.
       }

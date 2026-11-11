@@ -1244,3 +1244,135 @@ class TestAppDefaults:
         assert "site-box" in box
         assert "ds-box" not in box
         assert "ds-button" in classes_of(page, NEXT)
+
+
+BEACON = ".driver-hint"
+HINT_BUTTON = ".driver-popover-next-btn"
+
+
+class TestHintsPlay:
+    """The hints a page carries show a beacon on each element."""
+
+    def test_each_hint_gets_a_beacon_that_opens_its_popover(self, page, live_server):
+        """Three hints give three beacons, and one opens with its declared title."""
+        page.goto(live_server.url + reverse("hints"))
+
+        beacons = page.locator(BEACON)
+        expect(beacons).to_have_count(len(views.THREE_HINTS.hints))
+        for hint in views.THREE_HINTS.hints:
+            assert page.locator(hint.element).count() == 1
+
+        beacons.nth(1).click()
+
+        expect(page.locator(TITLE)).to_have_text(views.THREE_HINTS.hints[1].title)
+
+    def test_a_hint_whose_element_is_missing_has_no_beacon(self, page, live_server):
+        """The other hints still show."""
+        page.goto(live_server.url + reverse("hints-missing-element"))
+
+        expect(page.locator(BEACON)).to_have_count(
+            len(views.MISSING_ELEMENT_HINTS.hints) - 1
+        )
+
+
+class TestHintOwnBeacon:
+    """A hint's own beacon and button text differ from the shared ones."""
+
+    def test_the_hint_takes_its_own_beacon_and_the_others_the_shared_one(
+        self, page, live_server
+    ):
+        """Classes and animation follow the hint's beacon, else the hints'."""
+        page.goto(live_server.url + reverse("own-beacon"))
+        beacons = page.locator(BEACON)
+        expect(beacons).to_have_count(2)
+
+        own, shared = beacons.nth(0), beacons.nth(1)
+        expect(own).to_have_class(re.compile(r"\bown-beacon\b"))
+        expect(own).to_have_class(re.compile(r"driver-hint-no-animation"))
+        expect(own).not_to_have_class(re.compile(r"shared-beacon"))
+        expect(shared).to_have_class(re.compile(r"\bshared-beacon\b"))
+        expect(shared).not_to_have_class(re.compile(r"driver-hint-no-animation"))
+
+    def test_the_popover_button_shows_the_hints_own_text_else_the_shared(
+        self, page, live_server
+    ):
+        """The button text is the declared one for each hint."""
+        page.goto(live_server.url + reverse("own-beacon"))
+        hints = views.OWN_BEACON_HINTS
+        beacons = page.locator(BEACON)
+
+        beacons.nth(0).click()
+        expect(page.locator(HINT_BUTTON)).to_have_text(hints.hints[0].buttonText)
+        beacons.nth(1).click()
+        expect(page.locator(HINT_BUTTON)).to_have_text(hints.buttonText)
+
+
+class TestHintsRestoreControl:
+    """The restore control shows only where hints play."""
+
+    def test_it_shows_on_a_page_with_hints(self, page, live_server):
+        """Hints on the page make the control visible."""
+        page.goto(live_server.url + reverse("hints"))
+
+        expect(page.locator("[data-page-hints-restore]")).to_be_visible()
+
+    def test_it_stays_hidden_on_a_page_without_hints(self, page, live_server):
+        """No hints, no visible control."""
+        page.goto(live_server.url + reverse("no-hints"))
+        page.wait_for_load_state("load")
+
+        expect(page.locator("[data-page-hints-restore]")).to_be_hidden()
+
+    def test_it_stays_hidden_with_javascript_off(self, browser, live_server):
+        """Without JavaScript the control keeps its hidden attribute."""
+        context = browser.new_context(java_script_enabled=False)
+        try:
+            page = context.new_page()
+            page.goto(live_server.url + reverse("hints"))
+
+            expect(page.locator("[data-page-hints-restore]")).to_be_hidden()
+        finally:
+            context.close()
+
+
+class TestHintsAndTour:
+    """Hints and a tour on one page play side by side."""
+
+    def test_a_step_can_point_at_an_element_a_hint_is_about(self, page, live_server):
+        """The tour plays, and its step shows on the element."""
+        page.goto(live_server.url + reverse("hints-and-tour"))
+
+        expect(page.locator(TITLE)).to_have_text(views.HINTS_TOUR.steps[0].title)
+        assert views.HINTS_TOUR.steps[0].element == views.THREE_HINTS.hints[0].element
+
+    def test_beacons_are_hidden_during_the_tour_and_back_after_it(
+        self, page, live_server
+    ):
+        """No beacon is visible while the tour plays; all are once it closes."""
+        page.goto(live_server.url + reverse("hints-and-tour"))
+        expect(page.locator(TITLE)).to_be_visible()
+        beacons = page.locator(BEACON)
+        expect(beacons).to_have_count(len(views.THREE_HINTS.hints))
+        for beacon in beacons.all():
+            expect(beacon).to_be_hidden()
+
+        page.click(CLOSE)
+
+        expect(page.locator(".driver-popover")).to_have_count(0)
+        for beacon in beacons.all():
+            expect(beacon).to_be_visible()
+
+
+class TestHintsScriptMissing:
+    """Without the hints script the page is as it would be without hints."""
+
+    def test_the_page_shows_no_beacon_and_raises_no_error(self, page, live_server):
+        """A page that loads no hints script shows nothing and raises nothing."""
+        problems = []
+        page.on("pageerror", lambda error: problems.append(str(error)))
+        page.goto(live_server.url + reverse("hints-without-script"))
+        page.wait_for_load_state("load")
+
+        expect(page.locator(BEACON)).to_have_count(0)
+        expect(page.locator("[data-page-hints-restore]")).to_be_hidden()
+        assert problems == []

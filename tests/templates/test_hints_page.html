@@ -1,0 +1,10 @@
+{% extends "test_base.html" %}
+{% block content %}
+  <h1>Page</h1>
+  <button id="first" type="button">First</button>
+  <button id="second" type="button">Second</button>
+  <button id="third" type="button">Third</button>
+  <button id="restore" type="button" data-page-hints-restore hidden>Restore</button>
+  {{ hints }}
+  {{ tour }}
+{% endblock content %}

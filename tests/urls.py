@@ -109,4 +109,18 @@ urlpatterns = [
         views.overridden_function_view,
         name="overridden-function",
     ),
+    path("hints/", views.HintsView.as_view(), name="hints"),
+    path("hints-own-beacon/", views.OwnBeaconHintsView.as_view(), name="own-beacon"),
+    path(
+        "hints-missing-element/",
+        views.MissingElementHintsView.as_view(),
+        name="hints-missing-element",
+    ),
+    path("hints-and-tour/", views.HintsAndTourView.as_view(), name="hints-and-tour"),
+    path("no-hints/", views.NoHintsView.as_view(), name="no-hints"),
+    path(
+        "hints-without-script/",
+        views.HintsWithoutScriptView.as_view(),
+        name="hints-without-script",
+    ),
 ]
