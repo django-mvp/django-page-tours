@@ -7,7 +7,7 @@ from django.urls import reverse
 from playwright.sync_api import expect
 
 from tests import views
-from tests.views import CLASS_TOUR, MARKUP_TITLE
+from tests.views import CLASS_TOUR, MARKUP_TITLE, OWN_SETTINGS_TOUR
 
 TITLE = ".driver-popover-title"
 NEXT = ".driver-popover-next-btn"
@@ -52,6 +52,28 @@ class TestTourPlays:
         title = page.locator(TITLE)
         expect(title).to_be_visible()
         assert title.text_content() == MARKUP_TITLE
+
+
+class TestDriverOptions:
+    """Options a tour declares reach Driver.js, under the package's own settings."""
+
+    def test_an_option_the_package_does_not_set_reaches_driverjs(
+        self, page, live_server
+    ):
+        """A tour that turns on Driver.js's step count shows it, as configured."""
+        page.goto(live_server.url + reverse("options-tour"))
+
+        expect(page.locator(".driver-popover-progress-text")).to_have_text(
+            f"1 / {len(CLASS_TOUR.steps)}"
+        )
+
+    def test_the_package_keeps_the_settings_it_sets_itself(self, page, live_server):
+        """Options cannot replace the steps, step skipping or control labels."""
+        page.goto(live_server.url + reverse("own-settings"))
+
+        expect(page.locator(TITLE)).to_have_text(OWN_SETTINGS_TOUR.steps[1].title)
+        expect(page.locator(NEXT)).not_to_have_text("Mine")
+        expect(page.locator(CLOSE)).not_to_have_attribute("aria-label", "Mine")
 
 
 class TestTourNavigation:
