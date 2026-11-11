@@ -7,6 +7,7 @@ from demo.views import (
     FIRST_VERSION,
     NEW_VERSION,
     ChangedTourView,
+    DriverOptionsView,
     OnRequestView,
     OverviewView,
     OwnLookView,
@@ -34,6 +35,7 @@ urlpatterns = [
     path("library/", include("demo.library.urls")),
     path("own-look/", OwnLookView.as_view(), name="own-look"),
     path("function-view/", function_view, name="function-view"),
+    path("driver-options/", DriverOptionsView.as_view(), name="driver-options"),
     path("admin/", admin.site.urls),
     # The endpoint an open page holds to hear that something on disk changed.
     path("__reload__/", include("django_browser_reload.urls")),

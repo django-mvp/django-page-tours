@@ -1,13 +1,15 @@
 """Declarations of a tour and its steps."""
 
+import json
 import weakref
-from collections.abc import Sequence
-from dataclasses import dataclass
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass, field
 from functools import partial
 from typing import Any
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
+from django.core.serializers.json import DjangoJSONEncoder
 from django.utils.functional import Promise
 from django.utils.html import escape, json_script
 from django.utils.module_loading import import_string
@@ -83,16 +85,26 @@ class Tour:
         version: A whole number of 1 or more. Raise it when the tour has changed
             enough that people who saw it should see it again: a browser that saw
             another version plays it by itself once more.
+        driver_options: Options passed to the Driver.js constructor as they are,
+            for what the package does not set itself, such as
+            ``{"showProgress": True}``. Each value must have a JSON form. The
+            options the package sets win over these: ``steps``,
+            ``skipMissingElement``, the four control labels and the hooks it uses.
+            Whether an option works with the shipped Driver.js is up to the
+            developer.
 
     Raises:
         ImproperlyConfigured: If ``name`` is not a string with something in it,
-            ``steps`` is empty or ``version`` is not a whole number of 1 or more.
+            ``steps`` is empty, ``version`` is not a whole number of 1 or more, or
+            ``driver_options`` is not a mapping of names to values with a JSON
+            form.
     """
 
     name: str
     steps: Sequence[TourStep]
     autoplay: bool = True
     version: int = 1
+    driver_options: Mapping[str, Any] = field(default_factory=dict, hash=False)
 
     def __post_init__(self):
         """Refuse a bad tour, freeze its steps and record it under its name."""
@@ -109,9 +121,36 @@ class Tour:
                 _("A tour's version must be a whole number of 1 or more.")
             )
         object.__setattr__(self, "steps", tuple(self.steps))
+        object.__setattr__(self, "driver_options", self._checked_driver_options())
         _declared.setdefault(self.name, []).append(
             weakref.ref(self, partial(_forget, self.name))
         )
+
+    def _checked_driver_options(self) -> dict[str, Any]:
+        """Refuse options that cannot reach Driver.js, and copy the rest.
+
+        Returns:
+            A copy of ``driver_options``, so changing the declared mapping
+            afterwards does not change the tour.
+
+        Raises:
+            ImproperlyConfigured: If the options are not a mapping, a name is not a
+                string or a value has no JSON form.
+        """
+        options = self.driver_options
+        if not isinstance(options, Mapping) or not all(
+            isinstance(key, str) for key in options
+        ):
+            raise ImproperlyConfigured(
+                _("A tour's driver_options must be a mapping of names to values.")
+            )
+        try:
+            json.dumps(options, cls=DjangoJSONEncoder)
+        except (TypeError, ValueError) as error:
+            raise ImproperlyConfigured(
+                _("Every value in a tour's driver_options must have a JSON form.")
+            ) from error
+        return dict(options)
 
     def __html__(self) -> SafeString:
         """Render the tour as the element the package's script plays it from.
@@ -119,8 +158,9 @@ class Tour:
         This is what ``{{ tour }}`` outputs in a template: a
         ``<script id="page-tour-steps" type="application/json">`` element holding
         the tour's name and version, whether it plays by itself, its steps in the
-        form Driver.js takes, the labels of its controls in the active language
-        and the classes each part of a shown step carries.
+        form Driver.js takes, the labels of its controls in the active language,
+        the classes each part of a shown step carries and the tour's own
+        Driver.js options.
 
         When the ``PAGE_TOURS_OVERRIDES`` setting names the tour, the replacement
         is rendered in its place, or nothing when the setting turns it off. The
@@ -159,6 +199,7 @@ class Tour:
                 "close": pgettext("page tour control", "Close"),
             },
             "parts": TourParts.classes(),
+            "options": played.driver_options,
         }
         return json_script(payload, "page-tour-steps")
 

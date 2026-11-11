@@ -48,11 +48,43 @@ def steps_for(name, *selectors):
     )
 
 
+OPTIONS_TOUR = Tour(
+    name="tests.options",
+    steps=CLASS_TOUR.steps,
+    driver_options={"showProgress": True, "progressText": "{{current}} / {{total}}"},
+)
+OWN_SETTINGS_TOUR = Tour(
+    name="tests.own-settings",
+    steps=[
+        TourStep(title="Missing", text="Text.", element="#missing"),
+        TourStep(title="The heading", text="Text.", element="h1"),
+    ],
+    driver_options={
+        "steps": [],
+        "skipMissingElement": False,
+        "nextBtnText": "Mine",
+        "closeBtnLabel": "Mine",
+    },
+)
+
+
 class ClassTourView(TemplateView):
     """A class-based page with a tour."""
 
     template_name = "test_page.html"
     extra_context = {"tour": CLASS_TOUR}
+
+
+class OptionsTourView(ClassTourView):
+    """A page whose tour passes options of its own to Driver.js."""
+
+    extra_context = {"tour": OPTIONS_TOUR}
+
+
+class OwnSettingsTourView(ClassTourView):
+    """A page whose tour's options try to replace what the package sets."""
+
+    extra_context = {"tour": OWN_SETTINGS_TOUR}
 
 
 class MarkupTourView(ClassTourView):

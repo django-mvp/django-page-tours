@@ -71,6 +71,33 @@ class TestTourPage:
         assert any(f'id="{s.removeprefix("#")}"' not in page for s in selectors)
 
 
+class TestDriverOptionsPage:
+    """The demo page whose tour passes Driver.js options of its own."""
+
+    def page(self, client, name="driver-options"):
+        """Return the rendered page."""
+        return client.get(reverse(name)).content.decode()
+
+    def test_its_tour_turns_on_the_step_count(self, client):
+        """The tour carries Driver.js's step count option, turned on."""
+        match = re.search(
+            r'<script id="page-tour-steps" type="application/json">(.*?)</script>',
+            self.page(client),
+            re.DOTALL,
+        )
+        assert json.loads(match.group(1))["options"]["showProgress"] is True
+
+    def test_it_is_linked_from_the_page_bar(self, client):
+        """The bar every demo page shares links the page."""
+        bar = self.page(client, "overview").split('aria-label="Demo pages"', 1)[1]
+        assert f'href="{reverse("driver-options")}"' in bar.split("</nav>", 1)[0]
+
+    def test_the_overview_links_it(self, client):
+        """The overview names the page outside the page bar."""
+        body = self.page(client, "overview").split("</nav>", 1)[1]
+        assert f'href="{reverse("driver-options")}"' in body
+
+
 class TestDemoTourPages:
     """The demo pages that show how a tour is started and when it plays again."""
 

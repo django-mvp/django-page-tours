@@ -162,3 +162,29 @@ FUNCTION_VIEW_TOUR = Tour(
 def function_view(request):
     """Render a page whose tour a function-based view passes in its context."""
     return render(request, "demo/function_view.html", {"tour": FUNCTION_VIEW_TOUR})
+
+
+class DriverOptionsView(TemplateView):
+    """A page whose tour passes Driver.js options the package does not set."""
+
+    template_name = "demo/driver_options.html"
+    extra_context = {
+        "tour": Tour(
+            name="demo.driver-options",
+            steps=[
+                TourStep(
+                    title="Options of its own",
+                    text="This tour turns on Driver.js's step count, shown below.",
+                ),
+                TourStep(
+                    title="Where they are set",
+                    text="The tour passes them in driver_options, by Driver.js's names.",
+                    element="#demo-driver-options",
+                ),
+            ],
+            driver_options={
+                "showProgress": True,
+                "progressText": "Step {{current}} of {{total}}",
+            },
+        )
+    }

@@ -114,6 +114,80 @@ class TestTour:
             )
 
 
+class TestTourDriverOptions:
+    """A tour carries options of its own to Driver.js, as declared."""
+
+    def test_a_tour_declared_without_options_carries_none(self):
+        """A tour that passes nothing to Driver.js carries an empty mapping."""
+        assert payload_of(views.CLASS_TOUR)["options"] == {}
+
+    def test_the_options_arrive_as_declared(self):
+        """Each option reaches the page with its name and value unchanged."""
+        options = {
+            "animate": False,
+            "overlayOpacity": 0.4,
+            "stagePadding": 4,
+            "popoverClass": "my-tour",
+            "showButtons": ["next", "close"],
+        }
+        tour = Tour(
+            name="tests.options-as-declared", steps=[STEP], driver_options=options
+        )
+
+        assert payload_of(tour)["options"] == options
+
+    def test_a_lazy_value_is_translated_into_the_active_language(self):
+        """A value marked for translation arrives in the page's language."""
+        tour = Tour(
+            name="tests.options-translated",
+            steps=[STEP],
+            driver_options={"progressText": gettext_lazy("Yes")},
+        )
+
+        with translation.override("de"):
+            assert payload_of(tour)["options"] == {"progressText": gettext("Yes")}
+
+    def test_changing_the_declared_mapping_afterwards_changes_nothing(self):
+        """The tour keeps the options it was declared with."""
+        options = {"animate": False}
+        tour = Tour(name="tests.options-copied", steps=[STEP], driver_options=options)
+
+        options["animate"] = True
+
+        assert payload_of(tour)["options"] == {"animate": False}
+
+    def test_a_value_holding_markup_stays_inside_the_script_element(self):
+        """A value cannot close the element it is carried in."""
+        value = "</script><script>alert(1)</script>"
+        tour = Tour(
+            name="tests.options-markup",
+            steps=[STEP],
+            driver_options={"popoverClass": value},
+        )
+
+        assert payload_of(tour)["options"] == {"popoverClass": value}
+
+    @pytest.mark.parametrize("options", [None, ["animate"], "animate", 1])
+    def test_options_that_are_not_a_mapping_are_an_error(self, options):
+        """Anything but a mapping is refused when the tour is declared."""
+        with pytest.raises(ImproperlyConfigured):
+            Tour(name="tests.options-bad", steps=[STEP], driver_options=options)
+
+    def test_an_option_name_that_is_not_a_string_is_an_error(self):
+        """Every option is named by a string."""
+        with pytest.raises(ImproperlyConfigured):
+            Tour(name="tests.options-bad", steps=[STEP], driver_options={1: True})
+
+    def test_a_value_that_cannot_reach_the_page_is_an_error(self):
+        """A value with no JSON form is refused when the tour is declared."""
+        with pytest.raises(ImproperlyConfigured):
+            Tour(
+                name="tests.options-bad",
+                steps=[STEP],
+                driver_options={"onNextClick": print},
+            )
+
+
 class TestTourAsDriverSteps:
     """Converting a tour to the steps Driver.js takes."""
 
@@ -232,6 +306,7 @@ class TestTourRendering:
             "steps",
             "controls",
             "parts",
+            "options",
         }
 
     def test_the_payload_carries_the_tours_name_version_and_autoplay(self):
@@ -396,6 +471,14 @@ class TestTourOverrides:
         steps = payload_of(views.APP_TOUR)["steps"]
 
         assert steps == views.REWORDED_TOUR.as_driver_steps()
+
+    def test_a_replacement_carries_its_own_options(self, settings):
+        """The options are the replacement's, not the replaced tour's."""
+        settings.PAGE_TOURS_OVERRIDES = {OVERRIDDEN: "tests.views.OPTIONS_TOUR"}
+
+        options = payload_of(views.APP_TOUR)["options"]
+
+        assert options == views.OPTIONS_TOUR.driver_options
 
     def test_a_replacement_keeps_the_name_of_the_tour_it_replaces(self, settings):
         """Replacing a tour does not rename it, so what was seen stays seen."""

@@ -237,6 +237,44 @@ msgstr "Schließen"
 A control with no translation in the page's language shows in English. Like step text, a
 translated label is shown as text, never as markup.
 
+## Pass Driver.js options of its own
+
+Driver.js has more options than `Tour` and `TourStep` set. Pass any of them with
+`driver_options`, a mapping the package hands to the Driver.js constructor as it is:
+
+```python
+Tour(
+    name="dashboard",
+    steps=[...],
+    driver_options={"showProgress": True, "progressText": "{{current}} / {{total}}"},
+)
+```
+
+The options reach the page in its source, as JSON, so every value needs a JSON form: strings,
+numbers, booleans, `None`, lists and mappings of them, and strings marked for translation. A
+function such as an `onNextClick` hook has none. Options that are not a mapping, a name that is
+not a string and a value with no JSON form raise `ImproperlyConfigured` when the tour is declared.
+
+The package keeps the settings it sets itself, and an option of the same name changes nothing:
+
+- `steps`
+- `skipMissingElement`, so a missing or hidden element is still skipped
+- `nextBtnText`, `prevBtnText`, `doneBtnText` and `closeBtnLabel`, which come from the
+  package's catalogue
+- `onPopoverRender`, `onDestroyStarted` and `onDestroyed`
+
+Driver.js writes some options into the page as markup, `progressText` among them. They are passed
+as you wrote them and are not escaped, so never build one from a visitor's input.
+
+The package does not check what an option does. The options Driver.js takes are listed in its
+[configuration reference](https://driverjs.com/docs/configuration), and whether one works with
+the release the package ships, recorded in `page_tours/static/page_tours/vendor/`, is yours to
+check. An option can also undo what the package promises, such as `allowClose: False`, which
+leaves a visitor no way out of the tour but its last step.
+
+A tour that a project replaces through `PAGE_TOURS_OVERRIDES` plays with the replacement's
+options, not the replaced tour's.
+
 ## See a tour in the demo project
 
 The demo project in `demo/` has a tour page at `/tour/`, linked from the bar at the top of every
@@ -250,7 +288,8 @@ and `/changed-tour/new-version/`. Open one and then the other to see a new versi
 more in a browser that saw the first.
 
 The function-view page at `/function-view/` is rendered by a function-based view that passes its
-tour in the template context. Every demo page outputs its tour with `{{ tour }}` in its own
+tour in the template context. The Driver.js options page at `/driver-options/` plays a tour that
+turns on Driver.js's step count through `driver_options`. Every demo page outputs its tour with `{{ tour }}` in its own
 template, and the demo's base template includes the package's files.
 
 ## Why a visitor can always use the page

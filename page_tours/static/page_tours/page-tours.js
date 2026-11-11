@@ -196,7 +196,9 @@
           tour.destroy();
         }
         returnFocusTo = document.activeElement;
-        tour = driver({
+        // The tour's own options go first, so the settings the package
+        // depends on below replace any of the same name.
+        tour = driver(Object.assign({}, payload.options, {
           steps: steps,
           skipMissingElement: true,
           nextBtnText: payload.controls.next,
@@ -216,7 +218,7 @@
             window.removeEventListener("error", endTour);
             stopWatchingOverlay();
           },
-        });
+        }));
         window.addEventListener("error", endTour);
         stopWatchingOverlay();
         overlayWatcher = new MutationObserver(guarded(nameOverlay));
