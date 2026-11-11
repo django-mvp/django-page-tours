@@ -50,12 +50,11 @@ feature does not anticipate them beyond leaving room for them.
 
 **ADR:** none — a scope boundary with the next feature, recorded in its specification
 
-## D8 — Step text is plain text, escaped
+## D8 — A step's title and description are passed to Driver.js as they are
 
-Driver.js accepts markup in a step's description, but passing developer strings through as
-markup opens an injection path the moment a step's text comes from data, and Article V requires
-escaping through the template layer. Markup in steps can be added later as a deliberate change
-if a need appears.
+Driver.js writes a step's title and description into the page as HTML. They come from the
+developer's code, like the tour's own labels, so they are passed on unchanged and markup in them
+renders. The documentation tells the developer never to build one from a visitor's input.
 
 **ADR:** none — a behaviour fixed by the specification (FR-006)
 
@@ -76,7 +75,7 @@ JavaScript.
 
 ## D11 — A mistake in a declared tour is reported to the developer, not hidden from the visitor
 
-A tour with no steps, or a step without its title or text, is an error raised before any visitor
+A tour with no name or no steps is an error raised before any visitor
 sees the page. Skipping silently is reserved for what depends on the page at run time (a missing
 element), where the developer cannot know in advance.
 
@@ -131,9 +130,10 @@ Every current browser has it, and the browser tests run in Chromium only.
 
 **ADR:** none — local to the starter script, revisited only if older browsers become a target
 
-## D19 — A title or text of only whitespace counts as missing
+## D19 — A step has no required fields
 
-A title or text of only whitespace counts as missing(FR-004).
+A step mirrors a Driver.js step, whose title and description are both optional, so `TourStep`
+checks nothing (FR-004).
 
 **ADR:** none — a reading of FR-004, local to TourStep
 

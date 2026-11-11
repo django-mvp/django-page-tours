@@ -68,8 +68,8 @@ from page_tours import Tour, TourStep
 DASHBOARD_TOUR = Tour(
     name="dashboard",
     steps=[
-        TourStep(title="Welcome", text="A quick look around."),
-        TourStep(title="Projects", text="Your work is here.", element="#projects"),
+        TourStep(title="Welcome", description="A quick look around."),
+        TourStep(title="Projects", description="Your work is here.", element="#projects"),
     ],
 )
 

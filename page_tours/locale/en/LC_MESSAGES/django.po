@@ -77,63 +77,50 @@ msgstr ""
 msgid "the app '%(label)s'"
 msgstr ""
 
-#: tours.py:64
-#, python-format
-msgid "A tour step needs a %(name)s."
-msgstr ""
-
-#: tours.py:112
+#: tours.py:190
 msgid "A tour needs a name."
 msgstr ""
 
-#: tours.py:114
+#: tours.py:192
 msgid "A tour needs at least one step."
 msgstr ""
 
-#: tours.py:121
+#: tours.py:199
 msgid "A tour's version must be a whole number of 1 or more."
 msgstr ""
 
-#: tours.py:145
-msgid "A tour's driver_options must be a mapping of names to values."
-msgstr ""
-
-#: tours.py:151
-msgid "Every value in a tour's driver_options must have a JSON form."
-msgstr ""
-
-#: tours.py:196
+#: tours.py:32
 msgctxt "page tour control"
 msgid "Next"
 msgstr ""
 
-#: tours.py:197
+#: tours.py:33
 msgctxt "page tour control"
 msgid "Previous"
 msgstr ""
 
-#: tours.py:198
+#: tours.py:34
 msgctxt "page tour control"
 msgid "Done"
 msgstr ""
 
-#: tours.py:199
+#: tours.py:35
 msgctxt "page tour control"
 msgid "Close"
 msgstr ""
 
-#: tours.py:259
+#: tours.py:305
 #, python-format
 msgid ""
 "PAGE_TOURS_OVERRIDES[%(name)s] must be the dotted path of a Tour or None."
 msgstr ""
 
-#: tours.py:268
+#: tours.py:314
 #, python-format
 msgid "PAGE_TOURS_OVERRIDES[%(name)s]: %(path)s cannot be imported."
 msgstr ""
 
-#: tours.py:273
+#: tours.py:319
 #, python-format
 msgid "PAGE_TOURS_OVERRIDES[%(name)s]: %(path)s is not a Tour."
 msgstr ""

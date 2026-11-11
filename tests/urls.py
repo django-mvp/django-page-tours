@@ -27,7 +27,6 @@ urlpatterns = [
         name="bare-without-tour",
     ),
     path("options/", views.OptionsTourView.as_view(), name="options-tour"),
-    path("own-settings/", views.OwnSettingsTourView.as_view(), name="own-settings"),
     path("replay/", views.ReplayView.as_view(), name="replay"),
     path("replay-no-tour/", views.ReplayNoTourView.as_view(), name="replay-no-tour"),
     path(
@@ -83,7 +82,6 @@ urlpatterns = [
     path("tour/", views.ClassTourView.as_view(), name="class-tour"),
     path("tour-again/", views.ClassTourView.as_view(), name="class-tour-again"),
     path("function-tour/", views.function_tour_view, name="function-tour"),
-    path("markup-tour/", views.MarkupTourView.as_view(), name="markup-tour"),
     path(
         "translated-tour/", views.TranslatedTourView.as_view(), name="translated-tour"
     ),

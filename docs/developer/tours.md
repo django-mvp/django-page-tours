@@ -52,10 +52,10 @@ from page_tours import Tour, TourStep
 DASHBOARD_TOUR = Tour(
     name="dashboard",
     steps=[
-        TourStep(title="Welcome", text="A quick look around."),
+        TourStep(title="Welcome", description="A quick look around."),
         TourStep(
             title="Your projects",
-            text="Everything you work on is listed here.",
+            description="Everything you work on is listed here.",
             element="#projects",
         ),
     ],
@@ -150,10 +150,10 @@ it a new version:
 DASHBOARD_TOUR = Tour(
     name="dashboard",
     steps=[
-        TourStep(title="Welcome", text="A quick look around."),
+        TourStep(title="Welcome", description="A quick look around."),
         TourStep(
             title="Reports",
-            text="Your reports are here now.",
+            description="Your reports are here now.",
             element="#reports",
         ),
     ],
@@ -183,14 +183,14 @@ A step with `element` points at the first element on the page matching that CSS 
 highlights it and places the step beside it:
 
 ```python
-TourStep(title="Your projects", text="Everything is listed here.", element="#projects")
+TourStep(title="Your projects", description="Everything is listed here.", element="#projects")
 ```
 
 A step without `element` is attached to nothing. Driver.js shows it in the middle of the page,
 which suits a welcome or a closing step:
 
 ```python
-TourStep(title="Welcome", text="A quick look around.")
+TourStep(title="Welcome", description="A quick look around.")
 ```
 
 ## Translate a tour
@@ -198,8 +198,8 @@ TourStep(title="Welcome", text="A quick look around.")
 A tour is shown in the language the page is served in: the steps you write and the tour's own
 controls alike.
 
-Titles and texts are plain text. Markup characters in them are escaped, so
-`<b>bold</b>` shows as those characters and not as bold text.
+Titles and descriptions are passed to Driver.js as they are, and it writes them into the page as
+HTML, so `<b>bold</b>` shows as bold text. Never build one from a visitor's input.
 
 Mark a step for translation with `gettext_lazy`. It is converted when the page is rendered, in
 the visitor's language:
@@ -207,7 +207,7 @@ the visitor's language:
 ```python
 from django.utils.translation import gettext_lazy as _
 
-TourStep(title=_("Your projects"), text=_("Everything is listed here."))
+TourStep(title=_("Your projects"), description=_("Everything is listed here."))
 ```
 
 The tour's own controls are the next, previous and done buttons and the label a screen reader
@@ -234,43 +234,109 @@ msgid "Close"
 msgstr "Schließen"
 ```
 
-A control with no translation in the page's language shows in English. Like step text, a
-translated label is shown as text, never as markup.
+A control with no translation in the page's language shows in English. To give one tour its
+own labels, set them on the tour, as described in
+[Set Driver.js options](#set-driverjs-options). Like a step's title and description, a label is shown as HTML.
 
-## Pass Driver.js options of its own
+## Set Driver.js options
 
-Driver.js has more options than `Tour` and `TourStep` set. Pass any of them with
-`driver_options`, a mapping the package hands to the Driver.js constructor as it is:
+`Tour` mirrors the configuration object of Driver.js 1.10.2. Set an option as a field of the
+tour, under the same name Driver.js gives it. Every field defaults to the value Driver.js uses, so a tour sets only what it
+changes:
 
 ```python
 Tour(
     name="dashboard",
     steps=[...],
-    driver_options={"showProgress": True, "progressText": "{{current}} / {{total}}"},
+    showProgress=True,
+    progressText="{{current}} / {{total}}",
+    nextBtnText="Continue",
 )
 ```
 
-The options reach the page in its source, as JSON, so every value needs a JSON form: strings,
-numbers, booleans, `None`, lists and mappings of them, and strings marked for translation. A
-function such as an `onNextClick` hook has none. Options that are not a mapping, a name that is
-not a string and a value with no JSON form raise `ImproperlyConfigured` when the tour is declared.
+The fields, with the Driver.js option each one is:
 
-The package keeps the settings it sets itself, and an option of the same name changes nothing:
+| Field | Default | What it does |
+|-------|---------|--------------|
+| `animate` | `True` | Whether to animate the tour. |
+| `duration` | `400` | How long the animation takes, in milliseconds. |
+| `allowClose` | `True` | Whether a visitor can close the tour before its last step. |
+| `allowScroll` | `True` | Whether the page can be scrolled while the tour shows. |
+| `overlayClickBehavior` | `"close"` | What clicking the overlay does: `"close"` or `"nextStep"`. |
+| `overlayColor` | `"#000"` | The colour of the overlay. |
+| `overlayOpacity` | `0.7` | The opacity of the overlay, from 0 to 1. |
+| `smoothScroll` | `False` | Whether to scroll smoothly to each step's element. |
+| `disableActiveInteraction` | `False` | Whether the highlighted element ignores clicks. |
+| `allowKeyboardControl` | `True` | Whether the arrow and escape keys move through and close the tour. |
+| `advanceOnClick` | `False` | Whether clicking a step's element moves to the next step. |
+| `waitForElement` | `0` | How long to wait for a step's element to appear, in milliseconds. |
+| `stagePadding` | `10` | The space around the highlighted element, in pixels. |
+| `stageRadius` | `5` | The corner radius of the highlight, in pixels. |
+| `popoverOffset` | `10` | The distance between the popover and the element, in pixels. |
+| `popoverClass` | `""` | A class added to every popover. |
+| `showButtons` | `("next", "previous", "close")` | The buttons the popover shows. |
+| `disableButtons` | `()` | The buttons that show but cannot be pressed. |
+| `showProgress` | `False` | Whether the popover shows how far through the tour it is. |
+| `progressText` | `"{{current}} of {{total}}"` | The progress text. `{{current}}` and `{{total}}` stand for the step's number and the number of steps. |
+| `nextBtnText` | "Next", translated | The text of the next button. |
+| `prevBtnText` | "Previous", translated | The text of the previous button. |
+| `doneBtnText` | "Done", translated | The text of the button on the last step. |
+| `closeBtnLabel` | "Close", translated | The accessible name of the close button. |
 
-- `steps`
-- `skipMissingElement`, so a missing or hidden element is still skipped
-- `nextBtnText`, `prevBtnText`, `doneBtnText` and `closeBtnLabel`, which come from the
-  package's catalogue
-- `onPopoverRender`, `onDestroyStarted` and `onDestroyed`
+The [Driver.js configuration reference](https://driverjs.com/docs/configuration) describes each
+option, so moving between it and `Tour` is one to one.
 
-Driver.js writes some options into the page as markup, `progressText` among them. They are passed
-as you wrote them and are not escaped, so never build one from a visitor's input.
+Options that take a JavaScript function, such as `onNextClick`, are not available. Neither are
+`steps` and `skipMissingElement`, which the package sets itself so that a missing or hidden
+element is skipped.
 
-The package does not check what an option does. The options Driver.js takes are listed in its
-[configuration reference](https://driverjs.com/docs/configuration), and whether one works with
-the release the package ships, recorded in `page_tours/static/page_tours/vendor/`, is yours to
-check. An option can also undo what the package promises, such as `allowClose: False`, which
-leaves a visitor no way out of the tour but its last step.
+The four labels default to the package's translated strings, as described in
+[Translate a tour](#translate-a-tour). A label you set is shown as you wrote it, and Driver.js
+writes the button texts and the progress text into the page as markup, so never build one from a
+visitor's input.
+
+## Set Driver.js options on one step
+
+`TourStep` mirrors a Driver.js step. Its fields are named as Driver.js names them, and
+[the Driver.js configuration reference](https://driverjs.com/docs/configuration) describes the
+step and popover options too. Besides `element`, `title` and `description`, a step takes these
+options:
+
+| Field | What it does on this step |
+|-------|---------------------------|
+| `disableActiveInteraction` | Whether the highlighted element ignores clicks. |
+| `advanceOnClick` | Whether clicking the element moves to the next step. |
+| `waitForElement` | How long to wait for the element to appear, in milliseconds. |
+| `side` | Which side of the element the popover sits on: `"top"`, `"right"`, `"bottom"` or `"left"`. |
+| `align` | How the popover lines up along that side: `"start"`, `"center"` or `"end"`. |
+| `popoverClass` | A class added to this step's popover. |
+| `showButtons` | The buttons the popover shows. |
+| `disableButtons` | The buttons that show but cannot be pressed. |
+| `showProgress` | Whether the popover shows how far through the tour it is. |
+| `progressText` | The progress text. |
+| `nextBtnText`, `prevBtnText`, `doneBtnText` | The texts of the buttons. |
+
+Every one defaults to `None`, which means the step uses the tour's value of the same name. A value
+you set on a step overrides the tour's for that step only:
+
+```python
+Tour(
+    name="dashboard",
+    steps=[
+        TourStep(title="Welcome", description="A quick look around."),
+        TourStep(
+            element="#projects",
+            title="Your projects",
+            description="Press one to open it.",
+            side="left",
+            advanceOnClick=True,
+        ),
+    ],
+    showProgress=True,
+)
+```
+
+A step needs no title: Driver.js shows a popover with only a description.
 
 A tour that a project replaces through `PAGE_TOURS_OVERRIDES` plays with the replacement's
 options, not the replaced tour's.
@@ -289,8 +355,8 @@ more in a browser that saw the first.
 
 The function-view page at `/function-view/` is rendered by a function-based view that passes its
 tour in the template context. The Driver.js options page at `/driver-options/` plays a tour that
-turns on Driver.js's step count through `driver_options`. Every demo page outputs its tour with `{{ tour }}` in its own
-template, and the demo's base template includes the package's files.
+sets `showProgress`, `progressText` and `nextBtnText`. Every demo page outputs its tour with
+`{{ tour }}` in its own template, and the demo's base template includes the package's files.
 
 ## Why a visitor can always use the page
 
@@ -323,8 +389,7 @@ This is what a visitor sees when a page with a tour opens in their browser.
 A tour is checked as the module that declares it is imported: at start-up for the development
 server and `manage.py check`, and at the latest on the first request a production server handles.
 A mistake raises an error there instead of being shown to a visitor. A tour with no name or no
-steps, and a step with an empty title or empty text (whitespace counts as empty), raise
-`ImproperlyConfigured`.
+steps raise `ImproperlyConfigured`.
 
 ## Why a tour never shows on an error page
 

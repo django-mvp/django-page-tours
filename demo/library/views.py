@@ -13,12 +13,12 @@ BOOK_LIST_TOUR = Tour(
     steps=[
         TourStep(
             title="The library's books",
-            text="Every book the library holds is listed here.",
+            description="Every book the library holds is listed here.",
             element="#library-books",
         ),
         TourStep(
             title="Open a book",
-            text="Choose a title to see its page.",
+            description="Choose a title to see its page.",
             element="#library-first-book",
         ),
     ],
@@ -37,12 +37,12 @@ BOOK_TOUR = Tour(
     steps=[
         TourStep(
             title="A book",
-            text="This page shows one book.",
+            description="This page shows one book.",
             element="#library-book-title",
         ),
         TourStep(
             title="Borrow it",
-            text="Press the button to borrow the book.",
+            description="Press the button to borrow the book.",
             element="#library-borrow",
         ),
     ],
@@ -61,7 +61,7 @@ LOANS_TOUR = Tour(
     steps=[
         TourStep(
             title="Your loans",
-            text="The books you have borrowed are listed here.",
+            description="The books you have borrowed are listed here.",
             element="#library-loans",
         ),
     ],

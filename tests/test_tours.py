@@ -10,7 +10,6 @@ from django.core.exceptions import ImproperlyConfigured
 from django.template import Context, Template
 from django.urls import reverse
 from django.utils import translation
-from django.utils.html import escape
 from django.utils.safestring import SafeString
 from django.utils.translation import gettext, gettext_lazy
 
@@ -24,29 +23,16 @@ from page_tours.tours import (
     tour_overrides,
 )
 from tests import views
-from tests.views import MARKUP_TITLE
 
-STEP = TourStep(title="Title", text="Body")
+STEP = TourStep(title="Title", description="Body")
 
 
 class TestTourStep:
     """Declaring a step of a tour."""
 
-    @pytest.mark.parametrize("title", ["", "   ", "\n\t"])
-    def test_an_empty_or_blank_title_is_an_error(self, title):
-        """A step without a title cannot be declared."""
-        with pytest.raises(ImproperlyConfigured):
-            TourStep(title=title, text="Body")
-
-    @pytest.mark.parametrize("text", ["", "   ", "\n\t"])
-    def test_an_empty_or_blank_text_is_an_error(self, text):
-        """A step without text cannot be declared."""
-        with pytest.raises(ImproperlyConfigured):
-            TourStep(title="Title", text=text)
-
     def test_the_element_is_optional(self):
         """A step may name no element."""
-        assert TourStep(title="Title", text="Body").element == ""
+        assert TourStep(title="Title", description="Body").element == ""
 
 
 class TestTour:
@@ -74,7 +60,7 @@ class TestTour:
 
     def test_steps_are_stored_as_a_tuple(self):
         """A declared tour cannot change later."""
-        step = TourStep(title="Title", text="Body")
+        step = TourStep(title="Title", description="Body")
 
         tour = Tour(name="test", steps=[step])
 
@@ -83,20 +69,25 @@ class TestTour:
     def test_a_tour_plays_by_itself_unless_told_otherwise(self):
         """Autoplay is on by default."""
         assert (
-            Tour(name="test", steps=[TourStep(title="Title", text="Body")]).autoplay
+            Tour(
+                name="test", steps=[TourStep(title="Title", description="Body")]
+            ).autoplay
             is True
         )
 
     def test_a_tour_is_at_version_one_unless_told_otherwise(self):
         """A tour declared without a version has version 1."""
         assert (
-            Tour(name="test", steps=[TourStep(title="Title", text="Body")]).version == 1
+            Tour(
+                name="test", steps=[TourStep(title="Title", description="Body")]
+            ).version
+            == 1
         )
 
     def test_a_tour_keeps_the_version_it_is_declared_with(self):
         """The developer sets the version."""
         tour = Tour(
-            name="test", steps=[TourStep(title="Title", text="Body")], version=3
+            name="test", steps=[TourStep(title="Title", description="Body")], version=3
         )
 
         assert tour.version == 3
@@ -109,83 +100,86 @@ class TestTour:
         with pytest.raises(ImproperlyConfigured):
             Tour(
                 name="test",
-                steps=[TourStep(title="Title", text="Body")],
+                steps=[TourStep(title="Title", description="Body")],
                 version=version,
             )
 
 
 class TestTourDriverOptions:
-    """A tour carries options of its own to Driver.js, as declared."""
+    """A tour's Driver.js options reach the page under Driver.js's own names."""
 
-    def test_a_tour_declared_without_options_carries_none(self):
-        """A tour that passes nothing to Driver.js carries an empty mapping."""
-        assert payload_of(views.CLASS_TOUR)["options"] == {}
+    def test_a_field_arrives_in_the_rendered_options(self):
+        """``overlayOpacity`` set on a tour is in the rendered options."""
+        tour = Tour(name="tests.options-field", steps=[STEP], overlayOpacity=0.4)
 
-    def test_the_options_arrive_as_declared(self):
-        """Each option reaches the page with its name and value unchanged."""
-        options = {
-            "animate": False,
-            "overlayOpacity": 0.4,
-            "stagePadding": 4,
-            "popoverClass": "my-tour",
-            "showButtons": ["next", "close"],
+        assert payload_of(tour)["options"]["overlayOpacity"] == 0.4
+
+    def test_a_tour_that_sets_nothing_renders_driverjs_defaults(self):
+        """The defaults of the fields are the defaults of Driver.js 1.10.2."""
+        options = payload_of(views.CLASS_TOUR)["options"]
+
+        assert options == {
+            "animate": True,
+            "duration": 400,
+            "allowClose": True,
+            "allowScroll": True,
+            "overlayClickBehavior": "close",
+            "overlayColor": "#000",
+            "overlayOpacity": 0.7,
+            "smoothScroll": False,
+            "disableActiveInteraction": False,
+            "allowKeyboardControl": True,
+            "advanceOnClick": False,
+            "waitForElement": 0,
+            "stagePadding": 10,
+            "stageRadius": 5,
+            "popoverOffset": 10,
+            "popoverClass": "",
+            "showButtons": ["next", "previous", "close"],
+            "disableButtons": [],
+            "showProgress": False,
+            "progressText": "{{current}} of {{total}}",
+            "nextBtnText": "Next",
+            "prevBtnText": "Previous",
+            "doneBtnText": "Done",
+            "closeBtnLabel": "Close",
         }
-        tour = Tour(
-            name="tests.options-as-declared", steps=[STEP], driver_options=options
-        )
 
-        assert payload_of(tour)["options"] == options
+    def test_the_options_leave_out_what_is_not_a_driverjs_option(self):
+        """Name, steps, autoplay and version are the package's, not Driver.js's."""
+        options = payload_of(views.CLASS_TOUR)["options"]
 
-    def test_a_lazy_value_is_translated_into_the_active_language(self):
-        """A value marked for translation arrives in the page's language."""
-        tour = Tour(
-            name="tests.options-translated",
-            steps=[STEP],
-            driver_options={"progressText": gettext_lazy("Yes")},
-        )
+        assert not {"name", "steps", "autoplay", "version"} & set(options)
+
+    def test_a_tuple_of_buttons_arrives_as_a_list(self):
+        """The buttons shown are carried as a JSON list."""
+        tour = Tour(name="tests.options-buttons", steps=[STEP], showButtons=("next",))
+
+        assert payload_of(tour)["options"]["showButtons"] == ["next"]
+
+    def test_the_labels_follow_the_active_language(self):
+        """The four labels are translated when the tour renders."""
+        with translation.override("de"):
+            options = payload_of(views.CLASS_TOUR)["options"]
+
+        assert options["nextBtnText"] == "Weiter <i>»</i>"
+        assert options["prevBtnText"] == "Zurück"
+        assert options["doneBtnText"] == "Fertig"
+        assert options["closeBtnLabel"] == "Schließen & beenden"
+
+    def test_a_label_set_on_the_tour_replaces_the_translated_one(self):
+        """A tour names its own label, and it is passed as written."""
+        tour = Tour(name="tests.options-label", steps=[STEP], nextBtnText="Go <b>")
 
         with translation.override("de"):
-            assert payload_of(tour)["options"] == {"progressText": gettext("Yes")}
-
-    def test_changing_the_declared_mapping_afterwards_changes_nothing(self):
-        """The tour keeps the options it was declared with."""
-        options = {"animate": False}
-        tour = Tour(name="tests.options-copied", steps=[STEP], driver_options=options)
-
-        options["animate"] = True
-
-        assert payload_of(tour)["options"] == {"animate": False}
+            assert payload_of(tour)["options"]["nextBtnText"] == "Go <b>"
 
     def test_a_value_holding_markup_stays_inside_the_script_element(self):
         """A value cannot close the element it is carried in."""
         value = "</script><script>alert(1)</script>"
-        tour = Tour(
-            name="tests.options-markup",
-            steps=[STEP],
-            driver_options={"popoverClass": value},
-        )
+        tour = Tour(name="tests.options-markup", steps=[STEP], popoverClass=value)
 
-        assert payload_of(tour)["options"] == {"popoverClass": value}
-
-    @pytest.mark.parametrize("options", [None, ["animate"], "animate", 1])
-    def test_options_that_are_not_a_mapping_are_an_error(self, options):
-        """Anything but a mapping is refused when the tour is declared."""
-        with pytest.raises(ImproperlyConfigured):
-            Tour(name="tests.options-bad", steps=[STEP], driver_options=options)
-
-    def test_an_option_name_that_is_not_a_string_is_an_error(self):
-        """Every option is named by a string."""
-        with pytest.raises(ImproperlyConfigured):
-            Tour(name="tests.options-bad", steps=[STEP], driver_options={1: True})
-
-    def test_a_value_that_cannot_reach_the_page_is_an_error(self):
-        """A value with no JSON form is refused when the tour is declared."""
-        with pytest.raises(ImproperlyConfigured):
-            Tour(
-                name="tests.options-bad",
-                steps=[STEP],
-                driver_options={"onNextClick": print},
-            )
+        assert payload_of(tour)["options"]["popoverClass"] == value
 
 
 class TestTourAsDriverSteps:
@@ -196,23 +190,27 @@ class TestTourAsDriverSteps:
         tour = Tour(
             name="test",
             steps=[
-                TourStep(title="First", text="One"),
-                TourStep(title="Second", text="Two"),
-                TourStep(title="Third", text="Three"),
+                TourStep(title="First", description="One"),
+                TourStep(title="Second", description="Two"),
+                TourStep(title="Third", description="Three"),
             ],
         )
 
         steps = tour.as_driver_steps()
 
-        assert [step["title"] for step in steps] == ["First", "Second", "Third"]
+        assert [step["popover"]["title"] for step in steps] == [
+            "First",
+            "Second",
+            "Third",
+        ]
 
     def test_the_element_key_is_present_only_for_a_step_that_names_one(self):
         """A step with no element has no element key."""
         tour = Tour(
             name="test",
             steps=[
-                TourStep(title="Attached", text="One", element="#menu"),
-                TourStep(title="Floating", text="Two"),
+                TourStep(title="Attached", description="One", element="#menu"),
+                TourStep(title="Floating", description="Two"),
             ],
         )
 
@@ -221,27 +219,69 @@ class TestTourAsDriverSteps:
         assert attached["element"] == "#menu"
         assert "element" not in floating
 
-    def test_title_and_text_are_escaped(self):
-        """Markup characters come out as text, not as markup."""
-        raw = "<b>&\"'"
-        tour = Tour(name="test", steps=[TourStep(title=raw, text=raw)])
+    def test_a_step_option_arrives_under_driverjs_name_where_driverjs_reads_it(self):
+        """Step-level options sit on the step, popover options inside ``popover``."""
+        tour = Tour(
+            name="test",
+            steps=[
+                TourStep(
+                    element="#menu",
+                    title="Title",
+                    description="Body",
+                    advanceOnClick=True,
+                    waitForElement=500,
+                    side="left",
+                    popoverClass="wide",
+                    showButtons=("next",),
+                )
+            ],
+        )
 
         (step,) = tour.as_driver_steps()
 
-        assert step["title"] == escape(raw)
-        assert step["text"] == escape(raw)
+        assert step == {
+            "element": "#menu",
+            "advanceOnClick": True,
+            "waitForElement": 500,
+            "popover": {
+                "title": "Title",
+                "description": "Body",
+                "side": "left",
+                "popoverClass": "wide",
+                "showButtons": ("next",),
+            },
+        }
+
+    def test_an_option_left_as_none_is_absent_so_the_tours_value_applies(self):
+        """A null in the step would override the tour's value in Driver.js."""
+        tour = Tour(name="test", steps=[TourStep(title="Title", description="Body")])
+
+        (step,) = tour.as_driver_steps()
+
+        assert step == {"popover": {"title": "Title", "description": "Body"}}
+
+    def test_title_and_description_are_passed_as_they_are(self):
+        """HTML in a title or description reaches Driver.js unescaped."""
+        tour = Tour(
+            name="test", steps=[TourStep(title="<b>A</b>", description="<i>B</i>")]
+        )
+
+        (step,) = tour.as_driver_steps()
+
+        assert step["popover"]["title"] == "<b>A</b>"
+        assert step["popover"]["description"] == "<i>B</i>"
 
     def test_a_lazy_title_is_translated_into_the_active_language(self):
         """The language active when the steps are built decides the text."""
         tour = Tour(
-            name="test", steps=[TourStep(title=gettext_lazy("Yes"), text="Body")]
+            name="test", steps=[TourStep(title=gettext_lazy("Yes"), description="Body")]
         )
 
         with translation.override("de"):
             (step,) = tour.as_driver_steps()
             expected = str(gettext("Yes"))
 
-        assert step["title"] == expected
+        assert step["popover"]["title"] == expected
 
 
 STEPS_SCRIPT = re.compile(
@@ -293,7 +333,7 @@ class TestTourRendering:
         assert rendered == views.CLASS_TOUR.__html__()
         assert isinstance(rendered, SafeString)
 
-    def test_the_payload_carries_exactly_its_id_version_autoplay_steps_and_controls(
+    def test_the_payload_carries_exactly_its_id_version_autoplay_steps_parts_and_options(
         self,
     ):
         """Nothing else reaches the browser."""
@@ -304,7 +344,6 @@ class TestTourRendering:
             "version",
             "autoplay",
             "steps",
-            "controls",
             "parts",
             "options",
         }
@@ -330,22 +369,13 @@ class TestTourRendering:
             views.CLASS_TOUR.as_driver_steps()
         )
 
-    def test_markup_characters_in_a_step_arrive_escaped(self):
-        """The step is plain text: its markup characters reach the page escaped."""
-        rendered = str(views.MARKUP_TOUR)
-
-        assert payload_of(rendered)["steps"][0]["title"] == escape(MARKUP_TITLE)
-        assert MARKUP_TITLE not in rendered
-
-    def test_a_translated_step_and_the_controls_are_in_the_active_language(self):
+    def test_a_translated_step_is_in_the_active_language(self):
         """The tour is converted when it renders, in the language active then."""
         with translation.override("de"):
             payload = payload_of(views.TRANSLATED_TOUR)
             expected = str(gettext("Yes"))
 
-        assert payload["steps"][0]["title"] == expected != "Yes"
-        assert payload["controls"]["previous"] == "Zurück"
-        assert payload["controls"]["done"] == "Fertig"
+        assert payload["steps"][0]["popover"]["title"] == expected != "Yes"
 
     def test_the_payload_carries_every_part_with_its_name(self):
         """Each part is a key, and its documented name is the first class."""
@@ -472,13 +502,14 @@ class TestTourOverrides:
 
         assert steps == views.REWORDED_TOUR.as_driver_steps()
 
-    def test_a_replacement_carries_its_own_options(self, settings):
+    def test_a_replacement_renders_its_own_options(self, settings):
         """The options are the replacement's, not the replaced tour's."""
         settings.PAGE_TOURS_OVERRIDES = {OVERRIDDEN: "tests.views.OPTIONS_TOUR"}
 
         options = payload_of(views.APP_TOUR)["options"]
 
-        assert options == views.OPTIONS_TOUR.driver_options
+        assert options["showProgress"] is True
+        assert options["progressText"] == "{{current}} / {{total}}"
 
     def test_a_replacement_keeps_the_name_of_the_tour_it_replaces(self, settings):
         """Replacing a tour does not rename it, so what was seen stays seen."""

@@ -60,7 +60,7 @@ The script sets up the control before the tour starts, so a step can point at it
 ```python
 TourStep(
     title="Come back to this tour",
-    text="Press this button to see the tour again.",
+    description="Press this button to see the tour again.",
     element="#replay-tour",
 )
 ```
@@ -83,10 +83,10 @@ from page_tours import Tour, TourStep
 REPORTS_TOUR = Tour(
     name="reports",
     steps=[
-        TourStep(title="Reports", text="Everything you have filed, in one place."),
+        TourStep(title="Reports", description="Everything you have filed, in one place."),
         TourStep(
             title="Filters",
-            text="Narrow the list by date or author.",
+            description="Narrow the list by date or author.",
             element="#filters",
         ),
     ],

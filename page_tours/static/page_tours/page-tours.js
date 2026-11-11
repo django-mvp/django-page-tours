@@ -39,7 +39,7 @@
     // tours had versions holds "1", which is the version a tour has by default.
     var seenVersion = String(payload.version);
     var steps = payload.steps.map(function (step) {
-      var driverStep = { popover: { title: step.title, description: step.text } };
+      var driverStep = Object.assign({}, step);
       if (step.element) {
         driverStep.element = function () {
           return visibleElement(step.element);
@@ -201,10 +201,6 @@
         tour = driver(Object.assign({}, payload.options, {
           steps: steps,
           skipMissingElement: true,
-          nextBtnText: payload.controls.next,
-          prevBtnText: payload.controls.previous,
-          doneBtnText: payload.controls.done,
-          closeBtnLabel: payload.controls.close,
           onPopoverRender: guarded(nameParts),
           // Every way a visitor ends the tour arrives here, including a close
           // pressed while a step is still opening, which skips onDestroyed.
