@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: django-page-tours\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 13:32+0000\n"
+"POT-Creation-Date: 2026-11-11 14:03+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -95,20 +95,16 @@ msgstr ""
 msgid "PAGE_TOURS_OVERRIDES[%(name)s]: %(path)s is not a %(cls)s."
 msgstr ""
 
-#: hints.py:16
+#: hints.py:14
 msgctxt "page hint control"
 msgid "Got it"
 msgstr ""
 
-#: hints.py:126
-msgid "Hints need at least one hint."
-msgstr ""
-
-#: parts.py:52
+#: parts.py:57
 msgid "the PAGE_TOURS_CLASSES setting"
 msgstr ""
 
-#: parts.py:58
+#: parts.py:63
 #, python-format
 msgid "the app '%(label)s'"
 msgstr ""

@@ -4,9 +4,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import ClassVar
 
-from django.core.exceptions import ImproperlyConfigured
 from django.utils.functional import Promise
-from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 
 from page_tours.driver import Alignment, Declaration, DriverObject, PopoverContent, Side
@@ -104,8 +102,8 @@ class Hints(Declaration):
         overlayOpacity: The opacity of the overlay, from 0 to 1.
 
     Raises:
-        ImproperlyConfigured: If ``name`` is not a string with something in it,
-            ``hints`` is empty or ``version`` is not a whole number of 1 or more.
+        ImproperlyConfigured: If ``name`` is not a string with something in it or
+            ``version`` is not a whole number of 1 or more.
     """
 
     kind: ClassVar[str] = "hints"
@@ -121,8 +119,6 @@ class Hints(Declaration):
     overlayOpacity: float = 0.7
 
     def __post_init__(self):
-        """Refuse hints without a hint, freeze them and declare the hints."""
-        if not self.hints:
-            raise ImproperlyConfigured(_("Hints need at least one hint."))
+        """Freeze the hints and declare them under their name."""
         object.__setattr__(self, "hints", tuple(self.hints))
         super().__post_init__()

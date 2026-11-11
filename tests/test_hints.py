@@ -58,6 +58,12 @@ class TestHints:
         with pytest.raises(TypeError):
             Hints(name="tests.none")  # type: ignore[call-arg]
 
+    def test_hints_with_an_empty_list_render_with_no_hints(self):
+        """An empty list is declared and renders, and nothing is shown."""
+        hints = Hints(name="tests.empty", hints=[])
+
+        assert payload_of(str(hints))["config"]["hints"] == []
+
     @pytest.mark.parametrize("name", ["", "   ", None, 3])
     def test_a_name_that_is_not_a_non_blank_string_is_an_error(self, name):
         """A name is plain text with something in it."""

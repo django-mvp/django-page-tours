@@ -84,8 +84,8 @@ name that stays put, and in a reusable app start it with the app label, as for a
 a `Tour` or a `Hints`. Django's `check` command warns with `page_tours.W005` when two different
 declarations are given one name.
 
-A name that is not a string with something in it, or an empty list of hints, raises
-`ImproperlyConfigured` when the hints are declared.
+A name that is not a string with something in it raises `ImproperlyConfigured` when the hints
+are declared. An empty list of hints is allowed: the page renders and shows no beacon.
 
 ## Set the options of the hints
 
