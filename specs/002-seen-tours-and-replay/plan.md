@@ -23,7 +23,7 @@ the tour from its first step.
 
 ## Constitution Check
 
-- **Article V (escaping)**: step text stays pre-escaped by `Tour.as_driver_steps()`. The
+- **Article V (escaping)**: a step's title and description are passed to Driver.js as they are. The
   control's attributes go through `flatatt`, its content through the template engine.
 - **Article VIII (translation)**: the control's fallback text is `gettext_lazy`.
 - **Article XIII (the page stays usable)**: every storage call and every replay path is inside

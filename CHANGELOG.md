@@ -8,6 +8,17 @@ All notable changes to this project are documented in this file. The format foll
 
 ### Changed
 
+- **Breaking:** `TourStep`'s `text` is now `description`, matching Driver.js. To upgrade, rename the
+  argument: `TourStep(title="Welcome", text="Hello")` becomes
+  `TourStep(title="Welcome", description="Hello")`. `element` now comes first among the fields, so
+  pass every argument by name.
+- A step takes Driver.js's per-step options, under the names Driver.js gives them: `side`, `align`,
+  `popoverClass`, `showButtons`, `disableButtons`, `showProgress`, `progressText`, `nextBtnText`,
+  `prevBtnText`, `doneBtnText`, `disableActiveInteraction`, `advanceOnClick` and `waitForElement`. An
+  option a step leaves out uses the tour's value.
+- Titles and descriptions are passed to Driver.js as they are, so HTML in them renders. Never build
+  one from a visitor's input.
+- A step no longer refuses an empty title or description.
 - **Breaking:** a page outputs its own tour with `{{ tour }}`, in place of `{% page_tour %}` in the
   base template. A `Tour` renders itself as the `<script type="application/json">` element the
   package's script plays it from, so `{{ tour }}` needs no tag library and Django does not escape

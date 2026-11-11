@@ -26,7 +26,7 @@ django-page-tours moves the steps into Python, next to the page, and handles the
 ## Scope & philosophy
 
 **What it is.** A tour belongs to one page. A developer declares its steps in Python, each one
-pointing at an element on the page with a title and a short text. The first time someone opens
+pointing at an element on the page with a title and a short description. The first time someone opens
 the page, the tour plays. They can step through it, skip it or close it, and once they have seen
 it, their browser remembers and it does not play again unless they ask for it. When the tour
 changes enough to matter, the developer gives it a new version, and people who saw the old one
@@ -80,8 +80,8 @@ from page_tours import Tour, TourStep
 DASHBOARD_TOUR = Tour(
     name="dashboard",
     steps=[
-        TourStep(title="Welcome", text="A quick look around."),
-        TourStep(title="Projects", text="Your work is here.", element="#projects"),
+        TourStep(title="Welcome", description="A quick look around."),
+        TourStep(title="Projects", description="Your work is here.", element="#projects"),
     ],
 )
 
