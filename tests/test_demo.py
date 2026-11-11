@@ -12,6 +12,7 @@ from playwright.sync_api import expect
 from demo import settings as demo_settings
 from demo.library.views import BOOK_LIST_TOUR, BOOK_TOUR
 from demo.tours import book_tour
+from demo.views import REPORT_HINTS, REPORT_TOUR
 from page_tours.parts import TourParts
 
 pytestmark = pytest.mark.urls("demo.urls")
@@ -407,3 +408,77 @@ class TestOwnLookPage:
         page = client.get(reverse("overview")).content.decode()
 
         assert f'href="{reverse("own-look")}"' in page.split("</nav>", 1)[1]
+
+
+class TestHintsPage:
+    """The demo page that carries hints and a tour."""
+
+    def page(self, client, name="hints"):
+        """Return the rendered page."""
+        return client.get(reverse(name)).content.decode()
+
+    def payload(self, page, kind):
+        """Return the payload the page hands to the browser for a declaration."""
+        match = re.search(
+            rf'<script id="page-tours-{kind}" type="application/json">(.*?)</script>',
+            page,
+            re.DOTALL,
+        )
+        assert match is not None
+        return json.loads(match.group(1))
+
+    def test_it_responds(self, client):
+        """The page renders for an anonymous visitor."""
+        assert client.get(reverse("hints")).status_code == 200
+
+    def test_it_carries_the_hints_of_its_view(self, client):
+        """The payload names the hints and holds each of their elements."""
+        payload = self.payload(self.page(client), "hints")
+
+        assert payload["id"] == REPORT_HINTS.name
+        assert [h["element"] for h in payload["config"]["hints"]] == [
+            hint.element for hint in REPORT_HINTS.hints
+        ]
+
+    def test_it_carries_the_tour_of_its_view(self, client):
+        """The payload names the tour."""
+        payload = self.payload(self.page(client), "tour")
+
+        assert payload["id"] == REPORT_TOUR.name
+
+    def test_its_tour_does_not_play_by_itself(self, client):
+        """The hints stay in view until the replay control is used."""
+        assert self.payload(self.page(client), "tour")["autoplay"] is False
+
+    def test_it_places_the_restore_control_hidden(self, client):
+        """The page carries the control, hidden, for the script to reveal."""
+        assert "data-page-hints-restore hidden" in self.page(client)
+
+    def test_it_places_a_replay_control_in_its_body(self, client):
+        """The page carries two replay controls: the bar's and its own."""
+        assert self.page(client).count("data-page-tour-replay") == 2
+
+    def test_every_hint_points_at_an_element_on_the_page(self, client):
+        """Each hint's selector is an id the page's HTML carries."""
+        page = self.page(client)
+
+        for hint in REPORT_HINTS.hints:
+            assert f'id="{hint.element.removeprefix("#")}"' in page
+
+    def test_it_is_linked_from_the_page_bar(self, client):
+        """The bar every demo page shares links the page."""
+        bar = self.page(client, "overview").split('aria-label="Demo pages"', 1)[1]
+
+        assert f'href="{reverse("hints")}"' in bar.split("</nav>", 1)[0]
+
+    def test_the_overview_links_it(self, client):
+        """The overview names the page outside the page bar."""
+        body = self.page(client, "overview").split("</nav>", 1)[1]
+
+        assert f'href="{reverse("hints")}"' in body
+
+    def test_the_base_template_loads_the_hints_script(self, client):
+        """The project includes Driver.js's hints script on every page."""
+        page = self.page(client, "overview")
+
+        assert "page_tours/vendor/driver.js-1.11.0/hints.iife.js" in page

@@ -9,10 +9,15 @@
       header, main { max-width: 48rem; margin: 0 auto; padding: 1rem 1.5rem; }
       header { border-bottom: 1px solid #ddd; }
       header a { margin-right: 1rem; }
+      nav { display: flex; flex-wrap: wrap; gap: .25rem 0; align-items: center; }
+      .demo-quiet-beacon { --driver-hint-color: #059669; }
+      table { border-collapse: collapse; width: 100%; } td, th { border-bottom: 1px solid #ddd; padding: .4rem; text-align: left; }
+      .report-actions { display: flex; gap: .75rem; flex-wrap: wrap; margin: 1rem 0; }
       .replay-inline { margin-left: 1rem; }
     </style>
     <link rel="stylesheet" href="{% static 'page_tours/page-tours.css' %}">
     <script src="{% static 'page_tours/vendor/driver.js-1.11.0/driver.js.iife.js' %}" defer></script>
+    <script src="{% static 'page_tours/vendor/driver.js-1.11.0/hints.iife.js' %}" defer></script>
     <script src="{% static 'page_tours/page-tours.js' %}" defer></script>
     {% block head %}{% endblock head %}
   </head>
@@ -28,6 +33,7 @@
         <a href="{% url 'own-look' %}">Own look</a>
         <a href="{% url 'function-view' %}">Function view</a>
         <a href="{% url 'driver-options' %}">Driver.js options</a>
+        <a href="{% url 'hints' %}">Hints</a>
         <button type="button" data-page-tour-replay hidden>Show the tour</button>
       </nav>
     </header>

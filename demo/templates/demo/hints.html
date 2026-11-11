@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1>Quarterly report</h1>
+  <p>
+    The pulsing dots are hints. Open them in any order, and the page stays usable while one is
+    open. <em>Got it</em> dismisses a hint for good in this browser.
+  </p>
+  <div class="report-actions">
+    <button id="report-export" type="button">Export</button>
+    <a id="report-share" href="#share">Share link</a>
+    <button type="button" data-page-hints-restore hidden>Show dismissed hints again</button>
+    <button type="button" data-page-tour-replay hidden>Play the tour</button>
+  </div>
+  <p id="report-summary">
+    Revenue rose 12% on the quarter before. Two of three months beat their target, and
+    September carried most of the growth.
+  </p>
+  <table id="report-figures">
+    <thead><tr><th>Month</th><th>Revenue</th><th>Target</th></tr></thead>
+    <tbody>
+      <tr><td>July</td><td>€41,200</td><td>€44,000</td></tr>
+      <tr><th>August</th><th>€46,900</th><th>€45,000</th></tr>
+      <tr><th>September</th><th>€52,300</th><th>€46,000</th></tr>
+    </tbody>
+  </table>
+  {{ hints }}
+  {{ tour }}
+{% endblock content %}

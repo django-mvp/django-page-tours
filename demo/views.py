@@ -3,7 +3,7 @@
 from django.shortcuts import render
 from django.views.generic import TemplateView
 
-from page_tours import Tour, TourStep
+from page_tours import Beacon, Hint, Hints, Tour, TourStep
 
 
 class OverviewView(TemplateView):
@@ -187,3 +187,59 @@ class DriverOptionsView(TemplateView):
             nextBtnText="Onwards",
         )
     }
+
+
+REPORT_HINTS = Hints(
+    name="demo.report",
+    beacon=Beacon(side="right", align="start"),
+    hints=[
+        Hint(
+            element="#report-export",
+            title="Export the report",
+            description="Download this quarter's figures as a spreadsheet.",
+        ),
+        Hint(
+            element="#report-summary",
+            id="summary",
+            title="Written for you",
+            description="This paragraph is written from the quarter's figures.",
+            side="bottom",
+            beacon=Beacon(side="left", align="center"),
+        ),
+        Hint(
+            element="#report-figures",
+            title="The figures",
+            description="Each row is one month. <strong>Bold</strong> rows beat their target.",
+            buttonText="Understood",
+        ),
+        Hint(
+            element="#report-share",
+            title="Share it",
+            description="Anyone with the link can read the report, but not change it.",
+            beacon=Beacon(animate=False, className="demo-quiet-beacon"),
+        ),
+    ],
+)
+
+REPORT_TOUR = Tour(
+    name="demo.report-tour",
+    autoplay=False,
+    steps=[
+        TourStep(
+            title="The hints step aside",
+            description="While a tour plays, the hints' beacons are hidden.",
+        ),
+        TourStep(
+            title="And come back",
+            description="When the tour ends, the beacons return.",
+            element="#report-figures",
+        ),
+    ],
+)
+
+
+class HintsView(TemplateView):
+    """A report page with hints on it, and a tour the hints step aside for."""
+
+    template_name = "demo/hints.html"
+    extra_context = {"hints": REPORT_HINTS, "tour": REPORT_TOUR}
