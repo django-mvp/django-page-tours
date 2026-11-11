@@ -32,14 +32,15 @@ rendered, nested objects and lists converted, fields routed into an inner object
 `popover`. Prototype: `page_tours/driver.py:37` `driver_value`, `:60` `DriverObject`. Built by
 hints (FS-005). `Checklist`, `ChecklistItem` and `Offset` are declared on it.
 
-### Reused: a base class, `Guide`, and the module functions it needs
+### Reused: the base class for what a page renders, and the module functions it needs
 
 What a page renders: name, version, record of declared names, `PAGE_TOURS_OVERRIDES`, `{{ … }}`
-rendering, payload with `kind`. Prototype: `page_tours/driver.py:136` `Guide`, `:222`
+rendering, payload with `kind`. Prototype: `page_tours/driver.py:136` (named `Guide` in the prototype), `:222`
 `resolve_override`, `:260`, `:270`; subclassed at `checklists.py:72`. Built by hints (FS-005).
-`Checklist` is a `Guide`.
+`Checklist` is declared on it, under whatever name FS-005 gives it. The prototype's name is
+not kept, because `CONTEXT.md` avoids the word.
 
-### Reused: rendering element id per kind, part of `Guide`
+### Reused: rendering element id per kind, part of the base class for what a page renders
 
 `page-tours-<kind>`. Prototype: `page_tours/driver.py:189`. Built by hints (FS-005). The checklist
 renders as `page-tours-checklist`.
