@@ -75,14 +75,14 @@ checklists too.
 the tour goals a checklist is held to (G1, G4, G6 to G9). Adding a roadmap entry is left to the
 roadmap's own revision.
 
-**ADR:** none
+**ADR:** none — a note on the roadmap, not a decision about the code
 
 ## D9 — New terms for CONTEXT.md
 
 The feature adds four terms to the glossary: *checklist*, *checklist item* and *ticked*, as
 defined in the specification's Key Entities, and *toggle control* (D16). They go into `CONTEXT.md` in the build.
 
-**ADR:** none
+**ADR:** none — vocabulary, kept in `CONTEXT.md`
 
 ## D10 — The override lookup moves into `Declaration.playing()`
 
@@ -111,7 +111,7 @@ a later tick (design review SPEC-001). An item the app stops reporting is then u
 the visitor ticked it in the browser, as the Edge Cases say, and unticking an item the app reports
 lasts only until the next request, as clarification 2 says.
 
-**ADR:** none — local to the checklist's script
+**ADR:** none — local to the checklist's script; the record it writes is named in ADR 0009
 
 ## D13 — `completed` is the field the app reports through
 
@@ -137,7 +137,7 @@ start. The page's own tour and a checklist item's tour are built by it,
 so a tour finds its elements, carries its part classes, cleans up and is recorded as seen the same
 way wherever it plays (SC-003). Driver.js's checklist drives the instance it is given.
 
-**ADR:** decided at converge
+**ADR:** docs/adr/0009-a-tour-plays-the-same-wherever-it-starts.md
 
 ## D16 — The toggle control follows the replay and restore controls
 
