@@ -201,10 +201,6 @@
         tour = driver(Object.assign({}, payload.options, {
           steps: steps,
           skipMissingElement: true,
-          nextBtnText: payload.controls.next,
-          prevBtnText: payload.controls.previous,
-          doneBtnText: payload.controls.done,
-          closeBtnLabel: payload.controls.close,
           onPopoverRender: guarded(nameParts),
           // Every way a visitor ends the tour arrives here, including a close
           // pressed while a step is still opening, which skips onDestroyed.

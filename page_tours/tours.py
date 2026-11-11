@@ -1,27 +1,51 @@
 """Declarations of a tour and its steps."""
 
-import json
 import weakref
-from collections.abc import Mapping, Sequence
-from dataclasses import dataclass, field
+from collections.abc import Sequence
+from dataclasses import dataclass, fields
 from functools import partial
-from typing import Any
+from typing import Any, Literal
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
-from django.core.serializers.json import DjangoJSONEncoder
 from django.utils.functional import Promise
 from django.utils.html import escape, json_script
 from django.utils.module_loading import import_string
 from django.utils.safestring import SafeString
 from django.utils.translation import gettext_lazy as _
-from django.utils.translation import pgettext
+from django.utils.translation import pgettext_lazy
 
 from page_tours.parts import TourParts
 
 # Every tour that exists, by name. The references are weak, and each removes
 # itself when its tour is collected, so a tour built per request leaves nothing.
 _declared: dict[str, list[weakref.ref["Tour"]]] = {}
+
+# The fields of Tour that are the package's own. Every other field is a
+# Driver.js option, passed to the browser under its Driver.js name.
+PACKAGE_FIELDS = {"name", "steps", "autoplay", "version"}
+
+Button = Literal["next", "previous", "close"]
+
+# The default labels of the controls: lazy, so the active language applies when
+# the tour renders.
+NEXT_LABEL = pgettext_lazy("page tour control", "Next")
+PREVIOUS_LABEL = pgettext_lazy("page tour control", "Previous")
+DONE_LABEL = pgettext_lazy("page tour control", "Done")
+CLOSE_LABEL = pgettext_lazy("page tour control", "Close")
+
+
+def camel_case(name: str) -> str:
+    """Convert a snake_case field name to the camelCase name Driver.js uses.
+
+    Args:
+        name: The field name, such as ``overlay_opacity``.
+
+    Returns:
+        The Driver.js name, such as ``overlayOpacity``.
+    """
+    first, *rest = name.split("_")
+    return first + "".join(word.capitalize() for word in rest)
 
 
 def _forget(name: str, ref: weakref.ref["Tour"]) -> None:
@@ -74,6 +98,13 @@ class Tour:
     made, so the system checks can report a name declared twice or a
     ``PAGE_TOURS_OVERRIDES`` key that names no tour.
 
+    The fields after ``version`` are Driver.js's configuration options, named in
+    snake_case and defaulting to the value Driver.js 1.10.2 itself uses. See
+    https://driverjs.com/docs/configuration for what each one does. Options that
+    take a JavaScript function are not available. Driver.js writes the button
+    texts and the progress text into the page as HTML, so they are passed on as
+    they are.
+
     Args:
         name: The name the tour is known by: a browser remembers that it has seen
             the tour under it, and ``PAGE_TOURS_OVERRIDES`` changes the tour by it.
@@ -85,26 +116,73 @@ class Tour:
         version: A whole number of 1 or more. Raise it when the tour has changed
             enough that people who saw it should see it again: a browser that saw
             another version plays it by itself once more.
-        driver_options: Options passed to the Driver.js constructor as they are,
-            for what the package does not set itself, such as
-            ``{"showProgress": True}``. Each value must have a JSON form. The
-            options the package sets win over these: ``steps``,
-            ``skipMissingElement``, the four control labels and the hooks it uses.
-            Whether an option works with the shipped Driver.js is up to the
-            developer.
+        animate: Whether to animate the tour.
+        duration: How long the animation takes, in milliseconds.
+        allow_close: Whether clicking the overlay closes the tour.
+        allow_scroll: Whether the page can be scrolled while the tour shows.
+        overlay_click_behavior: What clicking the overlay does: ``"close"`` the tour
+            or go to the ``"nextStep"``.
+        overlay_color: The colour of the overlay.
+        overlay_opacity: The opacity of the overlay, from 0 to 1.
+        smooth_scroll: Whether to scroll smoothly to each step's element.
+        disable_active_interaction: Whether the highlighted element ignores clicks.
+        allow_keyboard_control: Whether the arrow and escape keys move through and
+            close the tour.
+        advance_on_click: Whether clicking a step's element moves to the next step.
+        wait_for_element: How long to wait for a step's element to appear, in
+            milliseconds.
+        stage_padding: The space around the highlighted element, in pixels.
+        stage_radius: The corner radius of the highlight, in pixels.
+        popover_offset: The distance between the popover and the element, in pixels.
+        popover_class: A class added to every popover.
+        show_buttons: The buttons the popover shows, from ``"next"``,
+            ``"previous"`` and ``"close"``.
+        disable_buttons: The buttons that show but cannot be pressed.
+        show_progress: Whether the popover shows how far through the tour it is.
+        progress_text: The progress text, with ``{{current}}`` and ``{{total}}``
+            standing for the step's number and the number of steps.
+        next_btn_text: The text of the next button, in the active language by
+            default.
+        prev_btn_text: The text of the previous button, in the active language by
+            default.
+        done_btn_text: The text of the button on the last step, in the active
+            language by default.
+        close_btn_label: The accessible name of the close button, in the active
+            language by default.
 
     Raises:
         ImproperlyConfigured: If ``name`` is not a string with something in it,
-            ``steps`` is empty, ``version`` is not a whole number of 1 or more, or
-            ``driver_options`` is not a mapping of names to values with a JSON
-            form.
+            ``steps`` is empty or ``version`` is not a whole number of 1 or more.
     """
 
     name: str
     steps: Sequence[TourStep]
     autoplay: bool = True
     version: int = 1
-    driver_options: Mapping[str, Any] = field(default_factory=dict, hash=False)
+    animate: bool = True
+    duration: int = 400
+    allow_close: bool = True
+    allow_scroll: bool = True
+    overlay_click_behavior: Literal["close", "nextStep"] = "close"
+    overlay_color: str = "#000"
+    overlay_opacity: float = 0.7
+    smooth_scroll: bool = False
+    disable_active_interaction: bool = False
+    allow_keyboard_control: bool = True
+    advance_on_click: bool = False
+    wait_for_element: int = 0
+    stage_padding: int = 10
+    stage_radius: int = 5
+    popover_offset: int = 10
+    popover_class: str = ""
+    show_buttons: tuple[Button, ...] = ("next", "previous", "close")
+    disable_buttons: tuple[Button, ...] = ()
+    show_progress: bool = False
+    progress_text: str = "{{current}} of {{total}}"
+    next_btn_text: str | Promise = NEXT_LABEL
+    prev_btn_text: str | Promise = PREVIOUS_LABEL
+    done_btn_text: str | Promise = DONE_LABEL
+    close_btn_label: str | Promise = CLOSE_LABEL
 
     def __post_init__(self):
         """Refuse a bad tour, freeze its steps and record it under its name."""
@@ -121,36 +199,9 @@ class Tour:
                 _("A tour's version must be a whole number of 1 or more.")
             )
         object.__setattr__(self, "steps", tuple(self.steps))
-        object.__setattr__(self, "driver_options", self._checked_driver_options())
         _declared.setdefault(self.name, []).append(
             weakref.ref(self, partial(_forget, self.name))
         )
-
-    def _checked_driver_options(self) -> dict[str, Any]:
-        """Refuse options that cannot reach Driver.js, and copy the rest.
-
-        Returns:
-            A copy of ``driver_options``, so changing the declared mapping
-            afterwards does not change the tour.
-
-        Raises:
-            ImproperlyConfigured: If the options are not a mapping, a name is not a
-                string or a value has no JSON form.
-        """
-        options = self.driver_options
-        if not isinstance(options, Mapping) or not all(
-            isinstance(key, str) for key in options
-        ):
-            raise ImproperlyConfigured(
-                _("A tour's driver_options must be a mapping of names to values.")
-            )
-        try:
-            json.dumps(options, cls=DjangoJSONEncoder)
-        except (TypeError, ValueError) as error:
-            raise ImproperlyConfigured(
-                _("Every value in a tour's driver_options must have a JSON form.")
-            ) from error
-        return dict(options)
 
     def __html__(self) -> SafeString:
         """Render the tour as the element the package's script plays it from.
@@ -158,9 +209,8 @@ class Tour:
         This is what ``{{ tour }}`` outputs in a template: a
         ``<script id="page-tour-steps" type="application/json">`` element holding
         the tour's name and version, whether it plays by itself, its steps in the
-        form Driver.js takes, the labels of its controls in the active language,
-        the classes each part of a shown step carries and the tour's own
-        Driver.js options.
+        form Driver.js takes, the classes each part of a shown step carries and the
+        Driver.js options of the tour that plays, in the names Driver.js uses.
 
         When the ``PAGE_TOURS_OVERRIDES`` setting names the tour, the replacement
         is rendered in its place, or nothing when the setting turns it off. The
@@ -190,16 +240,12 @@ class Tour:
             "version": version,
             "autoplay": played.autoplay,
             "steps": played.as_driver_steps(),
-            # Driver.js writes the button labels as HTML and the close label as an
-            # attribute value, so only the button labels are escaped.
-            "controls": {
-                "next": escape(pgettext("page tour control", "Next")),
-                "previous": escape(pgettext("page tour control", "Previous")),
-                "done": escape(pgettext("page tour control", "Done")),
-                "close": pgettext("page tour control", "Close"),
-            },
             "parts": TourParts.classes(),
-            "options": played.driver_options,
+            "options": {
+                camel_case(option.name): getattr(played, option.name)
+                for option in fields(played)
+                if option.name not in PACKAGE_FIELDS
+            },
         }
         return json_script(payload, "page-tour-steps")
 

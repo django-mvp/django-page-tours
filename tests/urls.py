@@ -27,7 +27,6 @@ urlpatterns = [
         name="bare-without-tour",
     ),
     path("options/", views.OptionsTourView.as_view(), name="options-tour"),
-    path("own-settings/", views.OwnSettingsTourView.as_view(), name="own-settings"),
     path("replay/", views.ReplayView.as_view(), name="replay"),
     path("replay-no-tour/", views.ReplayNoTourView.as_view(), name="replay-no-tour"),
     path(

@@ -115,77 +115,80 @@ class TestTour:
 
 
 class TestTourDriverOptions:
-    """A tour carries options of its own to Driver.js, as declared."""
+    """A tour's Driver.js options reach the page under Driver.js's own names."""
 
-    def test_a_tour_declared_without_options_carries_none(self):
-        """A tour that passes nothing to Driver.js carries an empty mapping."""
-        assert payload_of(views.CLASS_TOUR)["options"] == {}
+    def test_a_field_arrives_under_its_camel_case_name(self):
+        """``overlay_opacity`` is ``overlayOpacity`` in the rendered options."""
+        tour = Tour(name="tests.options-field", steps=[STEP], overlay_opacity=0.4)
 
-    def test_the_options_arrive_as_declared(self):
-        """Each option reaches the page with its name and value unchanged."""
-        options = {
-            "animate": False,
-            "overlayOpacity": 0.4,
-            "stagePadding": 4,
-            "popoverClass": "my-tour",
-            "showButtons": ["next", "close"],
+        assert payload_of(tour)["options"]["overlayOpacity"] == 0.4
+
+    def test_a_tour_that_sets_nothing_renders_driverjs_defaults(self):
+        """The defaults of the fields are the defaults of Driver.js 1.10.2."""
+        options = payload_of(views.CLASS_TOUR)["options"]
+
+        assert options == {
+            "animate": True,
+            "duration": 400,
+            "allowClose": True,
+            "allowScroll": True,
+            "overlayClickBehavior": "close",
+            "overlayColor": "#000",
+            "overlayOpacity": 0.7,
+            "smoothScroll": False,
+            "disableActiveInteraction": False,
+            "allowKeyboardControl": True,
+            "advanceOnClick": False,
+            "waitForElement": 0,
+            "stagePadding": 10,
+            "stageRadius": 5,
+            "popoverOffset": 10,
+            "popoverClass": "",
+            "showButtons": ["next", "previous", "close"],
+            "disableButtons": [],
+            "showProgress": False,
+            "progressText": "{{current}} of {{total}}",
+            "nextBtnText": "Next",
+            "prevBtnText": "Previous",
+            "doneBtnText": "Done",
+            "closeBtnLabel": "Close",
         }
-        tour = Tour(
-            name="tests.options-as-declared", steps=[STEP], driver_options=options
-        )
 
-        assert payload_of(tour)["options"] == options
+    def test_the_options_leave_out_what_is_not_a_driverjs_option(self):
+        """Name, steps, autoplay and version are the package's, not Driver.js's."""
+        options = payload_of(views.CLASS_TOUR)["options"]
 
-    def test_a_lazy_value_is_translated_into_the_active_language(self):
-        """A value marked for translation arrives in the page's language."""
-        tour = Tour(
-            name="tests.options-translated",
-            steps=[STEP],
-            driver_options={"progressText": gettext_lazy("Yes")},
-        )
+        assert not {"name", "steps", "autoplay", "version"} & set(options)
+
+    def test_a_tuple_of_buttons_arrives_as_a_list(self):
+        """The buttons shown are carried as a JSON list."""
+        tour = Tour(name="tests.options-buttons", steps=[STEP], show_buttons=("next",))
+
+        assert payload_of(tour)["options"]["showButtons"] == ["next"]
+
+    def test_the_labels_follow_the_active_language(self):
+        """The four labels are translated when the tour renders."""
+        with translation.override("de"):
+            options = payload_of(views.CLASS_TOUR)["options"]
+
+        assert options["nextBtnText"] == "Weiter <i>»</i>"
+        assert options["prevBtnText"] == "Zurück"
+        assert options["doneBtnText"] == "Fertig"
+        assert options["closeBtnLabel"] == "Schließen & beenden"
+
+    def test_a_label_set_on_the_tour_replaces_the_translated_one(self):
+        """A tour names its own label, and it is passed as written."""
+        tour = Tour(name="tests.options-label", steps=[STEP], next_btn_text="Go <b>")
 
         with translation.override("de"):
-            assert payload_of(tour)["options"] == {"progressText": gettext("Yes")}
-
-    def test_changing_the_declared_mapping_afterwards_changes_nothing(self):
-        """The tour keeps the options it was declared with."""
-        options = {"animate": False}
-        tour = Tour(name="tests.options-copied", steps=[STEP], driver_options=options)
-
-        options["animate"] = True
-
-        assert payload_of(tour)["options"] == {"animate": False}
+            assert payload_of(tour)["options"]["nextBtnText"] == "Go <b>"
 
     def test_a_value_holding_markup_stays_inside_the_script_element(self):
         """A value cannot close the element it is carried in."""
         value = "</script><script>alert(1)</script>"
-        tour = Tour(
-            name="tests.options-markup",
-            steps=[STEP],
-            driver_options={"popoverClass": value},
-        )
+        tour = Tour(name="tests.options-markup", steps=[STEP], popover_class=value)
 
-        assert payload_of(tour)["options"] == {"popoverClass": value}
-
-    @pytest.mark.parametrize("options", [None, ["animate"], "animate", 1])
-    def test_options_that_are_not_a_mapping_are_an_error(self, options):
-        """Anything but a mapping is refused when the tour is declared."""
-        with pytest.raises(ImproperlyConfigured):
-            Tour(name="tests.options-bad", steps=[STEP], driver_options=options)
-
-    def test_an_option_name_that_is_not_a_string_is_an_error(self):
-        """Every option is named by a string."""
-        with pytest.raises(ImproperlyConfigured):
-            Tour(name="tests.options-bad", steps=[STEP], driver_options={1: True})
-
-    def test_a_value_that_cannot_reach_the_page_is_an_error(self):
-        """A value with no JSON form is refused when the tour is declared."""
-        with pytest.raises(ImproperlyConfigured):
-            Tour(
-                name="tests.options-bad",
-                steps=[STEP],
-                driver_options={"onNextClick": print},
-            )
+        assert payload_of(tour)["options"]["popoverClass"] == value
 
 
 class TestTourAsDriverSteps:
@@ -293,7 +296,7 @@ class TestTourRendering:
         assert rendered == views.CLASS_TOUR.__html__()
         assert isinstance(rendered, SafeString)
 
-    def test_the_payload_carries_exactly_its_id_version_autoplay_steps_and_controls(
+    def test_the_payload_carries_exactly_its_id_version_autoplay_steps_parts_and_options(
         self,
     ):
         """Nothing else reaches the browser."""
@@ -304,7 +307,6 @@ class TestTourRendering:
             "version",
             "autoplay",
             "steps",
-            "controls",
             "parts",
             "options",
         }
@@ -337,15 +339,13 @@ class TestTourRendering:
         assert payload_of(rendered)["steps"][0]["title"] == escape(MARKUP_TITLE)
         assert MARKUP_TITLE not in rendered
 
-    def test_a_translated_step_and_the_controls_are_in_the_active_language(self):
+    def test_a_translated_step_is_in_the_active_language(self):
         """The tour is converted when it renders, in the language active then."""
         with translation.override("de"):
             payload = payload_of(views.TRANSLATED_TOUR)
             expected = str(gettext("Yes"))
 
         assert payload["steps"][0]["title"] == expected != "Yes"
-        assert payload["controls"]["previous"] == "Zurück"
-        assert payload["controls"]["done"] == "Fertig"
 
     def test_the_payload_carries_every_part_with_its_name(self):
         """Each part is a key, and its documented name is the first class."""
@@ -472,13 +472,14 @@ class TestTourOverrides:
 
         assert steps == views.REWORDED_TOUR.as_driver_steps()
 
-    def test_a_replacement_carries_its_own_options(self, settings):
+    def test_a_replacement_renders_its_own_options(self, settings):
         """The options are the replacement's, not the replaced tour's."""
         settings.PAGE_TOURS_OVERRIDES = {OVERRIDDEN: "tests.views.OPTIONS_TOUR"}
 
         options = payload_of(views.APP_TOUR)["options"]
 
-        assert options == views.OPTIONS_TOUR.driver_options
+        assert options["showProgress"] is True
+        assert options["progressText"] == "{{current}} / {{total}}"
 
     def test_a_replacement_keeps_the_name_of_the_tour_it_replaces(self, settings):
         """Replacing a tour does not rename it, so what was seen stays seen."""

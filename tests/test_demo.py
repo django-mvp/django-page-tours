@@ -72,14 +72,14 @@ class TestTourPage:
 
 
 class TestDriverOptionsPage:
-    """The demo page whose tour passes Driver.js options of its own."""
+    """The demo page whose tour sets Driver.js options as fields."""
 
     def page(self, client, name="driver-options"):
         """Return the rendered page."""
         return client.get(reverse(name)).content.decode()
 
     def test_its_tour_turns_on_the_step_count(self, client):
-        """The tour carries Driver.js's step count option, turned on."""
+        """The tour sets its ``show_progress`` field, which arrives as Driver.js's."""
         match = re.search(
             r'<script id="page-tour-steps" type="application/json">(.*?)</script>',
             self.page(client),

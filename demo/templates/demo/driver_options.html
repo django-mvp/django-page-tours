@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-  <h1>A tour with Driver.js options of its own</h1>
-  <p id="demo-driver-options">This page's tour passes <code>showProgress</code> and <code>progressText</code> to Driver.js in <code>driver_options</code>, so each step shows how far through the tour it is.</p>
+  <h1>A tour with Driver.js options set</h1>
+  <p id="demo-driver-options">This page's tour sets <code>show_progress</code>, <code>progress_text</code> and <code>next_btn_text</code> on the <code>Tour</code>, so each step shows how far through the tour it is and the next button reads "Onwards".</p>
   {{ tour }}
 {% endblock content %}

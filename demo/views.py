@@ -165,7 +165,7 @@ def function_view(request):
 
 
 class DriverOptionsView(TemplateView):
-    """A page whose tour passes Driver.js options the package does not set."""
+    """A page whose tour sets some of Driver.js's options on the Tour."""
 
     template_name = "demo/driver_options.html"
     extra_context = {
@@ -174,17 +174,16 @@ class DriverOptionsView(TemplateView):
             steps=[
                 TourStep(
                     title="Options of its own",
-                    text="This tour turns on Driver.js's step count, shown below.",
+                    text="This tour shows how far through it you are, below.",
                 ),
                 TourStep(
                     title="Where they are set",
-                    text="The tour passes them in driver_options, by Driver.js's names.",
+                    text="Each is a field of the Tour, named like Driver.js's option.",
                     element="#demo-driver-options",
                 ),
             ],
-            driver_options={
-                "showProgress": True,
-                "progressText": "Step {{current}} of {{total}}",
-            },
+            show_progress=True,
+            progress_text="Step {{current}} of {{total}}",
+            next_btn_text="Onwards",
         )
     }

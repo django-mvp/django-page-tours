@@ -7,7 +7,7 @@ from django.urls import reverse
 from playwright.sync_api import expect
 
 from tests import views
-from tests.views import CLASS_TOUR, MARKUP_TITLE, OWN_SETTINGS_TOUR
+from tests.views import CLASS_TOUR, MARKUP_TITLE
 
 TITLE = ".driver-popover-title"
 NEXT = ".driver-popover-next-btn"
@@ -55,7 +55,7 @@ class TestTourPlays:
 
 
 class TestDriverOptions:
-    """Options a tour declares reach Driver.js, under the package's own settings."""
+    """Options a tour declares reach Driver.js."""
 
     def test_an_option_the_package_does_not_set_reaches_driverjs(
         self, page, live_server
@@ -66,14 +66,6 @@ class TestDriverOptions:
         expect(page.locator(".driver-popover-progress-text")).to_have_text(
             f"1 / {len(CLASS_TOUR.steps)}"
         )
-
-    def test_the_package_keeps_the_settings_it_sets_itself(self, page, live_server):
-        """Options cannot replace the steps, step skipping or control labels."""
-        page.goto(live_server.url + reverse("own-settings"))
-
-        expect(page.locator(TITLE)).to_have_text(OWN_SETTINGS_TOUR.steps[1].title)
-        expect(page.locator(NEXT)).not_to_have_text("Mine")
-        expect(page.locator(CLOSE)).not_to_have_attribute("aria-label", "Mine")
 
 
 class TestTourNavigation:
@@ -119,12 +111,13 @@ class TestTourNavigation:
 class TestTourControlsLanguage:
     """The tour's own controls are in the language the page is served in."""
 
-    def test_the_buttons_show_the_translated_labels_as_text(self, page, live_server):
-        """Next, previous and done carry the page's language, markup shown as text."""
+    def test_the_buttons_show_the_translated_labels(self, page, live_server):
+        """Next, previous and done carry the page's language, markup written as HTML."""
         page.goto(live_server.url + reverse("german-navigation-tour"))
         expect(page.locator(TITLE)).to_have_text("Step 1")
 
-        assert page.locator(NEXT).text_content() == "Weiter <i>»</i>"
+        assert page.locator(NEXT).text_content() == "Weiter »"
+        expect(page.locator(NEXT).locator("i")).to_have_count(1)
         page.click(NEXT)
         assert page.locator(PREVIOUS).text_content() == "Zurück"
         page.click(NEXT)
@@ -1126,7 +1119,7 @@ class TestPartNames:
         label = page.evaluate(
             """() => JSON.parse(
                 document.getElementById("page-tour-steps").textContent
-            ).controls.close"""
+            ).options.closeBtnLabel"""
         )
         expect(page.locator(CLOSE)).to_have_attribute("aria-label", label)
 
