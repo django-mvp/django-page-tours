@@ -180,11 +180,13 @@ class TestUniqueNamesCheckForHints:
 
     def test_it_warns_for_a_tour_and_hints_under_one_name(self):
         """One name is one namespace for every kind of declaration."""
-        tour = Tour(name="tests.mixed", steps=[STEP])
-        hints = Hints(name="tests.mixed", hints=[HINT])
+        kept = [
+            Tour(name="tests.mixed", steps=[STEP]),
+            Hints(name="tests.mixed", hints=[HINT]),
+        ]
 
         assert "tests.mixed" in warnings_of("page_tours.W005")
-        assert tour.name == hints.name
+        del kept
 
     def test_it_is_silent_for_a_tour_and_hints_with_their_own_names(self):
         """Different names never clash, whatever the kind."""

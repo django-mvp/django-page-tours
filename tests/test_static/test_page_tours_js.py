@@ -772,7 +772,7 @@ class TestTourVersion:
         expect(page.locator(TITLE)).to_have_text("Step 1")
 
     def test_the_browser_remembers_the_version_it_played(self, page, live_server):
-        """The one entry for the tour holds the version that played and the tour's id."""
+        """The tour's one entry holds the version that played and the tour's id."""
         self.see(page, live_server.url + reverse("versioned-two"))
 
         stored = page.evaluate("({...localStorage})")

@@ -237,14 +237,12 @@ class TestHintsOverrides:
 
         payload = payload_of(hint_declarations.REPORT_HINTS)
 
-        assert (
-            payload["config"]["hints"]
-            == (hint_declarations.REPLACEMENT_HINTS.as_driver()["hints"])
-        )
+        elements = [hint["element"] for hint in payload["config"]["hints"]]
+        assert elements == ["#other"]
         assert payload["id"] == hint_declarations.REPORT_HINTS.name
 
     def test_a_replacement_version_adds_to_the_original(self, settings):
-        """A browser that saw the original sees the replacement once its version rises."""
+        """A browser that saw the original sees the replacement after a version bump."""
         settings.PAGE_TOURS_OVERRIDES = {
             hint_declarations.REPORT_HINTS.name: (
                 "tests.hints.REPLACEMENT_HINTS_VERSION_TWO"

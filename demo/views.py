@@ -209,7 +209,9 @@ REPORT_HINTS = Hints(
         Hint(
             element="#report-figures",
             title="The figures",
-            description="Each row is one month. <strong>Bold</strong> rows beat their target.",
+            description=(
+                "Each row is one month. <strong>Bold</strong> rows beat their target."
+            ),
             buttonText="Understood",
         ),
         Hint(
