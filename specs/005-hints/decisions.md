@@ -92,11 +92,19 @@ is a gap for the roadmap to close, not a reason to hold the feature.
 
 **ADR:** none — traceability note
 
-## D11 — "Guide" is a class name the build may need, and CONTEXT.md avoids it
+## D11 — The common base of what a page renders is not called "Guide"
 
-CONTEXT.md lists "guide" as a word to avoid for a tour. The prototype names the common base of a
-tour, hints and a checklist `Guide`, a different thing from a tour. The specification does not use
-the word. Research decides whether CONTEXT.md gains an entry for it and drops it from the tour's
-avoid list, or the base takes another name.
+CONTEXT.md lists "guide" as a word to avoid for a tour, and the prototype names the base that a
+tour, hints and a checklist share `Guide`. The base takes another name. Research picks one from
+CONTEXT.md's vocabulary, or adds a term to CONTEXT.md for the thing a page renders, and the
+specification's text stays as it is because it never uses the word.
+
+**ADR:** none — passed to research
+
+## D12 — Whether Driver.js hides the beacons during a tour is settled from its code
+
+FR-015 asks that no beacon shows over a playing tour. Research verifies against the vendored
+Driver.js 1.11.0 hints build whether it hides the beacons itself or only closes an open hint. If it
+only closes the hint, the package meets FR-015 itself.
 
 **ADR:** none — passed to research
