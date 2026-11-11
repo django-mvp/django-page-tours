@@ -173,7 +173,7 @@ class TestDemoTourPages:
         page = client.get(reverse(name)).content.decode()
 
         assert "page_tours/page-tours.css" in page
-        assert "page_tours/vendor/driver.js-1.10.2/driver.js.iife.js" in page
+        assert "page_tours/vendor/driver.js-1.11.0/driver.js.iife.js" in page
         assert "page_tours/page-tours.js" in page
 
     def test_the_overview_carries_no_tour(self, client):

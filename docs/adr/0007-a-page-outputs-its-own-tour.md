@@ -17,7 +17,7 @@ A page's template outputs the page's tour with `{{ tour }}`, and nothing finds t
   `get_context_data` on a class-based view, the context passed to `render` in a function-based
   view.
 - The host project includes the package's three static files itself, wherever it chooses:
-  `page_tours/page-tours.css`, `page_tours/vendor/driver.js-1.10.2/driver.js.iife.js` and
+  `page_tours/page-tours.css`, `page_tours/vendor/driver.js-1.11.0/driver.js.iife.js` and
   `page_tours/page-tours.js`. The script waits until the document is parsed, so the steps element
   can sit anywhere in the page and the scripts can be loaded with or without `defer`.
 - The script finds the package's stylesheet by its path, `page_tours/page-tours.`, and moves it to
