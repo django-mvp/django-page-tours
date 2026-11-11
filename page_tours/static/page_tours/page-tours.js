@@ -75,8 +75,11 @@
     };
   }
 
-  // Plays the tour a payload describes.
-  function playTour(payload, driver) {
+  // Builds the tour a payload describes. `instance()` is the Driver.js instance,
+  // made on its first call, whose `drive` is the package's start; `start()` does
+  // nothing for a tour with nothing to show and otherwise drives that instance,
+  // after ending a run that is still going.
+  function buildTour(payload, driver) {
     var seen = memory("seen", payload);
     var nameParts = popoverParts(payload.parts);
     var steps = payload.config.steps.map(function (step) {
@@ -212,25 +215,13 @@
       restoreFocus();
     }
 
-    function start() {
+    // The package's start, which the instance's `drive` runs whoever calls it.
+    function run(driveOwn, args) {
       if (!showable()) {
         return;
       }
       try {
-        if (tour && tour.isActive()) {
-          tour.destroy();
-        }
         returnFocusTo = document.activeElement;
-        // The tour's own options go first, so the settings the package
-        // depends on below replace any of the same name.
-        tour = driver(Object.assign({}, payload.config, {
-          steps: steps,
-          skipMissingElement: true,
-          onPopoverRender: guarded(nameParts),
-          onDestroyed: function () {
-            queueMicrotask(finished);
-          },
-        }));
         window.addEventListener("error", endTour);
         stopWatchingOverlay();
         // A tour closed while a step is still opening never reaches onDestroyed,
@@ -242,12 +233,51 @@
           })
         );
         overlayWatcher.observe(document.body, { childList: true });
-        tour.drive();
+        driveOwn.apply(tour, args);
         seen.set([payload.id]);
       } catch (error) {
         endTour();
       }
     }
+
+    function instance() {
+      if (!tour) {
+        // The tour's own options go first, so the settings the package
+        // depends on below replace any of the same name.
+        tour = driver(Object.assign({}, payload.config, {
+          steps: steps,
+          skipMissingElement: true,
+          onPopoverRender: guarded(nameParts),
+          onDestroyed: function () {
+            queueMicrotask(finished);
+          },
+        }));
+        var driveOwn = tour.drive;
+        tour.drive = function () {
+          run(driveOwn, arguments);
+        };
+      }
+      return tour;
+    }
+
+    function start() {
+      if (!showable()) {
+        return;
+      }
+      var tour = instance();
+      if (tour.isActive()) {
+        tour.destroy();
+      }
+      tour.drive();
+    }
+
+    return { start: start, instance: instance };
+  }
+
+  // Plays the tour a payload describes.
+  function playTour(payload, driver) {
+    var seen = memory("seen", payload);
+    var start = buildTour(payload, driver).start;
 
     // A replay control is the developer's own element. One written with `hidden`,
     // as in a shared template, shows only where this point is reached: on a page
