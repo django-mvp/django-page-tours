@@ -34,9 +34,12 @@ see it ticked; render the page with JavaScript off and see the page without a ch
   unchanged; the defaults; an `Offset`), 9 (the default `title` and `progressText` in German from
   a catalogue entry in `tests/locale/de`), 11 (the checklist replaced and turned off under its
   name) and 12 (an item's tour replaced plays the replacement at the combined version; turned off
-  leaves its item out) (FR-001 to FR-005, FR-011, FR-013).
+  leaves its item out; a replaced checklist plays with its own `completed`, D17) (FR-001 to
+  FR-005, FR-011, FR-013).
 - [ ] T003 [US1] `"launcher"` and `"item"` in `TourParts.parts` and its docstring. Tests in
-  `tests/test_parts.py` (both parts' documented names and configured classes) (FR-012).
+  `tests/test_parts.py` (both parts' documented names and configured classes). The existing test
+  that pins the list of parts, `test_the_parts_are_the_nine_of_a_step_and_the_beacon_of_a_hint`,
+  is updated to the new list and renamed to match (FR-012).
 - [ ] T004 [US1] W002 and W005 messages and docstrings name the checklist, as plan.md
   "`page_tours/checks.py`". Tests in `tests/test_checks.py`: two checklists with different items
   under one name warn, two that differ only in `completed` do not, a name only a checklist carries
@@ -47,8 +50,9 @@ see it ticked; render the page with JavaScript off and see the page without a ch
 ### Group 2 — the checklist in the browser
 
 - [ ] T006 [US1] `buildTour(payload, driver)` cut out of `playTour`, and `playTour` on it, as
-  plan.md "`page_tours/static/page_tours/page-tours.js`". No behaviour changes: every existing
-  test in `tests/test_static/test_page_tours_js.py` passes unchanged, and none is edited.
+  plan.md "`page_tours/static/page_tours/page-tours.js`": the Driver.js instance is made on first
+  use, after the showable check. No behaviour changes: every existing test in
+  `tests/test_static/test_page_tours_js.py` passes unchanged, and none is edited.
 - [ ] T007 [US1] `playChecklist` (configuration with `id`, the reported `completed`, item tours
   through `buildTour`; `show()`; part classes), its place in `play()` between hints and the tour,
   `checklist.css` imported by `page-tours.css`, and `checklist.iife.js` after `hints.iife.js` in
@@ -72,8 +76,9 @@ see it ticked; render the page with JavaScript off and see the page without a ch
 - [ ] T009 [US1] Demo, as plan.md "Demo project": `WELCOME_TOUR`, `demo/checklists.py` with
   `ONBOARDING` and `onboarding`, the context processor setting, `base.html`, the borrow view,
   route and form, and the overview paragraph. Tests in `tests/test_demo.py`: every demo page
-  renders the checklist payload, and after a borrow the payload reports the borrow item done
-  (FR-017).
+  renders the checklist payload, and after a borrow posted with
+  `Client(enforce_csrf_checks=True)` and the page's token, the payload reports the borrow item
+  done (FR-017).
 - [ ] T010 [US1] Documentation, as plan.md "Documentation": `docs/developer/checklists.md` in the
   Guides toctree, installation, styling, reusable apps, `CONTEXT.md`, `CHANGELOG.md`, README. The
   docs build passes with `-W` (FR-017).
@@ -92,13 +97,15 @@ reload and see every tick kept; see the completed state.
 - [ ] T011 [US2] `onProgress` into `memory("ticked", …)`, storing the ticked ids less the
   reported ones, and the stored ticks shown after the reported ones, as plan.md and D12,
   test-first. Tests in `tests/test_static/test_page_tours_js.py`: US2 scenarios 1 (every item,
-  which are done, done of total), 2 (finishing an item's tour ticks it), 3 (closing it early does
+  which are done, done of total), 2 (finishing an item's tour ticks it; finishing the second item's tour before the first
+  ticks only the second), 3 (closing it early does
   not), 4 (a tour started from the checklist does not autoplay as the page's own tour
   afterwards), 5 (a followed link is ticked), 6 (tick and untick follow), 7 (ticks kept on reload
   and on another page with the checklist), 8 (the app's report and the browser's ticks together),
   9 (a raised version forgets the browser's ticks and keeps the app's report) and 10 (the
   completed state), and the Edge Cases: an item's tour with nothing to show does not start and
-  stays unticked, an item the app stops reporting is unticked unless the browser ticked it, a
+  stays unticked, an item the app stops reporting is unticked unless the browser ticked it (also
+  when the visitor ticked it before the app reported it and ticked another item while it did), a
   stored tick for a removed item does not count, a tick is kept when its item is reworded or
   moved, and blocked storage still works for the page view with no page error (FR-007 to
   FR-009).

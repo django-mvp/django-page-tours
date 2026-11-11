@@ -79,8 +79,8 @@ roadmap's own revision.
 
 ## D9 — New terms for CONTEXT.md
 
-The feature adds three terms to the glossary: *checklist*, *checklist item* and *ticked*, as
-defined in the specification's Key Entities. They go into `CONTEXT.md` in the build.
+The feature adds four terms to the glossary: *checklist*, *checklist item* and *ticked*, as
+defined in the specification's Key Entities, and *toggle control* (D16). They go into `CONTEXT.md` in the build.
 
 **ADR:** none
 
@@ -104,8 +104,10 @@ off is left out of the items.
 
 ## D12 — The browser keeps its own ticks, never the app's
 
-The script stores the ticked ids less the ones the app reported for this request, and shows the
-app's report followed by the stored ticks. An item the app stops reporting is then unticked unless
+The script stores the ticked ids the app did not report for this request, plus the ids already
+stored that are still ticked, and shows the app's report followed by the stored ticks. Keeping
+what was already stored means a tick the visitor made before the app reported the item survives
+a later tick (design review SPEC-001). An item the app stops reporting is then unticked unless
 the visitor ticked it in the browser, as the Edge Cases say, and unticking an item the app reports
 lasts only until the next request, as clarification 2 says.
 
@@ -128,8 +130,10 @@ classes inside it, so classes added once stay. No event hook is needed, unlike t
 
 ## D15 — One function builds a tour in the browser, wherever it is started
 
-`buildTour(payload, driver)` is cut out of `playTour` and returns the Driver.js instance, whose
-`drive` is the package's start. The page's own tour and a checklist item's tour are built by it,
+`buildTour(payload, driver)` is cut out of `playTour` and returns `start()` and `instance()`.
+The Driver.js instance is made on first use, after the showable check, so a tour with nothing to
+show never asks Driver.js for anything (design review ARCH-001); its `drive` is the package's
+start. The page's own tour and a checklist item's tour are built by it,
 so a tour finds its elements, carries its part classes, cleans up and is recorded as seen the same
 way wherever it plays (SC-003). Driver.js's checklist drives the instance it is given.
 
@@ -142,3 +146,35 @@ and the script shows it and makes it open and close the checklist when a checkli
 works with or without a launcher.
 
 **ADR:** none — the existing control pattern
+
+## D17 — A replaced checklist plays with its own `completed`
+
+`PAGE_TOURS_OVERRIDES` swaps the whole declaration, so a replacement checklist plays with the
+`completed` it was declared with, and what the app reported for the original does not carry
+over. The specification is silent on it. A project that replaces an app's checklist and wants
+the app's report sets `completed` on its own replacement in its own context processor. Carrying
+the report across would be a change to the specification. Pinned by a test in T002.
+
+**ADR:** none — follows from ADR 0004's rule that a replacement takes the declaration's place
+
+## D18 — An item tour with nothing to show leaves the checklist closed
+
+Driver.js closes the panel before it drives an item's tour, and reopens it only when the tour
+ends. A tour with nothing to show does not start, so the panel stays closed and the item stays
+unticked, as the Edge Cases ask. Reopening it would be one call to the checklist's `open()`;
+it is not built, since the specification does not ask for it. Watch item for the build
+(design review ARCH-003).
+
+**ADR:** none — local to the checklist's script
+
+## D19 — The design review
+
+One review of the plan, three lenses. One verified high finding, applied as a plan edit: the
+tour's Driver.js instance is made on first use (ARCH-001, D15). Medium findings applied: the tick
+storage keeps earlier ticks (SPEC-001, D12), a replaced checklist's `completed` recorded and
+pinned (SPEC-002, D17), the demo's borrow form carries the CSRF token and its test enforces it
+(SEC-001). Low findings applied: `isSeen()` dropped (ARCH-002), "any order" tested (SPEC-003),
+and the closed panel recorded (ARCH-003, D18). US2 is built after US1, on its result, because both
+edit `playChecklist`.
+
+**ADR:** none — a record of the review

@@ -8,7 +8,7 @@ A developer declares a checklist as `Checklist(name=…, items=[ChecklistItem(�
 the page's template context, often for every page through a context processor, and outputs it
 with `{{ checklist }}`. It is a third kind of declaration on FS-005's `Declaration`, beside the
 tour and the hints. Driver.js 1.11.0's checklist build, already vendored, draws it. In the
-browser, the script that FS-005 wrote gains one function that builds a Driver.js tour from a
+browser, the script that FS-005 wrote gains one function that builds and starts a tour from a
 tour's payload, cut out of today's `playTour`. The page's own tour plays through it, and so does
 the tour of a checklist item, so both find their elements, carry their part classes and are
 remembered as seen in one way. The visitor's ticks are kept with the shared `memory()` function,
@@ -43,6 +43,13 @@ next to what the app reports for each request.
 - **Article XIII (a page never breaks)**: the checklist plays inside its own `try` in `play()`. A
   missing checklist script, blocked storage or a Driver.js error leaves the page as it would be
   without a checklist.
+
+## Complexity Tracking
+
+| New piece | Why it is needed | Simpler alternative rejected |
+|---|---|---|
+| `buildTour` | the page's tour and a checklist item's tour must behave and be remembered alike (SC-003) | a second copy of the tour code in `playChecklist`, which drifts |
+| `Declaration.playing()` | an item's tour is looked up in the overrides without rendering it (FR-013) | repeating the lookup in `Checklist` |
 
 ## Design
 
@@ -113,8 +120,8 @@ class Checklist(Declaration):
 - `Checklist.__post_init__` freezes `items` and `completed` to tuples, then calls
   `super().__post_init__()`. Nothing else is refused: an empty list of items renders an empty
   checklist, as hints declared with an empty list do (FS-005 T016).
-- `Checklist.as_driver()` calls `super().as_driver()`, then rebuilds `items`: for each item, the
-  item's own `as_driver()`; for an item with a tour, `item.tour.playing()`, the item left out when
+- `Checklist.as_driver()` calls `super().as_driver()` with `items` among the package fields, then
+  builds `items` once: for each item, the item's own `as_driver()`; for an item with a tour, `item.tour.playing()`, the item left out when
   it is `None`, and otherwise `tour` set to `played.payload(item.tour.name, version)`. An item's
   tour therefore reaches the browser in exactly the shape the page's own tour does, under its own
   name and version, with its overrides applied (FR-003, FR-009, FR-013, D10, D11).
@@ -126,6 +133,9 @@ class Checklist(Declaration):
   the request, as one built per request already is.
 - No `ImproperlyConfigured` for an option value, no check that an item has a tour or a link, no
   check that item ids are unique (Driver.js warns in the console). The design rule.
+- A checklist replaced through `PAGE_TOURS_OVERRIDES` plays with its own `completed`. What the
+  app reports for the original does not carry over (D17). Its docstring says, as the hints' does,
+  that the name is not shared with a tour or hints.
 
 `page_tours/__init__.py` exports `Checklist`, `ChecklistItem` and `Offset`.
 
@@ -146,21 +156,24 @@ W002 and W005 that name "a tour or hints" name the checklist too.
 
 **`buildTour(payload, driver)`** — cut out of today's `playTour`, with no change in behaviour. It
 holds the step mapping, `showable`, overlay naming and its watcher, `guarded`, the focus
-restore, `finished`, `endTour` and the seen record, and returns one Driver.js instance, made
-once, with the configuration `playTour` passes today (the tour's own options first, then
-`steps`, `skipMissingElement`, `onPopoverRender` and `onDestroyed`). Its `drive` is replaced by
-the package's start, so whoever starts the tour starts it the same way:
+restore, `finished`, `endTour` and the seen record, and returns an object with two functions:
 
-- nothing showable: nothing happens;
-- otherwise focus is noted, the error listener and the overlay watcher are set, Driver.js's own
-  `drive` runs, and `memory("seen", payload).set([payload.id])` records it;
-- a Driver.js error ends the tour and cleans up, as `endTour` does today.
+- `instance()` creates the Driver.js instance on its first call, with the configuration
+  `playTour` passes today (the tour's own options first, then `steps`, `skipMissingElement`,
+  `onPopoverRender` and `onDestroyed`), replaces its `drive` with the package's start, and
+  returns the same instance on every later call;
+- `start()` checks `showable()` first and does nothing when no step could show, so Driver.js is
+  never asked for such a tour (`test_a_tour_with_nothing_showable_never_starts_driver`); otherwise
+  it drives `instance()`.
 
-The instance also carries `isSeen()`, `memory("seen", payload).get().length > 0`.
+The package's start, which `instance().drive` runs whoever calls it: nothing showable, nothing
+happens; otherwise focus is noted, the error listener and the overlay watcher are set, Driver.js's
+own `drive` runs, and `memory("seen", payload).set([payload.id])` records it; a Driver.js error
+ends the tour and cleans up, as `endTour` does today.
 
 **`playTour(payload, driver)`** keeps only what belongs to a page's own tour: `buildTour`, the
-replay controls (destroy the instance when it is active, then `drive()`), shown as today, and
-autoplay when the tour is not seen. Every existing tour test passes unchanged; that suite is what
+replay controls (destroy the tour when it is active, then `start()`), shown as today, and autoplay
+with its present test, `payload.autoplay && seen.get().length === 0`, calling `start()`. Every existing tour test passes unchanged; that suite is what
 proves the cut changed nothing.
 
 **`playChecklist(payload, checklistDriver, tourDriver)`**, when `window.driverChecklist` is there:
@@ -168,9 +181,11 @@ proves the cut changed nothing.
 - `ticked = memory("ticked", payload)`. `reported = payload.config.completed`.
 - Driver.js's configuration is `payload.config` with `id: payload.id`, `completed` set to the
   reported ids followed by every stored id not among them, `items` with each tour item's `tour`
-  replaced by `buildTour(item.tour, tourDriver)`, and `onProgress` storing
-  `progress.completed` less the reported ids. The app's report is not stored, so an item it stops
-  reporting is ticked only where the browser holds a tick of its own (FR-008, D12).
+  replaced by `buildTour(item.tour, tourDriver).instance()`, and `onProgress` storing the ticked
+  ids the app did not report, plus the ids already stored that are still ticked. The app's report
+  alone is never stored, so an item it stops reporting is ticked only where the browser holds a
+  tick of its own, and a tick the visitor made before the app reported the item survives (FR-008,
+  D12). An item tour that has nothing to show does not start; the panel stays closed (D18).
 - `instance.show()`, then the part classes, once, on the widget the build made: `box` on
   `.driver-checklist-panel`, `title` on `.driver-checklist-title`, `text` on
   `.driver-checklist-description`, `progress` on `.driver-checklist-progress`, `close` on
@@ -208,7 +223,9 @@ As the prototype's:
   room under `main` so the corner widget covers no content.
 - `demo/library`: a `borrow` view (`require_POST`, sets `request.session["borrowed"]`, redirects
   to the book page), its route `library-borrow`, and the book page's borrow button in a form that
-  posts to it, with a line saying the checklist ticked it.
+  posts to it with `{% csrf_token %}`, with a line saying the checklist ticked it. The demo runs
+  Django's CSRF middleware, so its test posts with `Client(enforce_csrf_checks=True)` and the
+  token from the rendered page.
 - The overview page: one paragraph on the checklist.
 
 ### Documentation

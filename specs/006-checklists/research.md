@@ -102,6 +102,10 @@ Each entry of `planning-notes.md`, under its own words.
 
 ## What the checklist build does, read from the vendored file
 
+The build is one minified line; the functions named are its own: `i` (the factory), `L` (show),
+`C` (the widget), `v` and `x` (updates), `p` (progress), `T`, `E` and `D` (tick, untick), `g`
+(the manual tick), `A` and `k` (an item's tour and how it ended), `j` (starting an item).
+
 - `driverChecklist.checklist(config)` returns an instance with `show`, `hide`, `open`, `close`,
   `toggle`, `complete`, `uncomplete`, `reset`, `refresh` and `getProgress`.
 - It reads the global `driver.js` when its own script runs, so `checklist.iife.js` loads after
