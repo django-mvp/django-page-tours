@@ -40,40 +40,53 @@ INSTALLED_APPS = [
 ]
 ```
 
-Place the tag once in the `<head>` of your base template:
+Include the package's stylesheet and scripts once, in the `<head>` of your base template:
 
 ```django
-{% load page_tours %}
+{% load static %}
 <head>
   ...
-  {% page_tour %}
+  <link rel="stylesheet" href="{% static 'page_tours/page-tours.css' %}">
+  <script src="{% static 'page_tours/vendor/driver.js-1.10.2/driver.js.iife.js' %}" defer></script>
+  <script src="{% static 'page_tours/page-tours.js' %}" defer></script>
 </head>
 ```
 
-The tag draws nothing where it stands. It adds the tour's stylesheet, steps and scripts to the
-page, and the tour then shows over the page.
+On a page with no tour they do nothing.
 
 [Installation](developer/installation.md) in the developer guide says what each step sets up.
 
 ## Example
 
-Declare a tour on a class-based view:
+Declare a tour and put it in a view's context:
 
 ```python
 from django.views.generic import TemplateView
 
 from page_tours import Tour, TourStep
 
+DASHBOARD_TOUR = Tour(
+    name="dashboard",
+    steps=[
+        TourStep(title="Welcome", text="A quick look around."),
+        TourStep(title="Projects", text="Your work is here.", element="#projects"),
+    ],
+)
+
 
 class DashboardView(TemplateView):
     template_name = "dashboard.html"
-    tour = Tour(
-        name="dashboard",
-        steps=[
-            TourStep(title="Welcome", text="A quick look around."),
-            TourStep(title="Projects", text="Your work is here.", element="#projects"),
-        ],
-    )
+    extra_context = {"tour": DASHBOARD_TOUR}
+```
+
+Output it in the page's template, `dashboard.html`:
+
+```django
+{% extends "base.html" %}
+{% block content %}
+  <ul id="projects">...</ul>
+  {{ tour }}
+{% endblock content %}
 ```
 
 The page plays the tour when it opens, and the browser remembers it by its name, `dashboard`.

@@ -56,42 +56,56 @@ pip install django-page-tours
 
 Add `page_tours` to `INSTALLED_APPS`.
 
-Place `{% page_tour %}` once in the `<head>` of your base template:
+Include the package's stylesheet and scripts once, in the `<head>` of your base template:
 
 ```django
-{% load page_tours %}
+{% load static %}
 <head>
   ...
-  {% page_tour %}
+  <link rel="stylesheet" href="{% static 'page_tours/page-tours.css' %}">
+  <script src="{% static 'page_tours/vendor/driver.js-1.10.2/driver.js.iife.js' %}" defer></script>
+  <script src="{% static 'page_tours/page-tours.js' %}" defer></script>
 </head>
 ```
 
-The tag draws nothing where it stands. It adds the tour's stylesheet, its steps and its scripts
-to the page, the way `{{ form.media }}` adds a form's assets, and the tour then shows over the
-page. Placed once in the base template, it serves every page that extends it. A page with no tour
-gets nothing from it.
+On a page with no tour they do nothing.
 
-Declare a tour on a view:
+Declare a tour and put it in a view's context, like any other value:
 
 ```python
 from django.views.generic import TemplateView
 
 from page_tours import Tour, TourStep
 
+DASHBOARD_TOUR = Tour(
+    name="dashboard",
+    steps=[
+        TourStep(title="Welcome", text="A quick look around."),
+        TourStep(title="Projects", text="Your work is here.", element="#projects"),
+    ],
+)
+
 
 class DashboardView(TemplateView):
     template_name = "dashboard.html"
-    tour = Tour(
-        name="dashboard",
-        steps=[
-            TourStep(title="Welcome", text="A quick look around."),
-            TourStep(title="Projects", text="Your work is here.", element="#projects"),
-        ],
-    )
+    extra_context = {"tour": DASHBOARD_TOUR}
 ```
 
+Output it in the page's template, `dashboard.html`:
+
+```django
+{% extends "base.html" %}
+{% block content %}
+  <ul id="projects">...</ul>
+  {{ tour }}
+{% endblock content %}
+```
+
+`{{ tour }}` outputs the tour's steps, the way `{{ form.media }}` outputs a form's assets, and
+the package's script plays them over the page.
+
 The tour plays the first time a browser opens the page, and not again in that browser, which
-remembers it by its name. A function-based view passes its tour in the template context instead:
+remembers it by its name. A function-based view passes the tour in the context it renders with:
 `render(request, "dashboard.html", {"tour": DASHBOARD_TOUR})`.
 
 To let visitors play it again, place a button of your own marked `data-page-tour-replay` on the

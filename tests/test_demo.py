@@ -10,7 +10,7 @@ from django.urls import reverse
 from playwright.sync_api import expect
 
 from demo import settings as demo_settings
-from demo.library.views import BookDetailView, BookListView
+from demo.library.views import BOOK_LIST_TOUR, BOOK_TOUR
 from demo.tours import book_tour
 from page_tours.parts import TourParts
 
@@ -140,18 +140,20 @@ class TestDemoTourPages:
 
         assert "data-page-tour-replay hidden" in self.bar(page)
 
-    @pytest.mark.parametrize("name", PAGES)
-    def test_a_tour_page_carries_the_script_that_shows_the_control(self, client, name):
-        """A page with a tour loads the script that takes ``hidden`` off the control."""
+    @pytest.mark.parametrize("name", [*PAGES, "overview"])
+    def test_the_base_template_loads_the_packages_files(self, client, name):
+        """The project includes the stylesheet and both scripts on every page."""
         page = client.get(reverse(name)).content.decode()
 
-        assert "page-tours.js" in page
+        assert "page_tours/page-tours.css" in page
+        assert "page_tours/vendor/driver.js-1.10.2/driver.js.iife.js" in page
+        assert "page_tours/page-tours.js" in page
 
-    def test_the_overview_does_not_carry_the_script(self, client):
-        """A page with no tour never loads the script, so its control stays hidden."""
+    def test_the_overview_carries_no_tour(self, client):
+        """With no tour on the page, the script leaves its control hidden."""
         page = client.get(reverse("overview")).content.decode()
 
-        assert "page-tours.js" not in page
+        assert 'id="page-tour-steps"' not in page
 
     def test_the_on_request_page_places_a_second_control_in_its_body(self, client):
         """The page carries two controls: the bar's and its own."""
@@ -192,18 +194,18 @@ class TestLibraryPages:
         """Its payload is the app's own tour."""
         page = client.get(reverse("library-books")).content.decode()
 
-        assert self.payload(page)["steps"] == BookListView.tour.as_driver_steps()
+        assert self.payload(page)["steps"] == BOOK_LIST_TOUR.as_driver_steps()
 
     def test_the_book_page_plays_the_projects_replacement(self, client):
         """Its payload carries the replacement's steps under the app tour's name."""
         payload = self.payload(client.get(reverse("library-book")).content.decode())
 
         assert payload["steps"] == book_tour.as_driver_steps()
-        assert payload["id"] == BookDetailView.tour.name
+        assert payload["id"] == BOOK_TOUR.name
 
     def test_the_replacement_differs_from_the_apps_tour(self):
         """The project reworded a step, so the two tours are not the same."""
-        assert book_tour.as_driver_steps() != BookDetailView.tour.as_driver_steps()
+        assert book_tour.as_driver_steps() != BOOK_TOUR.as_driver_steps()
 
     def test_the_loans_page_has_no_tour_payload(self, client):
         """The project turned its tour off."""
@@ -212,11 +214,11 @@ class TestLibraryPages:
         assert 'id="page-tour-steps"' not in page
 
     def test_the_loans_page_does_not_show_the_replay_control(self, client):
-        """With no tour the script is not loaded, so the bar's control stays hidden."""
+        """With no tour the script leaves the bar's control hidden."""
         page = client.get(reverse("library-loans")).content.decode()
 
         assert "data-page-tour-replay hidden" in self.bar(page)
-        assert "page-tours.js" not in page
+        assert 'id="page-tour-steps"' not in page
 
     @pytest.mark.parametrize("name", ["library-books", "library-book"])
     def test_every_step_with_an_element_points_at_the_page(self, client, name):

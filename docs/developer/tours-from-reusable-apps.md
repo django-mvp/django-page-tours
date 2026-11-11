@@ -8,14 +8,17 @@ those tours, and can replace any of them or turn it off, without editing the app
 If you write an app that other projects install, declare its tours on the app's views exactly as
 a project does. See [Adding a tour to a page](tours.md).
 
-1. Declare `tour` on a class-based view, or pass it in a function-based view's template context
-   under `tour`.
+1. Put the tour in the view's template context under `tour`: `extra_context` on a class-based
+   view, or the context a function-based view passes to `render`. Declare the tour at module
+   level, under a name of its own, so a project can build on its steps.
 2. Name each tour `"<app_label>.<tour>"`, starting with your app's label, such as
    `"library.book"`. Projects and other apps name their own tours, and the label keeps yours
    apart from theirs. The package cannot tell an app's tour from a project's, so nothing checks
    this rule, but `page_tours.W005` warns when two tours with different steps meet under one name.
-3. Have the app's templates extend the project's base template. That is where a project
-   places `{% page_tour %}` once, so the app's tours play with no setup of their own.
+3. Output the tour with `{{ tour }}` in each of the app's page templates, and have them extend
+   the project's base template. The project includes the package's stylesheet and scripts
+   there (see [Installation](installation.md)), so the app's tours play with no setup of their
+   own.
 4. Treat a tour's name as part of what the app promises. Renaming a tour makes it a different
    tour: every visitor sees it again, and any override a project set for the old name stops
    matching. Renaming or moving the view that shows it changes nothing. Raising the tour's
@@ -27,9 +30,12 @@ a project does. See [Adding a tour to a page](tours.md).
 A project changes a tour by its name, the `name` the app gave it:
 
 ```python
+BOOK_TOUR = Tour(name="library.book", steps=[...])
+
+
 class BookDetailView(TemplateView):
     template_name = "library/book_detail.html"
-    tour = Tour(name="library.book", steps=[...])
+    extra_context = {"tour": BOOK_TOUR}
 ```
 
 This tour's name is `library.book`. The app's documentation should list its names. Otherwise
@@ -65,13 +71,13 @@ the first step and rewords the second:
 
 ```python
 # demo/tours.py
-from demo.library.views import BookDetailView
+from demo.library.views import BOOK_TOUR
 from page_tours import Tour, TourStep
 
 book_tour = Tour(
     name="demo.book",
     steps=(
-        *BookDetailView.tour.steps[:1],
+        *BOOK_TOUR.steps[:1],
         TourStep(
             title="Borrow it here",
             text="This library lends each book for a week. Press the button.",
@@ -81,7 +87,8 @@ book_tour = Tour(
 )
 ```
 
-The page keeps the app's template and view. Only the tour it plays changes.
+The page keeps the app's template and view. Only the tour it plays changes: `{{ tour }}`
+renders the replacement in its place.
 
 ## Turn a tour off
 
@@ -93,7 +100,8 @@ PAGE_TOURS_OVERRIDES = {
 }
 ```
 
-The page then has no tour, and a replay control placed in the base template does not show on it.
+`{{ tour }}` then renders nothing, so the page has no tour, and a replay control placed in the
+base template does not show on it.
 
 ## Check that the setting is right
 

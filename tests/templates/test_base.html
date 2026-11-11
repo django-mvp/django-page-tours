@@ -1,9 +1,11 @@
-{% load page_tours %}<!doctype html>
+{% load static %}<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8">
     <title>Test page</title>
-    {% page_tour %}
+    <link rel="stylesheet" href="{% static 'page_tours/page-tours.css' %}">
+    <script src="{% static 'page_tours/vendor/driver.js-1.10.2/driver.js.iife.js' %}" defer></script>
+    <script src="{% static 'page_tours/page-tours.js' %}" defer></script>
   </head>
   <body>
     {% block content %}{% endblock content %}

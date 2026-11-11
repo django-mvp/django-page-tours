@@ -93,9 +93,9 @@ files are unchanged throughout.
 - The project's replacement is not a valid tour (no steps, a step with no title). It is refused
   with the same error a developer gets for that mistake on their own view, when the project
   starts, never on a visitor's page.
-- The app's page does not render the project's base template, or a template with the tour tag in
-  it. Then no tour of the app plays in the project, with or without a change. That is the existing
-  setup requirement, not something this feature changes.
+- The app's page does not render the project's base template, or another template that includes
+  the package's files. Then no tour of the app plays in the project, with or without a change.
+  That is the existing setup requirement, not something this feature changes.
 
 ## Requirements *(mandatory)*
 
@@ -174,11 +174,13 @@ files are unchanged throughout.
 
 ## Assumptions
 
-- A page has at most one tour, and a tour belongs to the view that declares it (ADR 0001).
+- A page has at most one tour, and a tour belongs to the view that puts it in the page's context
+  (ADR 0007).
 - A tour is named by its developer where it is declared (ADR 0006). This feature uses that name
   for a project's change and adds no other.
-- The project has placed the tour tag in the template the app's pages render through. The app's
-  tours depend on the same setup as the project's own.
+- The project includes the package's files in the template the app's pages render through, and
+  each of the app's page templates outputs its tour with `{{ tour }}`. The app's tours depend on
+  the same setup as the project's own.
 - Showing a changed tour again to people who saw the old one is issue #21 and out of scope.
   Whatever a tour declared on the developer's own view can carry for that, a replacement can
   carry too.

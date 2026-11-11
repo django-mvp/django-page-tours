@@ -4,23 +4,14 @@ A tour is a short list of steps that Driver.js shows over one page, each step po
 of the page with a title and a sentence. You declare the tour in Python, next to the view that
 renders the page. The page plays it by itself the first time a browser opens it.
 
-## Set up the tour tag once
+## Before you start
 
-Load the tag library and place the tag in the `<head>` of your base template. You do this once
-for the whole project:
+Include the package's stylesheet and scripts in your base template, once for the whole project.
+[Installation](installation.md#include-the-packages-files-in-your-base-template) shows the three
+lines.
 
-```django
-{% load page_tours %}
-<head>
-  ...
-  {% page_tour %}
-</head>
-```
-
-The tag draws nothing where it stands, so its place in the `<head>` does not decide where the
-tour shows. A page with no tour gets nothing from the tag: no script, no stylesheet, no reference to
-Driver.js. A page with a tour gets the Driver.js stylesheet and script from your own static
-files, and the page's steps.
+A page with a tour then needs two things: the view puts the tour in the template context under
+`tour`, and the page's template outputs it with `{{ tour }}`.
 
 ## Name the tour
 
@@ -51,46 +42,53 @@ declared.
 
 ## Add a tour to a class-based view
 
-Set `tour` on a view built on Django's generic views, which put `view` in the template context:
+Put the tour in the view's context under `tour`. `extra_context` is the shortest way:
 
 ```python
 from django.views.generic import TemplateView
 
 from page_tours import Tour, TourStep
 
+DASHBOARD_TOUR = Tour(
+    name="dashboard",
+    steps=[
+        TourStep(title="Welcome", text="A quick look around."),
+        TourStep(
+            title="Your projects",
+            text="Everything you work on is listed here.",
+            element="#projects",
+        ),
+    ],
+)
+
 
 class DashboardView(TemplateView):
     template_name = "dashboard.html"
-    tour = Tour(
-        name="dashboard",
-        steps=[
-            TourStep(title="Welcome", text="A quick look around."),
-            TourStep(
-                title="Your projects",
-                text="Everything you work on is listed here.",
-                element="#projects",
-            ),
-        ]
-    )
+    extra_context = {"tour": DASHBOARD_TOUR}
 ```
 
-The tour is on every URL that routes to the view, and on every subclass of the view that does not
-set a `tour` of its own. A tour given through `as_view(tour=...)` is on that one URL.
+A view that builds its context in `get_context_data` adds the tour there instead:
+
+```python
+class DashboardView(TemplateView):
+    template_name = "dashboard.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["tour"] = DASHBOARD_TOUR
+        return context
+```
+
+The tour is on every URL that routes to the view, and on every subclass that inherits the
+context. To put a tour on one URL only, give it through `as_view`:
+`DashboardView.as_view(extra_context={"tour": DASHBOARD_TOUR})`.
 
 ## Add a tour to a function-based view
 
-Pass the tour in the template context under `tour`, like any other value. The page the view
-renders carries it:
+Pass the tour in the template context under `tour`, like any other value:
 
 ```python
 from django.shortcuts import render
-
-from page_tours import Tour, TourStep
-
-DASHBOARD_TOUR = Tour(
-    name="dashboard",
-    steps=[TourStep(title="Welcome", text="A quick look around.")],
-)
 
 
 def dashboard(request):
@@ -100,8 +98,31 @@ def dashboard(request):
 Declare the tour at module level, as above, rather than inside the view. It is then checked when
 the module is imported, and the system checks know its name.
 
-Only a `Tour` counts, so a `tour` of your own in the context, such as a model instance, is left
-alone. A class-based view can pass its tour this way too, but its `tour` attribute comes first.
+## Output the tour in the page's template
+
+Place `{{ tour }}` in the template of the page:
+
+```django
+{% extends "base.html" %}
+{% block content %}
+  <h1>Dashboard</h1>
+  <ul id="projects">...</ul>
+  {{ tour }}
+{% endblock content %}
+```
+
+`{{ tour }}` outputs the tour's steps as a `<script type="application/json">` element, which the
+package's script reads and plays. It draws nothing where it stands, so it can sit anywhere in the
+page, and where it sits does not decide where the tour shows. It needs no tag library: a `Tour`
+renders itself, and Django does not escape it.
+
+- **A page has one tour.** Render `{{ tour }}` once. Should it render twice, the first tour plays
+  and the second is left alone.
+- **`{{ tour }}` with no tour in the context renders nothing,** so a template shared by pages with
+  and without a tour can hold it.
+- **A tour that a project has turned off renders nothing,** and one it has replaced renders the
+  replacement. See [Tours from reusable apps](tours-from-reusable-apps.md).
+- **`str(tour)` is the same markup.** Use `repr(tour)` to see the tour's fields.
 
 ## Seen tours
 
@@ -126,20 +147,18 @@ they should see it again, for example because the page gained a section or a con
 it a new version:
 
 ```python
-class DashboardView(TemplateView):
-    template_name = "dashboard.html"
-    tour = Tour(
-        name="dashboard",
-        steps=[
-            TourStep(title="Welcome", text="A quick look around."),
-            TourStep(
-                title="Reports",
-                text="Your reports are here now.",
-                element="#reports",
-            ),
-        ],
-        version=2,
-    )
+DASHBOARD_TOUR = Tour(
+    name="dashboard",
+    steps=[
+        TourStep(title="Welcome", text="A quick look around."),
+        TourStep(
+            title="Reports",
+            text="Your reports are here now.",
+            element="#reports",
+        ),
+    ],
+    version=2,
+)
 ```
 
 A browser that saw any other version plays the tour by itself the next time it opens the page,
@@ -231,7 +250,8 @@ and `/changed-tour/new-version/`. Open one and then the other to see a new versi
 more in a browser that saw the first.
 
 The function-view page at `/function-view/` is rendered by a function-based view that passes its
-tour in the template context.
+tour in the template context. Every demo page outputs its tour with `{{ tour }}` in its own
+template, and the demo's base template includes the package's files.
 
 ## Why a visitor can always use the page
 
@@ -269,8 +289,7 @@ steps, and a step with an empty title or empty text (whitespace counts as empty)
 
 ## Why a tour never shows on an error page
 
-A tour is found only from the page its own view renders: the `tour` attribute of the class-based
-view in the template context, or the `tour` a view passes in its context. When a view raises,
-such as `Http404`, Django renders the error page instead, with a context of its own. Neither is
-in it, so the tour is not on the error page, even when the error page extends the same base
-template.
+A tour is on a page only when the view that renders the page puts it in the context. When a view
+raises, such as `Http404`, Django renders the error page instead, with a template and a context
+of its own. There is no tour in that context, so `{{ tour }}` renders nothing there, even when
+the error page extends the same base template.

@@ -19,10 +19,11 @@ Using it while the tour is playing starts the tour over from the first step.
 
 Write `type="button"` on the control, so that it never submits a form it sits in.
 
-The control does something only on a page with a tour, so place it in the templates of those
-pages. If the button sits in a template that pages without a tour share too, such as a base
-template, add `hidden` to it. The script removes `hidden` on a page with a tour, so the button
-stays hidden on the other pages and when JavaScript is off:
+The control does something only on a page whose template renders a tour with `{{ tour }}`, so
+place it in the templates of those pages. If the button sits in a template that pages without a
+tour share too, such as a base template, add `hidden` to it. The package's script loads on every
+page, but it removes `hidden` only on a page with a tour, so the button stays hidden on the other
+pages and when JavaScript is off:
 
 ```html
 <button type="button" class="btn btn-ghost" data-page-tour-replay hidden>Show the tour</button>
@@ -79,25 +80,28 @@ from django.views.generic import TemplateView
 
 from page_tours import Tour, TourStep
 
+REPORTS_TOUR = Tour(
+    name="reports",
+    steps=[
+        TourStep(title="Reports", text="Everything you have filed, in one place."),
+        TourStep(
+            title="Filters",
+            text="Narrow the list by date or author.",
+            element="#filters",
+        ),
+    ],
+    autoplay=False,
+)
+
 
 class ReportsView(TemplateView):
     template_name = "reports.html"
-    tour = Tour(
-        name="reports",
-        steps=[
-            TourStep(title="Reports", text="Everything you have filed, in one place."),
-            TourStep(
-                title="Filters",
-                text="Narrow the list by date or author.",
-                element="#filters",
-            ),
-        ],
-        autoplay=False,
-    )
+    extra_context = {"tour": REPORTS_TOUR}
 ```
 
-```html
+```django
 <button type="button" data-page-tour-replay>Show the tour</button>
+{{ tour }}
 ```
 
 The tour does not open when a browser first visits the page, and a browser that has not seen it

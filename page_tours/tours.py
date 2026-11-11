@@ -1,6 +1,5 @@
 """Declarations of a tour and its steps."""
 
-import copy
 import weakref
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -10,9 +9,13 @@ from typing import Any
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.functional import Promise
-from django.utils.html import escape
+from django.utils.html import escape, json_script
 from django.utils.module_loading import import_string
+from django.utils.safestring import SafeString
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext
+
+from page_tours.parts import TourParts
 
 # Every tour that exists, by name. The references are weak, and each removes
 # itself when its tour is collected, so a tour built per request leaves nothing.
@@ -64,9 +67,10 @@ class TourStep:
 class Tour:
     """A guided tour of one page.
 
-    Every tour is recorded under its name when it is made, so the system checks
-    can report a name declared twice or a ``PAGE_TOURS_OVERRIDES`` key that names
-    no tour.
+    A view puts the tour in its template context, and ``{{ tour }}`` in the
+    page's template renders it. Every tour is recorded under its name when it is
+    made, so the system checks can report a name declared twice or a
+    ``PAGE_TOURS_OVERRIDES`` key that names no tour.
 
     Args:
         name: The name the tour is known by: a browser remembers that it has seen
@@ -109,47 +113,65 @@ class Tour:
             weakref.ref(self, partial(_forget, self.name))
         )
 
-    @classmethod
-    def for_page(cls, context: Any) -> "Tour | None":
-        """Find the tour of the page whose own view is being rendered.
+    def __html__(self) -> SafeString:
+        """Render the tour as the element the package's script plays it from.
 
-        A class-based view supplies its ``tour`` attribute through ``context["view"]``.
-        A function-based view passes the tour in its context under ``tour``. An
-        error page has neither, so it has no tour.
+        This is what ``{{ tour }}`` outputs in a template: a
+        ``<script id="page-tour-steps" type="application/json">`` element holding
+        the tour's name and version, whether it plays by itself, its steps in the
+        form Driver.js takes, the labels of its controls in the active language
+        and the classes each part of a shown step carries.
 
         When the ``PAGE_TOURS_OVERRIDES`` setting names the tour, the replacement
-        is returned in its place, or ``None`` when the setting turns it off. The
-        replacement keeps the declared tour's name, and plays at the declared
-        tour's version plus its own, less one, so a browser that saw the declared
-        tour does not see the replacement by itself until the replacement's own
-        version is raised. The setting is read on every call.
-
-        Args:
-            context: The template context, or any mapping with ``get``.
+        is rendered in its place, or nothing when the setting turns it off. The
+        replacement keeps this tour's name, and plays at this tour's version plus
+        its own, less one, so a browser that saw this tour does not see the
+        replacement by itself until the replacement's own version is raised. The
+        setting is read every time the tour renders.
 
         Returns:
-            The tour, or ``None`` when the page has none.
+            The element, marked safe so the template does not escape it, or an
+            empty string when the tour is turned off.
 
         Raises:
             ImproperlyConfigured: If the setting's entry for this tour is not valid.
         """
-        tour = getattr(context.get("view"), "tour", None)
-        if not isinstance(tour, cls):
-            tour = context.get("tour")
-        if not isinstance(tour, cls):
-            return None
+        played = self
+        version = self.version
         overrides = getattr(settings, "PAGE_TOURS_OVERRIDES", {})
-        if tour.name not in overrides:
-            return tour
-        replacement = resolve_override(tour.name, overrides[tour.name])
-        if replacement is None:
-            return None
-        # A copy is not made through __init__, so the tour a page plays is not
-        # recorded as a second tour declared under the declared tour's name.
-        played = copy.copy(replacement)
-        object.__setattr__(played, "name", tour.name)
-        object.__setattr__(played, "version", tour.version + replacement.version - 1)
-        return played
+        if self.name in overrides:
+            replacement = resolve_override(self.name, overrides[self.name])
+            if replacement is None:
+                return SafeString("")
+            played = replacement
+            version = self.version + replacement.version - 1
+        payload = {
+            "id": self.name,
+            "version": version,
+            "autoplay": played.autoplay,
+            "steps": played.as_driver_steps(),
+            # Driver.js writes the button labels as HTML and the close label as an
+            # attribute value, so only the button labels are escaped.
+            "controls": {
+                "next": escape(pgettext("page tour control", "Next")),
+                "previous": escape(pgettext("page tour control", "Previous")),
+                "done": escape(pgettext("page tour control", "Done")),
+                "close": pgettext("page tour control", "Close"),
+            },
+            "parts": TourParts.classes(),
+        }
+        return json_script(payload, "page-tour-steps")
+
+    def __str__(self) -> SafeString:
+        """Render the tour, as ``__html__`` does.
+
+        A template converts a value with ``str()`` before it escapes it, so this
+        has to return the same safe string for ``{{ tour }}`` to arrive unescaped.
+
+        Returns:
+            What ``__html__`` returns.
+        """
+        return self.__html__()
 
     def as_driver_steps(self) -> list[dict[str, str]]:
         """Convert the steps to the form Driver.js takes.

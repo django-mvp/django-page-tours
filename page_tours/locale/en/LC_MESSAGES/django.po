@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: django-page-tours\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 22:03+0100\n"
+"POT-Creation-Date: 2026-11-10 21:51+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -77,55 +77,55 @@ msgstr ""
 msgid "the app '%(label)s'"
 msgstr ""
 
-#: templatetags/page_tours.py:42
-msgctxt "page tour control"
-msgid "Next"
-msgstr ""
-
-#: templatetags/page_tours.py:43
-msgctxt "page tour control"
-msgid "Previous"
-msgstr ""
-
-#: templatetags/page_tours.py:44
-msgctxt "page tour control"
-msgid "Done"
-msgstr ""
-
-#: templatetags/page_tours.py:45
-msgctxt "page tour control"
-msgid "Close"
-msgstr ""
-
-#: tours.py:44
+#: tours.py:62
 #, python-format
 msgid "A tour step needs a %(name)s."
 msgstr ""
 
-#: tours.py:81
+#: tours.py:100
 msgid "A tour needs a name."
 msgstr ""
 
-#: tours.py:83
+#: tours.py:102
 msgid "A tour needs at least one step."
 msgstr ""
 
-#: tours.py:90
+#: tours.py:109
 msgid "A tour's version must be a whole number of 1 or more."
 msgstr ""
 
-#: tours.py:179
+#: tours.py:156
+msgctxt "page tour control"
+msgid "Next"
+msgstr ""
+
+#: tours.py:157
+msgctxt "page tour control"
+msgid "Previous"
+msgstr ""
+
+#: tours.py:158
+msgctxt "page tour control"
+msgid "Done"
+msgstr ""
+
+#: tours.py:159
+msgctxt "page tour control"
+msgid "Close"
+msgstr ""
+
+#: tours.py:218
 #, python-format
 msgid ""
 "PAGE_TOURS_OVERRIDES[%(name)s] must be the dotted path of a Tour or None."
 msgstr ""
 
-#: tours.py:188
+#: tours.py:227
 #, python-format
 msgid "PAGE_TOURS_OVERRIDES[%(name)s]: %(path)s cannot be imported."
 msgstr ""
 
-#: tours.py:193
+#: tours.py:232
 #, python-format
 msgid "PAGE_TOURS_OVERRIDES[%(name)s]: %(path)s is not a Tour."
 msgstr ""

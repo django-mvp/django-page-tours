@@ -24,29 +24,37 @@ INSTALLED_APPS = [
 ]
 ```
 
-Django can now find the package's templates and static files. There are no migrations to run.
+Django can now find the package's static files. There are no migrations to run.
 
-## Add the tag to your base template
+## Include the package's files in your base template
 
-Load the tag library and place the tag once in the `<head>` of your base template:
+A tour needs one stylesheet and two scripts, which the package ships as static files. Include
+them once, in the `<head>` of your base template:
 
 ```django
-{% load page_tours %}
+{% load static %}
 <head>
   ...
-  {% page_tour %}
+  <link rel="stylesheet" href="{% static 'page_tours/page-tours.css' %}">
+  <script src="{% static 'page_tours/vendor/driver.js-1.10.2/driver.js.iife.js' %}" defer></script>
+  <script src="{% static 'page_tours/page-tours.js' %}" defer></script>
 </head>
 ```
 
-The tag draws nothing where it stands. On a page with a tour it adds the tour's stylesheet, its
-steps and the scripts that play it, the way `{{ form.media }}` adds a form's assets, and the tour
-then shows over the page. That is why it goes once in the base template and not where a tour is
-used: every page that extends the template is served by it, and a page with no tour gets nothing
-from it. What a visitor sees besides the tour is the [replay control](replaying-a-tour.md), your
-own button, which you place where it should appear.
+- **Load Driver.js before `page-tours.js`.** The package's script plays the tour with it.
+- **`defer` is optional.** The script waits until the page is parsed before it looks for the
+  tour, so the scripts work in the `<head>` or at the end of the `<body>`, with or without
+  `defer`.
+- **Link the stylesheet wherever you like.** Before a tour plays, the script moves it to the
+  start of the `<head>`, so that Driver.js's styles sit under every style of your own (see
+  [Styling tours](styling-tours.md)). The script finds the link by its path,
+  `page_tours/page-tours.`, so a hashed file name from `ManifestStaticFilesStorage` is found too.
+- **On a page with no tour the files do nothing.** Nothing shows, and a
+  [replay control](replaying-a-tour.md) marked `hidden` stays hidden.
 
-The tag needs nothing else from your settings. [Adding a tour to a page](tours.md) shows how to
-declare a tour.
+The files come from your own static files, so nothing is loaded from another site. Each page
+then outputs its own tour with `{{ tour }}`, the way a form outputs its assets with
+`{{ form.media }}`. [Adding a tour to a page](tours.md) shows how.
 
 ## Settings
 

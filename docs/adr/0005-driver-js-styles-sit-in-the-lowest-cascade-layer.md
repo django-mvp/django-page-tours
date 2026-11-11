@@ -1,6 +1,6 @@
 # ADR 0005 — Driver.js's stylesheet sits in the lowest cascade layer
 
-**Status:** accepted
+**Status:** accepted, amended by ADR 0007, under which the project links the stylesheet itself.
 
 ## Decision
 
@@ -19,7 +19,7 @@ site on a framework that puts its classes in cascade layers has to see those cla
   editing Driver.js's stylesheet.
 - Between layers, the one declared first loses. A layer declared after a framework's would outrank
   its classes, so the package's link is moved to the start of the head rather than left wherever
-  the template tag sits.
+  the project placed it. The script finds the link by its path (ADR 0007).
 - An inline `<style>` holding the import would do the same without a file of the package's own,
   and is blocked by a strict content security policy. A linked file is not.
 - Driver.js's stylesheet stays byte-identical to its release, so moving to a new Driver.js release

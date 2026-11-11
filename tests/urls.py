@@ -48,17 +48,21 @@ urlpatterns = [
     path("versioned/", views.VersionedTourView.as_view(), name="versioned"),
     path(
         "versioned-two/",
-        views.VersionedTourView.as_view(tour=views.VERSION_TWO),
+        views.VersionedTourView.as_view(extra_context={"tour": views.VERSION_TWO}),
         name="versioned-two",
     ),
     path(
         "versioned-two-edited/",
-        views.VersionedTourView.as_view(tour=views.VERSION_TWO_EDITED),
+        views.VersionedTourView.as_view(
+            extra_context={"tour": views.VERSION_TWO_EDITED}
+        ),
         name="versioned-two-edited",
     ),
     path(
         "on-request-two/",
-        views.OnRequestView.as_view(tour=views.ON_REQUEST_VERSION_TWO),
+        views.OnRequestView.as_view(
+            extra_context={"tour": views.ON_REQUEST_VERSION_TWO}
+        ),
         name="on-request-two",
     ),
     path("control-in-base/", views.ControlInBaseView.as_view(), name="control-in-base"),
@@ -72,6 +76,8 @@ urlpatterns = [
     path("style-after/", views.StyleAfterView.as_view(), name="style-after"),
     path("layer-before/", views.LayerBeforeView.as_view(), name="layer-before"),
     path("design-system/", views.DesignSystemView.as_view(), name="design-system"),
+    path("not-deferred/", views.ScriptsNotDeferredView.as_view(), name="not-deferred"),
+    path("tour-twice/", views.TourTwiceView.as_view(), name="tour-twice"),
     path("tour/", views.ClassTourView.as_view(), name="class-tour"),
     path("tour-again/", views.ClassTourView.as_view(), name="class-tour-again"),
     path("function-tour/", views.function_tour_view, name="function-tour"),
@@ -95,21 +101,6 @@ urlpatterns = [
         "overridden-again/",
         views.OverriddenTourView.as_view(),
         name="overridden-again",
-    ),
-    path(
-        "overridden-subclass/",
-        views.OverriddenTourSubclassView.as_view(),
-        name="overridden-subclass",
-    ),
-    path(
-        "overridden-own/",
-        views.OverriddenTourOwnView.as_view(),
-        name="overridden-own",
-    ),
-    path(
-        "overridden-as-view/",
-        views.OverriddenTourView.as_view(tour=views.OWN_TOUR),
-        name="overridden-as-view",
     ),
     path("overridden-off/", views.OffTourView.as_view(), name="overridden-off"),
     path("untouched/", views.UntouchedTourView.as_view(), name="untouched"),

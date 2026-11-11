@@ -1,0 +1,13 @@
+{% extends "test_base.html" %}
+{% block content %}
+  {{ tour }}
+  <h1>Page</h1>
+  <button id="control" type="button">Control</button>
+  <output id="output"></output>
+  <script>
+    document.getElementById("control").addEventListener("click", function () {
+      document.getElementById("output").textContent = "worked";
+    });
+  </script>
+  {{ tour }}
+{% endblock content %}

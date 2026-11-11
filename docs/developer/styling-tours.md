@@ -46,8 +46,9 @@ Write rules against the documented names in your own stylesheet:
 }
 ```
 
-Driver.js's rules sit in a cascade layer named `page-tours`. It is the lowest layer on the page,
-so a rule of yours that is outside any layer wins over Driver.js's whatever its order in the
+Driver.js's rules sit in a cascade layer named `page-tours`. It is the lowest layer on the page
+wherever your base template links `page_tours/page-tours.css`, because the package's script
+moves that link to the start of the `<head>` before a tour plays. So a rule of yours that is outside any layer wins over Driver.js's whatever its order in the
 page, and so do the layered classes of a framework. You never need `!important` to restyle a
 part. The same layer means a rule you wrote for the page can reach a part of the tour, such as
 `button { ... }` or a framework's layered reset. Style the documented names to settle any of it.

@@ -48,7 +48,8 @@ order, with no JavaScript written by hand and no request to another origin.
 3. **Given** a tour step that names no element, **When** the page renders, **Then** the step is
    attached to nothing and stands on its own.
 4. **Given** a page whose view declares no tour, **When** the page renders, **Then** it carries no
-   tour and loads none of the package's scripts or stylesheets.
+   tour, and the package's scripts and stylesheet, which the base template includes on every
+   page, change nothing on it.
 5. **Given** a page with a tour, **When** it renders, **Then** every script and stylesheet the tour
    needs is served by the site itself, and none comes from another origin.
 6. **Given** a step whose title and text are marked for translation, **When** the page is served
@@ -130,9 +131,10 @@ action, and that every control the page offers works afterwards.
 - **FR-001**: A developer MUST be able to declare a tour for a page in Python, attached to the
   view that renders the page, as an ordered list of tour steps, without writing JavaScript.
   (US1)
-- **FR-002**: The package MUST support tours on both class-based and function-based views. A
-  class-based view declares its tour as an attribute; a function-based view passes it in its
-  template context. Neither needs a decorator or a setting beyond the one-time setup. (US1)
+- **FR-002**: The package MUST support tours on both class-based and function-based views. Either
+  kind puts its tour in the page's template context under `tour`, like any other value, and the
+  page's template outputs it with `{{ tour }}` (ADR 0007). Neither needs a decorator, a tag
+  library or a setting beyond the one-time setup. (US1)
 - **FR-003**: Each tour step MUST have a title and a text, and MAY name one element of the page it
   is attached to. A step that names no element MUST be shown on its own, attached to nothing.
   (US1)
@@ -142,8 +144,9 @@ action, and that every control the page offers works afterwards.
   in the language the page is served in when a translation exists. (US1)
 - **FR-006**: Step titles and texts MUST reach the visitor as text, escaped, and never be
   interpreted as markup. (US1)
-- **FR-007**: A page whose view declares no tour MUST render exactly as it does without the
-  package, loading none of the package's scripts or stylesheets. (US1)
+- **FR-007**: A page whose view declares no tour MUST render and behave exactly as it does
+  without the package. The package's scripts and stylesheet MAY be loaded on it, and MUST then
+  do nothing. (US1)
 - **FR-008**: The package MUST ship Driver.js and its stylesheet as static files, at one recorded
   release, with Driver.js's licence beside them. A page with a tour MUST NOT load any script or
   stylesheet from another origin, and MUST need no front-end build step. (US1)
@@ -207,14 +210,16 @@ action, and that every control the page offers works afterwards.
 - Q: Can step text carry markup such as links or bold? → A: No. Titles and texts are text and
   reach the visitor escaped. (FR-006)
 - Q: Which views can have a tour? → A: Class-based and function-based views alike. (FR-002)
-- Q: What does a developer do once, before declaring tours? → A: Install the app and add the
-  package's one-time setup to their base template. After that, each tour is declared in Python
-  only. (Assumptions)
+- Q: What does a developer do once, before declaring tours? → A: Install the app and include the
+  package's stylesheet and two scripts in their base template. After that, each tour is declared
+  in Python, put in its view's context and output with `{{ tour }}` in its page's template.
+  (Assumptions)
 
 ## Assumptions
 
-- A site does a one-time setup when it installs the package: adding the app and placing the
-  package's setup once in its base template. Tours themselves need nothing more than Python.
+- A site does a one-time setup when it installs the package: adding the app and including the
+  package's stylesheet and two scripts in its base template. A tour then needs its declaration
+  in Python, its view's context and `{{ tour }}` in its page's template.
 - Tours look as Driver.js draws them by default (CONSTITUTION Article XIV). Giving tours a site's
   own look is a later feature (roadmap R5).
 - The tour's own controls are drawn by Driver.js, with labels from the package's own catalogue

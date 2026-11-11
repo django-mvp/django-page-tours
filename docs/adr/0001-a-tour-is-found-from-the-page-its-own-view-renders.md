@@ -1,6 +1,6 @@
 # ADR 0001 — A tour is found from the page its own view renders
 
-**Status:** accepted, amended by ADR 0006 for function-based views.
+**Status:** superseded by ADR 0007. Amended by ADR 0006 for function-based views.
 
 ## Decision
 
