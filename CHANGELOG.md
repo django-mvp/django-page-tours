@@ -6,6 +6,19 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+### Added
+
+- A checklist on a page. `Checklist`, `ChecklistItem` and `Offset` declare a panel of items, each
+  of which starts a tour, opens a page or is ticked by the app or the visitor. A view or a context
+  processor puts the checklist in the template context under `checklist`, and the page outputs it
+  with `{{ checklist }}`. `dataclasses.replace(checklist, completed=...)` reports items done, an
+  element marked `data-page-checklist-toggle` opens and closes the panel, and
+  `PAGE_TOURS_OVERRIDES` replaces a checklist or an item's tour by name. To use it, add
+  `checklist.iife.js` after `hints.iife.js` in your base template.
+- Two parts to style, `launcher` and `item`, with the documented names `page-tour-launcher` and
+  `page-tour-item`. They take classes from `PAGE_TOURS_CLASSES` and from an app's
+  `page_tour_classes`.
+
 ### Changed
 
 - **Breaking:** the element a tour renders is now `<script id="page-tours-tour">`, in place of

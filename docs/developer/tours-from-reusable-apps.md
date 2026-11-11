@@ -34,6 +34,23 @@ hints share one namespace of names, so a name belongs to one declaration whichev
 them off, with `PAGE_TOURS_OVERRIDES` by name, as it does a tour. The replacement has to be a
 `Hints`: a `Tour` in its place raises `ImproperlyConfigured`.
 
+## Ship a checklist in a reusable app
+
+An app ships a [checklist](checklists.md) the same way: a `Checklist` in the template context
+under `checklist`, from a view or a context processor, and `{{ checklist }}` in a template.
+Name it `"<app_label>.<checklist>"`. The three kinds of declaration share one namespace of names,
+and `page_tours.W005` warns when two meet under one name.
+
+## Change a checklist or an item's tour
+
+A project replaces an app's checklist, or turns it off, with `PAGE_TOURS_OVERRIDES` by name, as it
+does a tour. The replacement has to be a `Checklist`. It plays with the `completed` it was
+declared with: what the app reports for the original does not carry over.
+
+An item of a checklist can start a tour. That tour is looked up in `PAGE_TOURS_OVERRIDES` under
+its own name, so an override of it applies wherever it plays, on a page of its own or from an
+item. An item whose tour the project turned off is left out of the checklist.
+
 ## Find the name of a tour
 
 A project changes a tour by its name, the `name` the app gave it:

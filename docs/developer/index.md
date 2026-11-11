@@ -15,6 +15,7 @@ installation
 
 tours
 hints
+checklists
 replaying-a-tour
 tours-from-reusable-apps
 styling-tours
