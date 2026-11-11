@@ -24,9 +24,7 @@ PARTS = [
 class TestTourParts:
     """The parts of a shown step and the classes each one carries."""
 
-    def test_the_parts_are_the_nine_of_a_step_the_beacon_of_a_hint_and_the_launcher_and_item_of_a_checklist(
-        self,
-    ):
+    def test_the_parts_are_those_of_a_step_a_hint_and_a_checklist(self):
         """The list of parts exists once, in this order."""
         assert list(TourParts.parts) == PARTS
 
