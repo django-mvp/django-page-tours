@@ -387,3 +387,21 @@ class TestUniqueNamesCheckForChecklists:
 
         assert "tests.list-and-tour" in warnings_of("page_tours.W005")
         assert tour != checklist
+
+
+class TestNamesWithListOptions:
+    """Declarations whose options hold lists are compared without hashing them."""
+
+    def test_a_checklist_whose_item_tour_sets_a_list_option_is_checked(self):
+        """A tour with ``showButtons`` as a list in an item still lets the check run."""
+        tour = Tour(name="tests.list-buttons-tour", steps=[STEP], showButtons=["next"])
+        checklist = Checklist(
+            name="tests.list-buttons",
+            items=[ChecklistItem(id="tour", title="Tour", tour=tour)],
+        )
+        other = Checklist(name="tests.list-buttons", items=[ITEM])
+
+        found = warnings_of("page_tours.W005")
+
+        assert "tests.list-buttons" in found
+        assert checklist != other

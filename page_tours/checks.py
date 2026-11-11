@@ -86,13 +86,28 @@ def check_declaration_names_are_unique(app_configs, **kwargs):
             id="page_tours.W005",
         )
         for name, found in declarations().items()
-        if len(
-            contents := {
-                (type(item), getattr(item, item.content_field)) for item in found
-            }
-        )
-        > 1
+        if len(contents := distinct_contents(found)) > 1
     ]
+
+
+def distinct_contents(found):
+    """Return the different contents among declarations of one name.
+
+    Contents are compared for equality, never hashed, because a declaration may
+    hold a list, such as a tour's ``showButtons``.
+
+    Args:
+        found: The declarations under one name.
+
+    Returns:
+        Each different ``(class, content)`` pair once, in the order first found.
+    """
+    contents = []
+    for item in found:
+        content = (type(item), getattr(item, item.content_field))
+        if content not in contents:
+            contents.append(content)
+    return contents
 
 
 @checks.register()
