@@ -139,7 +139,8 @@ entry with `page_tours.driver.resolve_override`. An entry whose value is neither
 raises `ImproperlyConfigured` at start-up, naming the entry. When the tour renders, a replacement
 that is not a `Tour` raises it too, naming the entry and the class it has to be.
 
-Django's `check` command warns with `page_tours.W002` when a key names no declared tour. The
+Django's `check` command warns with `page_tours.W002` when a key names no declared tour, hints
+or checklist. The
 usual cause is a misspelt name, or an app that renamed its tour. A tour is declared when the
 module that holds it is imported, and the check loads the root URLconf first, so every tour in a
 module the URLs import is known. A tour in a module that only a URLconf other than the root one

@@ -73,7 +73,11 @@ Register the processor in the `context_processors` of your `TEMPLATES` setting, 
 element, which the package's script reads and shows. It draws nothing where it stands. It needs
 no tag library: `Checklist` renders itself, and Django does not escape it. As for a tour:
 
-- **Declare the checklist at module level,** so the system checks know its name.
+- **Declare the checklist at module level,** in a module the root URLconf imports, so the system
+  checks know its name. A checklist declared in a module that only a context processor imports,
+  as in the example above, is declared on the first page rendered, after the checks have run, so
+  a `PAGE_TOURS_OVERRIDES` key for it can draw `page_tours.W002` and a second checklist under its
+  name is not reported. Import the module from your URLconf to have the checks see it.
 - **`{{ checklist }}` with no checklist in the context renders nothing,** so a template shared
   by pages with and without one can hold it.
 - **A function-based view** passes the checklist in the context it renders with.
@@ -201,6 +205,10 @@ What a visitor ticks is kept in their browser, under the checklist's name and ve
 still ticked on their next visit. Nothing is stored on the server, and no cookie is set. What the
 app reports is never stored by the browser: it is shown again from the page each time. A browser
 that blocks storage shows only what the app reports, and the page raises no error.
+
+An item the app already reports as done is done when the visitor opens the checklist, so
+finishing its tour or following its link again stores nothing. Once the app stops reporting it,
+it is unticked, unless the visitor had ticked it in the browser before the app reported it.
 
 ### Show a changed checklist again
 

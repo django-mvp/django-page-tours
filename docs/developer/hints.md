@@ -80,8 +80,8 @@ Every set of hints has a name, given where you declare it. A browser remembers w
 visitor dismissed by the name, and a project changes a reusable app's hints by it. Choose a
 name that stays put, and in a reusable app start it with the app label, as for a tour.
 
-**Hints and tours share one namespace of names.** A name belongs to one declaration, whether it is
-a `Tour` or a `Hints`. Django's `check` command warns with `page_tours.W005` when two different
+**Hints, tours and checklists share one namespace of names.** A name belongs to one declaration,
+whether it is a `Tour`, a `Hints` or a `Checklist`. Django's `check` command warns with `page_tours.W005` when two different
 declarations are given one name.
 
 A name that is not a string with something in it raises `ImproperlyConfigured` when the hints

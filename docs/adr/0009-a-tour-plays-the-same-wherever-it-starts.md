@@ -30,8 +30,10 @@ finding elements that can be seen, skipping missing ones, naming the parts, clea
 error, putting focus back. A second copy for the checklist would drift from the first with the
 next fix. One builder means a fix lands everywhere a tour plays.
 
-Making the instance on first use keeps a promise the page's tour already made: a tour with nothing
-to show never asks Driver.js for anything.
+Making the instance on first use keeps a promise the page's tour already made: a page's own tour
+with nothing to show never asks Driver.js for anything. A checklist item's tour is handed to
+Driver.js already made, because Driver.js starts it; with nothing to show, the package's start
+declines and the item stays unticked.
 
 ## Revisit if
 
