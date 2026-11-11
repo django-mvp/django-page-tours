@@ -16,13 +16,17 @@ PARTS = [
     "close",
     "highlight",
     "beacon",
+    "launcher",
+    "item",
 ]
 
 
 class TestTourParts:
     """The parts of a shown step and the classes each one carries."""
 
-    def test_the_parts_are_the_nine_of_a_step_and_the_beacon_of_a_hint(self):
+    def test_the_parts_are_the_nine_of_a_step_the_beacon_of_a_hint_and_the_launcher_and_item_of_a_checklist(
+        self,
+    ):
         """The list of parts exists once, in this order."""
         assert list(TourParts.parts) == PARTS
 
@@ -268,3 +272,52 @@ class TestBeaconPart:
         installed(DESIGN_SYSTEM)
 
         assert TourParts.classes()["beacon"] == ["page-tour-beacon", "dot"]
+
+
+class TestChecklistParts:
+    """The launcher and an item of a checklist are parts like those of a step."""
+
+    @pytest.mark.parametrize("part", ["launcher", "item"])
+    def test_the_part_is_named_page_tour_followed_by_the_part(self, part):
+        """The documented name is built from the part's key."""
+        assert TourParts.name(part) == f"page-tour-{part}"
+
+    @pytest.mark.parametrize("part", ["launcher", "item"])
+    def test_the_part_carries_its_name_with_no_setting(self, settings, part):
+        """A project that configures nothing still gets the part named."""
+        settings.PAGE_TOURS_CLASSES = {}
+
+        assert TourParts.classes()[part] == [f"page-tour-{part}"]
+
+    @pytest.mark.parametrize("part", ["launcher", "item"])
+    def test_the_part_carries_its_name_then_its_configured_classes(
+        self, settings, part
+    ):
+        """The documented name comes first, the configured classes follow."""
+        settings.PAGE_TOURS_CLASSES = {part: "pill wide"}
+
+        assert TourParts.classes()[part] == [f"page-tour-{part}", "pill", "wide"]
+
+    def test_classes_configured_for_the_launcher_stay_on_the_launcher(self, settings):
+        """No other part carries them, the item included."""
+        settings.PAGE_TOURS_CLASSES = {"launcher": "pill"}
+
+        classes = TourParts.classes()
+        del classes["launcher"]
+        assert all("pill" not in tokens for tokens in classes.values())
+
+    def test_an_installed_apps_classes_apply_to_both_with_no_setting(
+        self, settings, installed, monkeypatch
+    ):
+        """A design system styles the launcher and the item with nothing set."""
+        settings.PAGE_TOURS_CLASSES = {}
+        installed(DESIGN_SYSTEM)
+        monkeypatch.setattr(
+            apps.get_app_config("design_system"),
+            "page_tour_classes",
+            {"launcher": "ds-launcher", "item": "ds-item"},
+        )
+
+        classes = TourParts.classes()
+        assert classes["launcher"] == ["page-tour-launcher", "ds-launcher"]
+        assert classes["item"] == ["page-tour-item", "ds-item"]
