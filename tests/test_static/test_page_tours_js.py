@@ -1594,3 +1594,141 @@ class TestHintsRestored:
 
         page.goto(url)
         expect(page.locator(BEACON)).to_have_count(2)
+
+
+class TestHintsDuringATour:
+    """Hints dismissed before a tour plays stay dismissed after it."""
+
+    def test_the_beacons_that_were_showing_come_back_and_no_other(
+        self, page, live_server
+    ):
+        """A dismissed hint does not return when the tour ends."""
+        page.goto(live_server.url + reverse("no-hints"))
+        page.evaluate(
+            f"localStorage.setItem({dismissed_key(views.THREE_HINTS)!r}, "
+            '\'{"version": 1, "ids": ["#second"]}\')'
+        )
+
+        page.goto(live_server.url + reverse("hints-and-tour"))
+        expect(page.locator(TITLE)).to_be_visible()
+        beacons = page.locator(BEACON)
+        expect(beacons).to_have_count(2)
+        for beacon in beacons.all():
+            expect(beacon).to_be_hidden()
+        page.click(CLOSE)
+
+        expect(page.locator(".driver-popover")).to_have_count(0)
+        expect(beacons).to_have_count(2)
+        for beacon in beacons.all():
+            expect(beacon).to_be_visible()
+
+
+class TestHintsWithTheKeyboard:
+    """Every beacon, popover and button works with the keyboard alone."""
+
+    def tab_to_the_first_beacon(self, page):
+        """Press Tab until a beacon has focus, as many times as the page needs."""
+        for _ in range(20):
+            page.keyboard.press("Tab")
+            if page.evaluate("document.activeElement.matches('.driver-hint')"):
+                return
+        raise AssertionError("No beacon took focus")
+
+    def test_tab_reaches_the_beacons_in_the_declared_order(self, page, live_server):
+        """Tabbing from one beacon goes to the beacon of the next hint."""
+        page.goto(live_server.url + reverse("hints"))
+        beacons = page.locator(BEACON)
+        expect(beacons).to_have_count(len(views.THREE_HINTS.hints))
+
+        self.tab_to_the_first_beacon(page)
+
+        for index in range(len(views.THREE_HINTS.hints)):
+            expect(beacons.nth(index)).to_be_focused()
+            page.keyboard.press("Tab")
+
+    def test_enter_opens_a_hint_and_its_button_dismisses_it(self, page, live_server):
+        """Enter opens the popover, the button is reached by Tab and closes it."""
+        page.goto(live_server.url + reverse("hints"))
+        expect(page.locator(BEACON)).to_have_count(3)
+        self.tab_to_the_first_beacon(page)
+
+        page.keyboard.press("Enter")
+        expect(page.locator(TITLE)).to_have_text(views.THREE_HINTS.hints[0].title)
+        for _ in range(20):
+            if page.evaluate(f"document.activeElement.matches('{HINT_BUTTON}')"):
+                break
+            page.keyboard.press("Tab")
+        page.keyboard.press("Enter")
+
+        expect(page.locator(".driver-popover")).to_have_count(0)
+        expect(page.locator(BEACON)).to_have_count(2)
+
+    def test_escape_closes_the_popover_and_leaves_the_beacon(self, page, live_server):
+        """Escape closes without dismissing."""
+        page.goto(live_server.url + reverse("hints"))
+        expect(page.locator(BEACON)).to_have_count(3)
+        self.tab_to_the_first_beacon(page)
+        page.keyboard.press("Enter")
+        expect(page.locator(TITLE)).to_be_visible()
+
+        page.keyboard.press("Escape")
+
+        expect(page.locator(".driver-popover")).to_have_count(0)
+        expect(page.locator(BEACON)).to_have_count(3)
+
+
+class TestHintsWherePagesDiffer:
+    """Hints give way to what the browser or the visitor asks for."""
+
+    def test_no_beacon_pulses_under_reduced_motion(self, browser, live_server):
+        """Driver.js's own stylesheet stops the animation when asked to."""
+        context = browser.new_context(reduced_motion="reduce")
+        try:
+            page = context.new_page()
+            page.goto(live_server.url + reverse("hints"))
+            expect(page.locator(BEACON)).to_have_count(3)
+
+            assert computed(page, ".driver-hint-pulse", "animationName") == "none"
+        finally:
+            context.close()
+
+    def test_blocked_storage_dismisses_for_the_page_view_only(self, page, live_server):
+        """The beacon goes, comes back on the next view, and nothing is raised."""
+        errors = []
+        page.on("pageerror", lambda error: errors.append(str(error)))
+        page.add_init_script(STORAGE_BLOCKED)
+        url = live_server.url + reverse("hints")
+        page.goto(url)
+        expect(page.locator(BEACON)).to_have_count(3)
+
+        dismiss(page, 0)
+        expect(page.locator(BEACON)).to_have_count(2)
+        page.goto(url)
+
+        expect(page.locator(BEACON)).to_have_count(3)
+        assert errors == []
+
+    def test_blocked_storage_leaves_the_restore_control_working(
+        self, page, live_server
+    ):
+        """Bringing the hints back needs nothing to be remembered."""
+        page.add_init_script(STORAGE_BLOCKED)
+        page.goto(live_server.url + reverse("hints"))
+        expect(page.locator(BEACON)).to_have_count(3)
+        dismiss(page, 0)
+
+        page.click("[data-page-hints-restore]")
+
+        expect(page.locator(BEACON)).to_have_count(3)
+
+    def test_javascript_off_shows_no_beacon(self, browser, live_server):
+        """The page is as it would be without hints."""
+        context = browser.new_context(java_script_enabled=False)
+        try:
+            page = context.new_page()
+            page.goto(live_server.url + reverse("hints"))
+            page.wait_for_load_state("load")
+
+            expect(page.locator(BEACON)).to_have_count(0)
+        finally:
+            context.close()
