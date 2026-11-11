@@ -264,11 +264,11 @@
       if (!showable()) {
         return;
       }
-      var tour = instance();
-      if (tour.isActive()) {
-        tour.destroy();
+      var playing = instance();
+      if (playing.isActive()) {
+        playing.destroy();
       }
-      tour.drive();
+      playing.drive();
     }
 
     return { start: start, instance: instance };
