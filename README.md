@@ -115,12 +115,17 @@ page. The package's script makes it start the tour:
 <button type="button" class="btn" data-page-tour-replay>Show the tour</button>
 ```
 
+`Tour` mirrors Driver.js's configuration object, so a tour sets Driver.js options as fields named
+in snake_case, such as `Tour(show_progress=True)`. See the
+[Driver.js configuration reference](https://driverjs.com/docs/configuration) for each option.
+Options that take a function are not available.
+
 A project can replace the tour of an installed app, or turn it off, from its own settings with
 `PAGE_TOURS_OVERRIDES`, keyed by the tour's name, without editing the app.
 
 The [documentation](https://django-mvp.github.io/django-page-tours/) covers naming a tour, function-based views,
 steps attached to elements, tour versions, replaying a tour and tours that play only on request,
-tours from reusable apps, styling, and translation.
+tours from reusable apps, Driver.js options, styling, and translation.
 
 ## Styling
 

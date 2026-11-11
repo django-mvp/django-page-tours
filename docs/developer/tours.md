@@ -234,43 +234,67 @@ msgid "Close"
 msgstr "Schließen"
 ```
 
-A control with no translation in the page's language shows in English. Like step text, a
-translated label is shown as text, never as markup.
+A control with no translation in the page's language shows in English. To give one tour its
+own labels, set them on the tour, as described in
+[Set Driver.js options](#set-driverjs-options). Unlike step text, a label is shown as markup.
 
-## Pass Driver.js options of its own
+## Set Driver.js options
 
-Driver.js has more options than `Tour` and `TourStep` set. Pass any of them with
-`driver_options`, a mapping the package hands to the Driver.js constructor as it is:
+`Tour` mirrors the configuration object of Driver.js 1.10.2. Set an option as a field of the
+tour, named in snake_case, and it reaches Driver.js under its own name: `show_progress` is
+`showProgress`. Every field defaults to the value Driver.js uses, so a tour sets only what it
+changes:
 
 ```python
 Tour(
     name="dashboard",
     steps=[...],
-    driver_options={"showProgress": True, "progressText": "{{current}} / {{total}}"},
+    show_progress=True,
+    progress_text="{{current}} / {{total}}",
+    next_btn_text="Continue",
 )
 ```
 
-The options reach the page in its source, as JSON, so every value needs a JSON form: strings,
-numbers, booleans, `None`, lists and mappings of them, and strings marked for translation. A
-function such as an `onNextClick` hook has none. Options that are not a mapping, a name that is
-not a string and a value with no JSON form raise `ImproperlyConfigured` when the tour is declared.
+The fields, with the Driver.js option each one is:
 
-The package keeps the settings it sets itself, and an option of the same name changes nothing:
+| Field | Default | What it does |
+|-------|---------|--------------|
+| `animate` | `True` | Whether to animate the tour. |
+| `duration` | `400` | How long the animation takes, in milliseconds. |
+| `allow_close` | `True` | Whether clicking the overlay closes the tour. |
+| `allow_scroll` | `True` | Whether the page can be scrolled while the tour shows. |
+| `overlay_click_behavior` | `"close"` | What clicking the overlay does: `"close"` or `"nextStep"`. |
+| `overlay_color` | `"#000"` | The colour of the overlay. |
+| `overlay_opacity` | `0.7` | The opacity of the overlay, from 0 to 1. |
+| `smooth_scroll` | `False` | Whether to scroll smoothly to each step's element. |
+| `disable_active_interaction` | `False` | Whether the highlighted element ignores clicks. |
+| `allow_keyboard_control` | `True` | Whether the arrow and escape keys move through and close the tour. |
+| `advance_on_click` | `False` | Whether clicking a step's element moves to the next step. |
+| `wait_for_element` | `0` | How long to wait for a step's element to appear, in milliseconds. |
+| `stage_padding` | `10` | The space around the highlighted element, in pixels. |
+| `stage_radius` | `5` | The corner radius of the highlight, in pixels. |
+| `popover_offset` | `10` | The distance between the popover and the element, in pixels. |
+| `popover_class` | `""` | A class added to every popover. |
+| `show_buttons` | `("next", "previous", "close")` | The buttons the popover shows. |
+| `disable_buttons` | `()` | The buttons that show but cannot be pressed. |
+| `show_progress` | `False` | Whether the popover shows how far through the tour it is. |
+| `progress_text` | `"{{current}} of {{total}}"` | The progress text. `{{current}}` and `{{total}}` stand for the step's number and the number of steps. |
+| `next_btn_text` | "Next", translated | The text of the next button. |
+| `prev_btn_text` | "Previous", translated | The text of the previous button. |
+| `done_btn_text` | "Done", translated | The text of the button on the last step. |
+| `close_btn_label` | "Close", translated | The accessible name of the close button. |
 
-- `steps`
-- `skipMissingElement`, so a missing or hidden element is still skipped
-- `nextBtnText`, `prevBtnText`, `doneBtnText` and `closeBtnLabel`, which come from the
-  package's catalogue
-- `onPopoverRender`, `onDestroyStarted` and `onDestroyed`
+The [Driver.js configuration reference](https://driverjs.com/docs/configuration) describes each
+option, so moving between it and `Tour` is one to one.
 
-Driver.js writes some options into the page as markup, `progressText` among them. They are passed
-as you wrote them and are not escaped, so never build one from a visitor's input.
+Options that take a JavaScript function, such as `onNextClick`, are not available. Neither are
+`steps` and `skipMissingElement`, which the package sets itself so that a missing or hidden
+element is skipped.
 
-The package does not check what an option does. The options Driver.js takes are listed in its
-[configuration reference](https://driverjs.com/docs/configuration), and whether one works with
-the release the package ships, recorded in `page_tours/static/page_tours/vendor/`, is yours to
-check. An option can also undo what the package promises, such as `allowClose: False`, which
-leaves a visitor no way out of the tour but its last step.
+The four labels default to the package's translated strings, as described in
+[Translate a tour](#translate-a-tour). A label you set is shown as you wrote it, and Driver.js
+writes the button texts and the progress text into the page as markup, so never build one from a
+visitor's input.
 
 A tour that a project replaces through `PAGE_TOURS_OVERRIDES` plays with the replacement's
 options, not the replaced tour's.
@@ -289,8 +313,8 @@ more in a browser that saw the first.
 
 The function-view page at `/function-view/` is rendered by a function-based view that passes its
 tour in the template context. The Driver.js options page at `/driver-options/` plays a tour that
-turns on Driver.js's step count through `driver_options`. Every demo page outputs its tour with `{{ tour }}` in its own
-template, and the demo's base template includes the package's files.
+sets `show_progress`, `progress_text` and `next_btn_text`. Every demo page outputs its tour with
+`{{ tour }}` in its own template, and the demo's base template includes the package's files.
 
 ## Why a visitor can always use the page
 

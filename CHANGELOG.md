@@ -62,10 +62,13 @@ All notable changes to this project are documented in this file. The format foll
 
 ### Added
 
-- `Tour(driver_options={...})` passes options of its own to the Driver.js constructor as they
-  are, for what the package does not set, such as `{"showProgress": True}`. The settings the
-  package depends on win over an option of the same name. A value with no JSON form raises
-  `ImproperlyConfigured` when the tour is declared.
+- `Tour` has a field for each Driver.js 1.10.2 configuration option that takes a plain value,
+  named in snake_case and defaulting to Driver.js's own default: `Tour(show_progress=True)`
+  sets `showProgress`. Options that take a function are not available. See
+  <https://driverjs.com/docs/configuration>.
+- The labels of a tour's controls (`next_btn_text`, `prev_btn_text`, `done_btn_text` and
+  `close_btn_label`) can be set per tour. They still default to the translated strings, and a
+  label you set is shown as markup, as Driver.js shows it (closes #38).
 - System check `page_tours.W005` warns when tours with different steps are declared with one
   name, since they would share what a browser remembers.
 - `page_tours.tours.declared_tours()` returns every tour that exists, by name, so a project can
