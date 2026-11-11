@@ -79,7 +79,7 @@ def check_tour_names_are_unique(app_configs, **kwargs):
             id="page_tours.W005",
         )
         for name, tours in declared_tours().items()
-        if len(steps := {tour.steps for tour in tours}) > 1
+        if len(steps := {repr(tour.as_driver().get('steps', tour.as_driver())) for tour in tours}) > 1
     ]
 
 

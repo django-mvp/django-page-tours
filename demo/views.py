@@ -187,3 +187,15 @@ class DriverOptionsView(TemplateView):
             nextBtnText="Onwards",
         )
     }
+
+
+class HintsView(TemplateView):
+    """A report page with hints on it, and a tour the hints step aside for."""
+
+    template_name = "demo/hints.html"
+
+    def get_context_data(self, **kwargs):
+        """Add the page's hints and tour."""
+        from demo.guides import REPORT_HINTS, REPORT_TOUR
+
+        return {**super().get_context_data(**kwargs), "hints": REPORT_HINTS, "tour": REPORT_TOUR}

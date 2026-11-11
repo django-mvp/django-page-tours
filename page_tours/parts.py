@@ -22,6 +22,9 @@ class TourParts:
         "done",
         "close",
         "highlight",
+        "beacon",
+        "launcher",
+        "item",
     )
 
     @classmethod
