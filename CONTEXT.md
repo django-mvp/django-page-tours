@@ -45,6 +45,52 @@ browser, never in the database, so the same person on a new browser has not seen
 A tour is seen at a [version](#tour-version). A browser that saw another version of the tour has
 not seen this one.
 
+### Declaration
+
+What a page renders: a [tour](#tour) or [hints](#hints). Each has a name and a version, and all
+share one namespace of names, so a name belongs to one declaration whichever kind it is. A browser
+remembers what a visitor did under the name.
+
+_Avoid:_ guide, config.
+
+### Hints
+
+The pointers a page shows over its elements, declared in Python as `Hints` with a
+[name](#tour-name), a version and a list of [hints](#hint). The view puts them in the page's
+template context under `hints`, and the page outputs them with `{{ hints }}`. Unlike a tour, they
+do not take over the page: a visitor opens them in any order or not at all. A page has one set of
+hints, and may have a tour as well.
+
+_Avoid:_ tooltips, guide.
+
+### Hint
+
+One pointer in a set of [hints](#hints): the element it is about, a title and a description. It
+shows a [beacon](#beacon) on its element, and opens a popover when the beacon is pressed. It is
+remembered as dismissed by its identifier, or by its element when it has none.
+
+_Avoid:_ tip, popover (the popover is how a hint is drawn).
+
+### Beacon
+
+The marker a [hint](#hint) shows on its element. A visitor presses it to open the hint. It is a
+part of its own, `beacon`, that a site styles.
+
+_Avoid:_ dot, pin.
+
+### Dismissed hint
+
+A [hint](#hint) whose button a visitor pressed. Its beacon is not shown again in that browser
+until the hints' version is raised or the visitor uses the [restore control](#restore-control).
+Recorded in the browser, never in the database.
+
+_Avoid:_ closed, seen (seen is a tour that has played).
+
+### Restore control
+
+An element of the developer's own, marked `data-page-hints-restore`, that shows every
+[dismissed hint](#dismissed-hint) again. Written `hidden`, it is shown only on a page with hints.
+
 ### Tour version
 
 A whole number the developer gives a tour, 1 unless they say otherwise. The developer raises it

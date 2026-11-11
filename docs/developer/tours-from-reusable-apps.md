@@ -25,6 +25,15 @@ a project does. See [Adding a tour to a page](tours.md).
    version shows it again, once, to everyone who saw it. Document the names of your app's
    tours, so a project can find them.
 
+## Ship hints in a reusable app
+
+An app ships [hints](hints.md) the same way: a `Hints` in the view's template context under
+`hints`, and `{{ hints }}` in the page's template. Name them `"<app_label>.<hints>"`. Tours and
+hints share one namespace of names, so a name belongs to one declaration whichever kind it is, and
+`page_tours.W005` warns when two meet under one name. A project replaces an app's hints, or turns
+them off, with `PAGE_TOURS_OVERRIDES` by name, as it does a tour. The replacement has to be a
+`Hints`: a `Tour` in its place raises `ImproperlyConfigured`.
+
 ## Find the name of a tour
 
 A project changes a tour by its name, the `name` the app gave it:

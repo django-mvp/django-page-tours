@@ -8,6 +8,16 @@ All notable changes to this project are documented in this file. The format foll
 
 ### Changed
 
+- **Breaking:** the element a tour renders is now `<script id="page-tours-tour">`, in place of
+  `page-tour-steps`, and the Driver.js options and the steps are under `config`. Only the package's
+  own script reads it.
+- **Breaking:** `page_tours.tours.declared_tours()` and `tour_overrides()` are now
+  `page_tours.driver.declarations()` and `declaration_overrides()`, and `resolve_override` moved to
+  `page_tours.driver`. To upgrade, import them from there.
+- **Breaking:** `Tour` and `TourStep` take keyword arguments only. To upgrade, write
+  `Tour(name="dashboard", steps=[...])`, never positional arguments.
+- **Breaking:** what a browser remembers of a seen tour has a new shape, so a browser that saw a
+  tour before this release sees it once more.
 - **Breaking:** Driver.js 1.11.0 is shipped in place of 1.10.2, under
   `page_tours/vendor/driver.js-1.11.0/`. To upgrade, change the path of the script in your base
   template to `{% static 'page_tours/vendor/driver.js-1.11.0/driver.js.iife.js' %}`. The release's
@@ -83,6 +93,19 @@ All notable changes to this project are documented in this file. The format foll
 
 ### Added
 
+- Hints: `Hints`, `Hint` and `Beacon` declare small markers on a page's elements that a visitor
+  opens in any order, and `{{ hints }}` renders them. Each class takes Driver.js 1.11.0's hints
+  options under Driver.js's names, and options that take a function are not available. A visitor
+  dismisses a hint for good in their browser until the hints' version is raised. A page can carry
+  hints and a tour. See <https://driverjs.com/docs/hints>.
+- An element marked `data-page-hints-restore`, written `hidden`, becomes a control that shows the
+  dismissed hints again. It is shown only on a page with hints.
+- The beacon is a part of its own, `beacon`, with the class name `page-tour-beacon`, configured
+  with `PAGE_TOURS_CLASSES` and `page_tour_classes` like the parts of a step. A hint's popover
+  carries the parts of a tour step.
+- Hints and tours share one namespace of names: `page_tours.W005` warns when two different
+  declarations are given one name, and `PAGE_TOURS_OVERRIDES` replaces or turns off hints by name.
+- A demo page, "Hints", shows hints and a tour on one page.
 - `Tour` has a field for each Driver.js 1.11.0 configuration option that takes a plain value,
   named and defaulted as in Driver.js: `Tour(showProgress=True)`. Options that take a function are not available. See
   <https://driverjs.com/docs/configuration>.
@@ -91,8 +114,8 @@ All notable changes to this project are documented in this file. The format foll
   label you set is shown as markup, as Driver.js shows it (closes #38).
 - System check `page_tours.W005` warns when tours with different steps are declared with one
   name, since they would share what a browser remembers.
-- `page_tours.tours.declared_tours()` returns every tour that exists, by name, so a project can
-  find the names of an installed app's tours.
+- `page_tours.driver.declarations()` returns every tour and set of hints that exists, by name, so
+  a project can find the names of an installed app's tours.
 - A demo page, "Function view", shows a tour passed in a function-based view's context.
 
 ### Removed
