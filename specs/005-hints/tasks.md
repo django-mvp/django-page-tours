@@ -23,7 +23,8 @@ confirm that hint alone differs.
 - [ ] T001 [US1] `page_tours/driver.py`: `driver_value`, `DriverObject`, `PopoverContent`,
   `Side`, `Alignment`, as plan.md "the shared bases". Tests in `tests/test_driver.py`: a `None`
   and a package field are left out, a nested field goes into its inner object, a lazy string
-  renders in the active language, a nested object and a list of them are converted.
+  renders in the active language, a nested object and a list of them are converted, a step with no popover fields still has
+  `popover`.
 - [ ] T002 [US1] `Declaration`, `declared`, `forget`, `resolve_override` (with the class it must
   be), `declaration_overrides`, `declarations`, as plan.md. Tests in `tests/test_driver.py`:
   refusals of a name and a version naming the class, the registry and its weak references, the
@@ -39,8 +40,11 @@ confirm that hint alone differs.
 - [ ] T004 [US1] `page-tours.js`: `memory`, `addClasses(parts, …)`, `popoverParts`, `playTour`
   reading `page-tours-tour` and `config`, and `play()` playing each kind in its own `try`, as
   plan.md. Tests in `tests/test_static/test_page_tours_js.py`: the existing tour suites green on
-  the new payload; a seen record of the old shape (`"1"`) reads as not seen; storage blocked still
-  plays the tour.
+  the new payload, including `CLASS_TOUR`'s step with no element; storage blocked still plays the
+  tour. Two existing tests are replaced under FR-021 and D7, and only these:
+  `test_a_tour_seen_before_versions_counts_as_seen_at_version_one` now asserts that a bare `"1"`
+  plays the tour once more, and `test_the_browser_remembers_the_version_it_played` asserts the
+  `{"version": …, "ids": […]}` entry.
 - [ ] T005 [US1] `Button` documented on `docs/developer/tours.md` with the values `showButtons`
   takes, and the payload element renamed there (the verify docs step).
 
@@ -60,13 +64,13 @@ confirm that hint alone differs.
 
 ### Group 3 — hints in the browser
 
-- [ ] T009 [US1] `playHints` (show, beacon classes, popover part classes, `onDismiss` into memory)
-  and the restore control's visibility, `hints.css` imported by `page-tours.css`, and
+- [ ] T009 [US1] `playHints` (show, beacon classes, popover part classes) and the restore
+  control's visibility, `hints.css` imported by `page-tours.css`, and
   `hints.iife.js` in the test base templates, as plan.md. Test views and routes in
   `tests/views.py` and `tests/urls.py`. Tests in `tests/test_static/test_page_tours_js.py`:
   scenarios 1 (a beacon on each element), 4 (one hint's own beacon side and button text differ,
   the others do not), 10 (restore control shown with hints, hidden without hints and with
-  JavaScript off), 11 (hints and a tour on one page, a step pointing at a beacon) and 15 (a hint
+  JavaScript off), 11 (hints and a tour on one page, a step pointing at an element a hint is about) and 15 (a hint
   whose element is missing shows no beacon, the others do).
 
 ### Group 4 — demo and documentation
@@ -90,12 +94,14 @@ gone; use the restore control and confirm it is back.
 
 ### Group 5 — reading, dismissing and restoring
 
-- [ ] T012 [US2] Tests in `tests/test_static/test_page_tours_js.py`, and any fix they show in
-  `page-tours.js`: scenarios 1 (two hints opened in reverse order), 2 (a page button takes a click
+- [ ] T012 [US2] `onDismiss` into `memory("dismissed", …)` and the restore control's click, as
+  plan.md, test-first. Tests in `tests/test_static/test_page_tours_js.py`: scenarios 1 (two hints opened in reverse order), 2 (a page button takes a click
   with a hint open; it does not with `overlay=True`), 3 (dismissed hint gone after reload, others
   shown), 4 (the same hints on another address stay dismissed), 5 (a fresh browser context shows
   every beacon), 6 (restore brings every beacon back without reloading), and a raised version
-  shows dismissed hints again (FR-011, FR-012, FR-013, FR-014).
+  shows dismissed hints again; a hint dismissed by its identifier stays dismissed when its element
+  changes, two hints on one element are both drawn and dismissed together, and a stored id no
+  hint declares is ignored (US1 scenario 8, Edge Cases, FR-011 to FR-014).
 - [ ] T013 [US2] Tests, and any fix they show: scenarios 7 (no beacon visible while a tour plays,
   back when it ends), 8 (keyboard alone reaches each beacon in declared order, opens it, presses
   its button, closes the popover), 9 (no pulse animation under reduced motion), 10 (storage

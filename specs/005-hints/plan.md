@@ -82,8 +82,10 @@ def declaration_overrides() -> dict[str, Declaration | None]
 def declarations() -> dict[str, list[Declaration]]
 ```
 
-- `as_driver()` leaves out a package field and a `None`, converts each value with
-  `driver_value`, and puts a field named in `nested` into that inner object. A `TourStep`'s
+- `as_driver()` creates every inner object named in `nested`, even when it stays empty (a step
+  with no popover fields still carries `popover: {}`, which Driver.js needs to show its popover),
+  then leaves out a package field and a `None`, converts each value with `driver_value`, and puts
+  a field named in `nested` into that inner object. A `TourStep`'s
   popover fields go into `popover`, as `as_driver_steps` does today, and its `element`,
   `disableActiveInteraction`, `advanceOn` and `waitForElement` stay on the step.
 - `Declaration.__post_init__` raises `ImproperlyConfigured` for a name that is not a non-empty
@@ -104,7 +106,8 @@ def declarations() -> dict[str, list[Declaration]]
 
 - `TourStep(PopoverContent)`: its own fields after the five popover fields, unchanged in name,
   type and default, except `title` and `description`, which now default to `None` (left out, as
-  `""` is today). `nested = {"popover": popover_fields | {showButtons, disableButtons,
+  `""` is today). `element` keeps its `""` default, which is sent, and the script drops a falsy
+  `element` from the step it gives Driver.js (`document.querySelector("")` throws). `nested = {"popover": popover_fields | {showButtons, disableButtons,
   showProgress, progressText, nextBtnText, prevBtnText, doneBtnText}}`.
 - `Tour(Declaration)`: `steps`, `autoplay`, then every Driver.js option as today. `kind = "tour"`,
   `content_field = "steps"`, `package_fields` adds `autoplay`. `__post_init__` refuses empty
@@ -163,16 +166,18 @@ Shared, at the top of the script:
   there.
 
 The tour (`playTour(payload)`): today's code, reading `page-tours-tour`, `payload.config.steps`
-and `payload.config`'s options, its seen record through `memory("seen", payload)` (seen is
+and `payload.config`'s options, deleting a falsy `element` from each step it maps, its seen record through `memory("seen", payload)` (seen is
 `get().length > 0`, marked with `set([payload.id])`). Every workaround it carries for 1.11.0 stays.
 
 The hints (`playHints(payload)`), when `window.driverHints` is there:
 
-- `dismissed = memory("dismissed", payload)`. A hint's key is its `id`, else its `element`.
-- The hints shown are the declared ones not dismissed, each with `id` set to its key, its
+- `dismissed = memory("dismissed", payload)`. A hint's key is its `id`, else its `element`,
+  worked out in the script only. The build's own `id` is left as declared (its default is the
+  hint's index), so two hints on one element are both drawn and share their key.
+- The hints shown are the declared ones not dismissed, each with its
   `popover.onPopoverRender` set to `popoverParts(parts)`, and its beacon's `className` set to the
   beacon part's classes, then the hint's own `className`, else the hints' `beacon.className`.
-- `onDismiss` adds the hint's key to `dismissed`. `instance.show()`.
+- `onDismiss` adds the key of the hint it receives to `dismissed`. `instance.show()`.
 - Each `[data-page-hints-restore]` control: on click, `dismissed.clear()`,
   `instance.setHints(<all hints>)`, `instance.show()`; then `hidden = false`.
 
@@ -182,8 +187,9 @@ other or raises on the page. The hints come first so a tour step can point at a 
 
 ### `page_tours/static/page_tours/page-tours.css`
 
-Imports `hints.css` into the `page-tours` layer after `driver.css`. It hides the beacons while a
-tour plays (D12) and gives them their look.
+Imports `hints.css` into the `page-tours` layer after `driver.css`, and holds nothing else.
+`hints.css` is Driver.js's: it hides the beacons while a tour plays (D16) and gives them their
+look.
 
 ### Templates loading the scripts
 
@@ -217,7 +223,8 @@ installation page.
 ### ADR
 
 One, graduated at converge: every declaration a page renders shares one base, one namespace of
-names and one shape of browser record (D14). Numbered then from `origin/main`.
+names and one shape of browser record (D14). Numbered then from `origin/main`. ADR 0006's description of
+the stored seen value is superseded by it, marked in place.
 
 ## Tests
 

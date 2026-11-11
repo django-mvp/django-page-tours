@@ -84,7 +84,7 @@ confirm that hint alone differs.
     page with hints, **When** the page loads, **Then** the control is shown; **Given** the same
     control on a page with no hints, or with JavaScript off, **Then** it stays hidden.
 11. **Given** a page that renders both `{{ hints }}` and `{{ tour }}`, **When** the page loads,
-    **Then** both play, and a tour step can point at an element the hints have drawn.
+    **Then** both play, and a tour step can point at an element a hint is about.
 12. **Given** a reusable app declares hints under a name, **When** a project names them in
     `PAGE_TOURS_OVERRIDES` with a replacement, **Then** the replacement renders in their place,
     remembered under the app's name; **Given** the entry turns them off, **Then** the page renders

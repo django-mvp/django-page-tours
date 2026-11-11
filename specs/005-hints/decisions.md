@@ -159,3 +159,38 @@ replaced the hints' beacon class for a hint that set none. The rebuild writes th
 then the hint's class, else the hints' class (FR-019). Taken at research.
 
 **ADR:** none — a defect of the prototype, not a design change
+
+## D19 — A tour step points at a hint's element, not at its beacon (US1 scenario 11)
+
+The approved scenario said a tour step can point at an element the hints have drawn. Driver.js
+hides every beacon while a tour plays, which FR-015 requires, so a step pointing at a beacon finds
+it hidden and is skipped. The two cannot both hold. The scenario now reads "an element a hint is
+about", which keeps FR-015 and what the prototype's tour does (its step points at the figures
+table a hint is about). Found at the design review; the specification is edited, and the edit is
+put to the specification gate.
+
+**ADR:** none — a correction of the specification, re-gated
+
+## D20 — Design review outcome
+
+One review, verdict request changes: one high, five medium, two low, each verified against the
+cited code.
+
+- A step's empty `element` reached Driver.js, which throws on it: the script drops a falsy
+  `element` (plan.md, the tour; T004).
+- A step with no popover fields lost its `popover`, which Driver.js needs: `as_driver()` always
+  creates the inner objects (plan.md, the shared bases; T001).
+- The build draws one beacon per id, so a key of the element would hide the second of two hints on
+  one element: the key is worked out in the script, and the build's id is left alone (plan.md,
+  the hints; T012).
+- US1 scenario 11 contradicted FR-015: corrected in the specification (D19).
+- `page-tours.css` holds the import and nothing else (plan.md).
+- The two seen-record tests replaced under FR-021 are named in T004, and ADR 0006's stored value
+  is marked superseded by the new ADR.
+- Dismissal and the restore click move from T009 to T012, so they are built test-first with their
+  tests.
+- Not adopted: a test that no function option is a field (US1 scenario 14). It could fail only if
+  someone added such a field on purpose, which makes it a change detector under the testing
+  standard. The hints page documents the options left out (T011).
+
+**ADR:** none — review outcome, recorded
