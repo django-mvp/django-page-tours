@@ -6,6 +6,7 @@ import re
 import pytest
 from django.core.checks import run_checks
 from django.core.management import call_command
+from django.test import Client
 from django.urls import reverse
 from playwright.sync_api import expect
 
@@ -482,3 +483,128 @@ class TestHintsPage:
         page = self.page(client, "overview")
 
         assert "page_tours/vendor/driver.js-1.11.0/hints.iife.js" in page
+
+
+class TestChecklistOnDemoPages:
+    """The demo project's onboarding checklist, as the pages render it."""
+
+    PAGES = [
+        "overview",
+        "tour",
+        "plays-once",
+        "on-request",
+        "changed-tour",
+        "function-view",
+        "driver-options",
+        "hints",
+        "own-look",
+        "library-books",
+        "library-book",
+        "library-loans",
+    ]
+
+    @pytest.fixture(autouse=True)
+    def checklist_processor(self, settings):
+        """Activate the demo's context processor, which the test settings omit."""
+        engine = dict(settings.TEMPLATES[0])
+        options = dict(engine["OPTIONS"])
+        options["context_processors"] = [
+            *options["context_processors"],
+            *demo_settings.TEMPLATES[0]["OPTIONS"]["context_processors"],
+            "demo.checklists.onboarding",
+        ]
+        engine["OPTIONS"] = options
+        settings.TEMPLATES = [engine]
+
+    def payload(self, page):
+        """Return the checklist payload the page hands to the browser."""
+        match = re.search(
+            r'<script id="page-tours-checklist" type="application/json">(.*?)</script>',
+            page,
+            re.DOTALL,
+        )
+        assert match is not None
+        return json.loads(match.group(1))
+
+    @pytest.mark.parametrize("name", PAGES)
+    def test_every_page_renders_the_checklist(self, client, name):
+        """Each demo page carries the onboarding checklist's payload."""
+        page = client.get(reverse(name)).content.decode()
+
+        assert self.payload(page)["id"] == "demo.onboarding"
+
+    def test_the_checklist_has_an_item_of_each_kind(self, client):
+        """One item starts a tour, one links, one is reported, one is ticked."""
+        items = self.payload(client.get(reverse("overview")).content.decode())[
+            "config"
+        ]["items"]
+
+        assert [item["id"] for item in items] == [
+            "welcome",
+            "hints",
+            "borrow",
+            "docs",
+        ]
+        assert items[0]["tour"]["id"] == "demo.welcome"
+        assert items[1]["href"] == reverse("hints")
+
+    def test_nothing_is_done_before_a_borrow(self, client):
+        """The app reports no item done until the visitor borrows the book."""
+        page = client.get(reverse("overview")).content.decode()
+
+        assert self.payload(page)["config"]["completed"] == []
+
+    def test_the_base_template_loads_the_checklist_script(self, client):
+        """The project includes the checklist script after the hints script."""
+        page = client.get(reverse("overview")).content.decode()
+
+        hints = page.index("page_tours/vendor/driver.js-1.11.0/hints.iife.js")
+        assert hints < page.index(
+            "page_tours/vendor/driver.js-1.11.0/checklist.iife.js"
+        )
+
+    @pytest.mark.django_db
+    def test_a_borrow_posted_with_the_pages_token_is_reported_done(self):
+        """The book page's form carries a token, and the next page reports the item."""
+        client = Client(enforce_csrf_checks=True)
+        book = client.get(reverse("library-book")).content.decode()
+        token = re.search(r'name="csrfmiddlewaretoken" value="([^"]+)"', book)
+        assert token is not None
+
+        response = client.post(
+            reverse("library-borrow"), {"csrfmiddlewaretoken": token.group(1)}
+        )
+
+        assert response.status_code == 302
+        assert response["Location"] == reverse("library-book")
+        page = client.get(reverse("overview")).content.decode()
+        assert self.payload(page)["config"]["completed"] == ["borrow"]
+
+    def test_a_borrow_posted_without_a_token_is_refused(self):
+        """The demo runs the CSRF middleware, so a bare post is not accepted."""
+        client = Client(enforce_csrf_checks=True)
+
+        assert client.post(reverse("library-borrow")).status_code == 403
+
+    def test_a_borrow_is_only_taken_as_a_post(self, client):
+        """A plain request for the borrow address does not borrow."""
+        assert client.get(reverse("library-borrow")).status_code == 405
+
+    def test_the_book_page_keeps_the_borrow_button_a_step_points_at(self, client):
+        """The button the tour step selects stays in the page, inside the form."""
+        page = client.get(reverse("library-book")).content.decode()
+        form = page.split("<form", 1)[1].split("</form>", 1)[0]
+
+        assert 'id="library-borrow"' in form
+        assert f'action="{reverse("library-borrow")}"' in page
+
+    def test_the_demo_raises_no_checklist_warning(self):
+        """The checklist's name is declared once and nothing overrides it."""
+        found = [
+            m
+            for m in run_checks()
+            if m.id.startswith("page_tours.")
+            and str(m.obj).partition(".")[0] in {"demo", "library"}
+        ]
+
+        assert found == []
