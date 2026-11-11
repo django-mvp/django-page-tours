@@ -678,6 +678,19 @@ class TestTourWithTheKeyboard:
         expect(page.locator(".driver-popover")).to_have_count(0)
         expect(page.locator(REPLAY)).to_be_focused()
 
+    def test_escape_while_a_step_opens_returns_focus_to_the_control(
+        self, page, live_server
+    ):
+        """Pressing Escape before the next step has finished opening ends the tour."""
+        self.start_from_the_control(page, live_server)
+
+        self.press_next(page)
+        page.keyboard.press("Escape")
+
+        expect(page.locator(".driver-popover")).to_have_count(0)
+        assert_no_driver_markup(page)
+        expect(page.locator(REPLAY)).to_be_focused()
+
     def test_a_failure_on_a_later_step_returns_focus_to_the_control(
         self, page, live_server
     ):

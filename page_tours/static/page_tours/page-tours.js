@@ -138,7 +138,7 @@
       };
     }
 
-    // Driver.js 1.10.2 puts focus back on whatever had it when the current step
+    // Driver.js 1.11.0 puts focus back on whatever had it when the current step
     // opened, which after the first step is a button of a popover it has removed.
     // Focus is put back here instead, on what had it before the tour started.
     function restoreFocus() {
@@ -147,6 +147,18 @@
       if (target && target.isConnected && typeof target.focus === "function") {
         target.focus();
       }
+    }
+
+    // Runs once Driver.js has finished ending the tour, so the focus it moves
+    // on the way out is moved back. A replay that has already started the next
+    // tour keeps everything that tour set up.
+    function finished() {
+      if (tour.isActive()) {
+        return;
+      }
+      window.removeEventListener("error", endTour);
+      stopWatchingOverlay();
+      restoreFocus();
     }
 
     function endTour() {
@@ -160,7 +172,9 @@
       window.removeEventListener("error", endTour);
       stopWatchingOverlay();
       document
-        .querySelectorAll(".driver-overlay, .driver-popover, #driver-dummy-element")
+        .querySelectorAll(
+          ".driver-overlay, .driver-popover, .driver-live-region, #driver-dummy-element"
+        )
         .forEach(function (el) {
           el.remove();
         });
@@ -168,9 +182,12 @@
         "driver-active",
         "driver-fade",
         "driver-simple",
+        "driver-no-scroll",
         "driver-active-element",
         "driver-active-element-parent",
         "driver-active-element-parent-no-scroll",
+        "driver-allowed-element",
+        "driver-no-interaction",
       ].forEach(function (name) {
         document.querySelectorAll("." + name).forEach(function (el) {
           el.classList.remove(name);
@@ -202,22 +219,20 @@
           steps: steps,
           skipMissingElement: true,
           onPopoverRender: guarded(nameParts),
-          // Every way a visitor ends the tour arrives here, including a close
-          // pressed while a step is still opening, which skips onDestroyed.
-          onDestroyStarted: function () {
-            tour.destroy();
-            window.removeEventListener("error", endTour);
-            stopWatchingOverlay();
-            restoreFocus();
-          },
           onDestroyed: function () {
-            window.removeEventListener("error", endTour);
-            stopWatchingOverlay();
+            queueMicrotask(finished);
           },
         }));
         window.addEventListener("error", endTour);
         stopWatchingOverlay();
-        overlayWatcher = new MutationObserver(guarded(nameOverlay));
+        // A tour closed while a step is still opening never reaches onDestroyed,
+        // so the watcher also notices the overlay going.
+        overlayWatcher = new MutationObserver(
+          guarded(function () {
+            nameOverlay();
+            finished();
+          })
+        );
         overlayWatcher.observe(document.body, { childList: true });
         tour.drive();
         markSeen();
