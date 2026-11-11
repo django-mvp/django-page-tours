@@ -117,7 +117,7 @@ applies, or else Driver.js's own default.
 | `completeTitle` | none | The heading once every item is done. |
 | `completeDescription` | none | The text once every item is done. |
 | `completeLauncherText` | none | The text of the launcher once every item is done. |
-| `progressText` | "{{done}} of {{total}}", in the active language | The progress in the panel. |
+| `progressText` | `"{{done}} of {{total}}"`, in the active language | The progress in the panel. |
 | `launcherProgressText` | `"{{done}}/{{total}}"` | The progress on the launcher. |
 | `position` | `"bottom-right"` | Which corner of the window the checklist sits in: a `Position`, one of `"bottom-right"`, `"bottom-left"`, `"top-right"` or `"top-left"`. |
 | `launcher` | `True` | Whether a launcher shows while the panel is closed. |
