@@ -2334,3 +2334,57 @@ class TestChecklistReportAndBrowser:
         open_checklist(page, live_server, "checklist-ticks")
 
         assert done_ids(page) == ["a", "b"]
+
+
+PAGE_BUTTONS = ["#control", "#first", "#second", "#third", "#toggle"]
+
+
+def tab_to(page, selector):
+    """Press Tab until the element of the selector has focus."""
+    for _ in range(20):
+        if page.evaluate("(sel) => document.activeElement.matches(sel)", selector):
+            return
+        page.keyboard.press("Tab")
+    raise AssertionError(f"Tab never reached {selector}")
+
+
+class TestChecklistBesidePage:
+    """The page stays usable with the checklist open, and closing uncovers it."""
+
+    def test_a_button_beside_the_open_checklist_takes_a_click(self, page, live_server):
+        """Every button of the page can be clicked with the panel open."""
+        open_checklist(page, live_server, "checklist")
+        expect(page.locator(PANEL)).to_be_visible()
+
+        for button in PAGE_BUTTONS:
+            page.click(button, timeout=2000)
+
+    def test_closing_the_checklist_uncovers_the_page(self, page, live_server):
+        """Every button of the page can be clicked once the panel is closed."""
+        open_checklist(page, live_server, "checklist")
+        page.click(".driver-checklist-close-btn")
+        expect(page.locator(PANEL)).to_be_hidden()
+
+        for button in PAGE_BUTTONS:
+            page.click(button, timeout=2000)
+
+
+class TestChecklistKeyboard:
+    """Keyboard alone opens the checklist, starts an item and closes it."""
+
+    def test_keys_open_start_and_close(self, page, live_server):
+        """Enter opens the panel and starts an item; Escape ends the tour and closes."""
+        page.goto(live_server.url + reverse("checklist-kinds"))
+        expect(page.locator(LAUNCHER)).to_have_count(1)
+        tab_to(page, LAUNCHER)
+
+        page.keyboard.press("Enter")
+        expect(page.locator(PANEL)).to_be_visible()
+        tab_to(page, trigger("tour"))
+        page.keyboard.press("Enter")
+        expect(page.locator(TITLE)).to_have_text(views.STILL_TOUR.steps[0].title)
+        page.keyboard.press("Escape")
+        expect(page.locator(".driver-popover")).to_have_count(0)
+        page.keyboard.press("Escape")
+
+        expect(page.locator(PANEL)).to_be_hidden()
