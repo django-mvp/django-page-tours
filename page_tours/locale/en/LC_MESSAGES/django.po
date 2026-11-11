@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: django-page-tours\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 09:02+0100\n"
+"POT-Creation-Date: 2026-11-11 14:03+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -23,104 +23,112 @@ msgstr ""
 #: checks.py:36
 #, python-format
 msgid ""
-"No tour is declared with the name %(name)s, so its entry in "
+"No tour or hints are declared with the name %(name)s, so its entry in "
 "PAGE_TOURS_OVERRIDES changes nothing."
 msgstr ""
 
-#: checks.py:40
-msgid "A tour that was renamed has a new name. Update the key to match."
+#: checks.py:41
+msgid ""
+"A tour or hints that were renamed have a new name. Update the key to match."
 msgstr ""
 
-#: checks.py:70
+#: checks.py:74
 #, python-format
 msgid ""
-"%(count)d tours with different steps are declared with the name %(name)s, so "
-"a browser that saw one counts them all as seen."
+"%(count)d tours or sets of hints with different content are declared with "
+"the name %(name)s, so a browser that saw one counts them all as seen."
 msgstr ""
 
-#: checks.py:75
+#: checks.py:80
 msgid ""
-"Give each tour its own name. A reusable app names its tours '<app_label>."
-"<tour>'."
-msgstr ""
-
-#: checks.py:106
-#, python-format
-msgid "%(source)s must be a dict from part to a string of class names."
+"Give each its own name. A reusable app names its declarations '<app_label>."
+"<name>'."
 msgstr ""
 
 #: checks.py:116
 #, python-format
-msgid "%(source)s names '%(part)s', which is not a part of a tour."
-msgstr ""
-
-#: checks.py:118
-#, python-format
-msgid "The parts are: %(parts)s."
+msgid "%(source)s must be a dict from part to a string of class names."
 msgstr ""
 
 #: checks.py:126
 #, python-format
-msgid "%(source)s gives '%(part)s' a value that is not a string."
+msgid "%(source)s names '%(part)s', which is not a part of a tour."
 msgstr ""
 
 #: checks.py:128
+#, python-format
+msgid "The parts are: %(parts)s."
+msgstr ""
+
+#: checks.py:136
+#, python-format
+msgid "%(source)s gives '%(part)s' a value that is not a string."
+msgstr ""
+
+#: checks.py:138
 msgid "Write the class names as one string."
 msgstr ""
 
-#: parts.py:52
-msgid "the PAGE_TOURS_CLASSES setting"
-msgstr ""
-
-#: parts.py:58
+#: driver.py:170
 #, python-format
-msgid "the app '%(label)s'"
+msgid "%(cls)s needs a name."
 msgstr ""
 
-#: tours.py:190
-msgid "A tour needs a name."
+#: driver.py:177
+#, python-format
+msgid "The version of %(cls)s must be a whole number of 1 or more."
 msgstr ""
 
-#: tours.py:192
-msgid "A tour needs at least one step."
-msgstr ""
-
-#: tours.py:199
-msgid "A tour's version must be a whole number of 1 or more."
-msgstr ""
-
-#: tours.py:32
-msgctxt "page tour control"
-msgid "Next"
-msgstr ""
-
-#: tours.py:33
-msgctxt "page tour control"
-msgid "Previous"
-msgstr ""
-
-#: tours.py:34
-msgctxt "page tour control"
-msgid "Done"
-msgstr ""
-
-#: tours.py:35
-msgctxt "page tour control"
-msgid "Close"
-msgstr ""
-
-#: tours.py:305
+#: driver.py:274
 #, python-format
 msgid ""
-"PAGE_TOURS_OVERRIDES[%(name)s] must be the dotted path of a Tour or None."
+"PAGE_TOURS_OVERRIDES[%(name)s] must be the dotted path of a %(cls)s or None."
 msgstr ""
 
-#: tours.py:314
+#: driver.py:283
 #, python-format
 msgid "PAGE_TOURS_OVERRIDES[%(name)s]: %(path)s cannot be imported."
 msgstr ""
 
-#: tours.py:319
+#: driver.py:288
 #, python-format
-msgid "PAGE_TOURS_OVERRIDES[%(name)s]: %(path)s is not a Tour."
+msgid "PAGE_TOURS_OVERRIDES[%(name)s]: %(path)s is not a %(cls)s."
+msgstr ""
+
+#: hints.py:14
+msgctxt "page hint control"
+msgid "Got it"
+msgstr ""
+
+#: parts.py:57
+msgid "the PAGE_TOURS_CLASSES setting"
+msgstr ""
+
+#: parts.py:63
+#, python-format
+msgid "the app '%(label)s'"
+msgstr ""
+
+#: tours.py:21
+msgctxt "page tour control"
+msgid "Next"
+msgstr ""
+
+#: tours.py:22
+msgctxt "page tour control"
+msgid "Previous"
+msgstr ""
+
+#: tours.py:23
+msgctxt "page tour control"
+msgid "Done"
+msgstr ""
+
+#: tours.py:24
+msgctxt "page tour control"
+msgid "Close"
+msgstr ""
+
+#: tours.py:191
+msgid "A tour needs at least one step."
 msgstr ""

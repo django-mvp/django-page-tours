@@ -111,8 +111,9 @@ Place `{{ tour }}` in the template of the page:
 {% endblock content %}
 ```
 
-`{{ tour }}` outputs the tour's steps as a `<script type="application/json">` element, which the
-package's script reads and plays. It draws nothing where it stands, so it can sit anywhere in the
+`{{ tour }}` outputs the tour as a `<script id="page-tours-tour" type="application/json">`
+element, which the package's script reads and plays. The element holds the tour's name, version
+and steps, whether it plays by itself, the classes of each part and the Driver.js options. It draws nothing where it stands, so it can sit anywhere in the
 page, and where it sits does not decide where the tour shows. It needs no tag library: a `Tour`
 renders itself, and Django does not escape it.
 
@@ -131,7 +132,8 @@ closes it at any step, or leaves the page while a step shows. A tour that is see
 by itself again in that browser.
 
 - **It is kept in the visitor's browser only.** The browser stores one entry in its local
-  storage for each seen tour. Nothing is stored on the server, and no cookie is set.
+  storage for each seen tour, holding the version that played and the tour's name. Nothing is
+  stored on the server, and no cookie is set.
 - **The tour's name identifies it.** A tour shown on many addresses is one tour, so seeing it at
   one address hides it at the others. Renaming or moving the view changes nothing, and renaming
   the tour makes it a different tour, so every visitor is shown it again. See
@@ -164,8 +166,10 @@ DASHBOARD_TOUR = Tour(
 A browser that saw any other version plays the tour by itself the next time it opens the page,
 once, and then it is seen again. A browser that has never seen the tour plays it once, as before.
 
-- **A tour without a version is at version 1.** Tours seen before you added a version count as
-  seen at version 1, so adding `version=1` changes nothing.
+- **A tour without a version is at version 1.** Adding `version=1` changes nothing.
+- **A browser that saw a tour before the entry held the tour's name sees it once more.** An
+  entry of the earlier form counts as not seen, and the entry written then is of the current
+  form.
 - **Leave the version alone for a small edit.** A fixed typo or a reworded step keeps its version,
   and nobody is shown the tour again for it. The package never works out a version from the
   steps.
@@ -286,6 +290,17 @@ The fields, with the Driver.js option each one is:
 The [Driver.js configuration reference](https://driverjs.com/docs/configuration) describes each
 option, so moving between it and `Tour` is one to one.
 
+`showButtons` and `disableButtons` take a tuple of `Button` values: `"next"`, `"previous"` and
+`"close"`. `Button` is the type of those values, in `page_tours.tours`:
+
+```python
+Tour(name="dashboard", steps=[...], showButtons=("next", "close"), disableButtons=("close",))
+```
+
+`showButtons` lists the buttons the popover shows, and `disableButtons` lists those that show but
+cannot be pressed. A step takes the same two fields and then uses its own list in place of the
+tour's.
+
 Options that take a JavaScript function, such as `onNextClick`, are not available. Neither are
 `steps` and `skipMissingElement`, which the package sets itself so that a missing or hidden
 element is skipped.
@@ -340,6 +355,23 @@ A step needs no title: Driver.js shows a popover with only a description.
 
 A tour that a project replaces through `PAGE_TOURS_OVERRIDES` plays with the replacement's
 options, not the replaced tour's.
+
+## Declarations share their bases
+
+`Tour` and `TourStep` are built on classes that hold what every declaration for Driver.js has in
+common, in `page_tours.driver`. Every one is declared with keywords only.
+
+- **`DriverObject`** is the base of every class that mirrors an object of Driver.js. It leaves out
+  a field left as `None` and the package's own fields, and passes the rest to Driver.js under the
+  names the fields have. `driver_value` converts one value of a field: a lazy string becomes
+  text in the active language, and a tuple becomes a list.
+- **`PopoverContent`** is the base of `TourStep`. It holds `title`, `description`, `side`,
+  `align` and `popoverClass`. `side` takes a `Side`, one of `"top"`, `"right"`, `"bottom"` or
+  `"left"`, and `align` takes an `Alignment`, one of `"start"`, `"center"` or `"end"`.
+- **`Declaration`** is the base of `Tour`. It holds the `name` and the `version`, refuses a
+  bad one with `ImproperlyConfigured` naming the class, records itself under its name and renders
+  as the element the script plays it from, `page-tours-` followed by its kind. A tour is the
+  kind `"tour"`.
 
 ## See a tour in the demo project
 

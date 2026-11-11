@@ -13,15 +13,10 @@ from django.utils import translation
 from django.utils.safestring import SafeString
 from django.utils.translation import gettext, gettext_lazy
 
-from page_tours import tours as tours_module
+from page_tours import driver as driver_module
+from page_tours.driver import declaration_overrides, declarations, resolve_override
 from page_tours.parts import TourParts
-from page_tours.tours import (
-    Tour,
-    TourStep,
-    declared_tours,
-    resolve_override,
-    tour_overrides,
-)
+from page_tours.tours import Tour, TourStep
 from tests import views
 
 STEP = TourStep(title="Title", description="Body")
@@ -112,11 +107,12 @@ class TestTourDriverOptions:
         """``overlayOpacity`` set on a tour is in the rendered options."""
         tour = Tour(name="tests.options-field", steps=[STEP], overlayOpacity=0.4)
 
-        assert payload_of(tour)["options"]["overlayOpacity"] == 0.4
+        assert payload_of(tour)["config"]["overlayOpacity"] == 0.4
 
     def test_a_tour_that_sets_nothing_renders_driverjs_defaults(self):
         """The defaults of the fields are the defaults of Driver.js 1.11.0."""
-        options = payload_of(views.CLASS_TOUR)["options"]
+        options = payload_of(views.CLASS_TOUR)["config"]
+        options.pop("steps")
 
         assert options == {
             "animate": True,
@@ -147,20 +143,20 @@ class TestTourDriverOptions:
 
     def test_the_options_leave_out_what_is_not_a_driverjs_option(self):
         """Name, steps, autoplay and version are the package's, not Driver.js's."""
-        options = payload_of(views.CLASS_TOUR)["options"]
+        options = payload_of(views.CLASS_TOUR)["config"]
 
-        assert not {"name", "steps", "autoplay", "version"} & set(options)
+        assert not {"name", "autoplay", "version"} & set(options)
 
     def test_a_tuple_of_buttons_arrives_as_a_list(self):
         """The buttons shown are carried as a JSON list."""
         tour = Tour(name="tests.options-buttons", steps=[STEP], showButtons=("next",))
 
-        assert payload_of(tour)["options"]["showButtons"] == ["next"]
+        assert payload_of(tour)["config"]["showButtons"] == ["next"]
 
     def test_the_labels_follow_the_active_language(self):
         """The four labels are translated when the tour renders."""
         with translation.override("de"):
-            options = payload_of(views.CLASS_TOUR)["options"]
+            options = payload_of(views.CLASS_TOUR)["config"]
 
         assert options["nextBtnText"] == "Weiter <i>»</i>"
         assert options["prevBtnText"] == "Zurück"
@@ -172,14 +168,14 @@ class TestTourDriverOptions:
         tour = Tour(name="tests.options-label", steps=[STEP], nextBtnText="Go <b>")
 
         with translation.override("de"):
-            assert payload_of(tour)["options"]["nextBtnText"] == "Go <b>"
+            assert payload_of(tour)["config"]["nextBtnText"] == "Go <b>"
 
     def test_a_value_holding_markup_stays_inside_the_script_element(self):
         """A value cannot close the element it is carried in."""
         value = "</script><script>alert(1)</script>"
         tour = Tour(name="tests.options-markup", steps=[STEP], popoverClass=value)
 
-        assert payload_of(tour)["options"]["popoverClass"] == value
+        assert payload_of(tour)["config"]["popoverClass"] == value
 
 
 class TestTourAsDriverSteps:
@@ -196,7 +192,7 @@ class TestTourAsDriverSteps:
             ],
         )
 
-        steps = tour.as_driver_steps()
+        steps = tour.as_driver()["steps"]
 
         assert [step["popover"]["title"] for step in steps] == [
             "First",
@@ -214,10 +210,10 @@ class TestTourAsDriverSteps:
             ],
         )
 
-        attached, floating = tour.as_driver_steps()
+        attached, floating = tour.as_driver()["steps"]
 
         assert attached["element"] == "#menu"
-        assert "element" not in floating
+        assert floating["element"] == ""
 
     def test_a_step_option_arrives_under_driverjs_name_where_driverjs_reads_it(self):
         """Step-level options sit on the step, popover options inside ``popover``."""
@@ -237,18 +233,18 @@ class TestTourAsDriverSteps:
             ],
         )
 
-        (step,) = tour.as_driver_steps()
+        (step,) = tour.as_driver()["steps"]
 
         assert step == {
             "element": "#menu",
-            "advanceOn": ("click", "keydown"),
+            "advanceOn": ["click", "keydown"],
             "waitForElement": 500,
             "popover": {
                 "title": "Title",
                 "description": "Body",
                 "side": "left",
                 "popoverClass": "wide",
-                "showButtons": ("next",),
+                "showButtons": ["next"],
             },
         }
 
@@ -256,9 +252,12 @@ class TestTourAsDriverSteps:
         """A null in the step would override the tour's value in Driver.js."""
         tour = Tour(name="test", steps=[TourStep(title="Title", description="Body")])
 
-        (step,) = tour.as_driver_steps()
+        (step,) = tour.as_driver()["steps"]
 
-        assert step == {"popover": {"title": "Title", "description": "Body"}}
+        assert step == {
+            "element": "",
+            "popover": {"title": "Title", "description": "Body"},
+        }
 
     def test_title_and_description_are_passed_as_they_are(self):
         """HTML in a title or description reaches Driver.js unescaped."""
@@ -266,7 +265,7 @@ class TestTourAsDriverSteps:
             name="test", steps=[TourStep(title="<b>A</b>", description="<i>B</i>")]
         )
 
-        (step,) = tour.as_driver_steps()
+        (step,) = tour.as_driver()["steps"]
 
         assert step["popover"]["title"] == "<b>A</b>"
         assert step["popover"]["description"] == "<i>B</i>"
@@ -278,14 +277,14 @@ class TestTourAsDriverSteps:
         )
 
         with translation.override("de"):
-            (step,) = tour.as_driver_steps()
+            (step,) = tour.as_driver()["steps"]
             expected = str(gettext("Yes"))
 
         assert step["popover"]["title"] == expected
 
 
 STEPS_SCRIPT = re.compile(
-    r'<script id="page-tour-steps" type="application/json">(.*?)</script>', re.DOTALL
+    r'<script id="page-tours-tour" type="application/json">(.*?)</script>', re.DOTALL
 )
 
 
@@ -305,7 +304,7 @@ def page_payload(response):
 
 def page_steps(response):
     """Return the steps a page carries."""
-    return page_payload(response)["steps"]
+    return page_payload(response)["config"]["steps"]
 
 
 class TestTourRendering:
@@ -333,19 +332,19 @@ class TestTourRendering:
         assert rendered == views.CLASS_TOUR.__html__()
         assert isinstance(rendered, SafeString)
 
-    def test_the_payload_carries_exactly_its_id_version_autoplay_steps_parts_and_options(
+    def test_the_payload_carries_exactly_its_kind_id_version_autoplay_parts_and_config(
         self,
     ):
         """Nothing else reaches the browser."""
         payload = payload_of(views.CLASS_TOUR)
 
         assert set(payload) == {
+            "kind",
             "id",
             "version",
             "autoplay",
-            "steps",
             "parts",
-            "options",
+            "config",
         }
 
     def test_the_payload_carries_the_tours_name_version_and_autoplay(self):
@@ -365,8 +364,9 @@ class TestTourRendering:
 
     def test_the_steps_are_its_steps_as_driverjs_takes_them(self):
         """The steps arrive in the declared order, in Driver.js's form."""
-        assert payload_of(views.CLASS_TOUR)["steps"] == (
-            views.CLASS_TOUR.as_driver_steps()
+        assert (
+            payload_of(views.CLASS_TOUR)["config"]["steps"]
+            == (views.CLASS_TOUR.as_driver()["steps"])
         )
 
     def test_a_translated_step_is_in_the_active_language(self):
@@ -375,7 +375,7 @@ class TestTourRendering:
             payload = payload_of(views.TRANSLATED_TOUR)
             expected = str(gettext("Yes"))
 
-        assert payload["steps"][0]["popover"]["title"] == expected != "Yes"
+        assert payload["config"]["steps"][0]["popover"]["title"] == expected != "Yes"
 
     def test_the_payload_carries_every_part_with_its_name(self):
         """Each part is a key, and its documented name is the first class."""
@@ -432,7 +432,7 @@ class TestTourOnAPage:
         """``{{ tour }}`` with nothing in the context renders nothing."""
         response = client.get(reverse("no-tour"))
 
-        assert "page-tour-steps" not in response.content.decode()
+        assert "page-tours-tour" not in response.content.decode()
 
     def test_a_tour_given_through_as_view_is_on_that_url(self, client):
         """``as_view(extra_context=...)`` puts a tour on one URL."""
@@ -467,7 +467,7 @@ class TestTourOnAPage:
         response = client.get(reverse(name))
 
         assert response.status_code == 404
-        assert "page-tour-steps" not in response.content.decode()
+        assert "page-tours-tour" not in response.content.decode()
 
     def test_a_tour_rendered_twice_is_on_the_page_twice(self, client):
         """The template decides; the browser plays the first one."""
@@ -491,22 +491,25 @@ class TestTourOverrides:
 
         payload = payload_of(views.APP_TOUR)
 
-        assert payload["steps"] == views.QUIET_REPLACEMENT_TOUR.as_driver_steps()
+        assert (
+            payload["config"]["steps"]
+            == views.QUIET_REPLACEMENT_TOUR.as_driver()["steps"]
+        )
         assert payload["autoplay"] is False
 
     def test_one_reworded_step_arrives_among_the_apps_in_order(self, settings):
         """A replacement that rewords one step carries all three, in order."""
         settings.PAGE_TOURS_OVERRIDES = {OVERRIDDEN: "tests.views.REWORDED_TOUR"}
 
-        steps = payload_of(views.APP_TOUR)["steps"]
+        steps = payload_of(views.APP_TOUR)["config"]["steps"]
 
-        assert steps == views.REWORDED_TOUR.as_driver_steps()
+        assert steps == views.REWORDED_TOUR.as_driver()["steps"]
 
     def test_a_replacement_renders_its_own_options(self, settings):
         """The options are the replacement's, not the replaced tour's."""
         settings.PAGE_TOURS_OVERRIDES = {OVERRIDDEN: "tests.views.OPTIONS_TOUR"}
 
-        options = payload_of(views.APP_TOUR)["options"]
+        options = payload_of(views.APP_TOUR)["config"]
 
         assert options["showProgress"] is True
         assert options["progressText"] == "{{current}} / {{total}}"
@@ -520,11 +523,11 @@ class TestTourOverrides:
     def test_rendering_a_replacement_declares_no_tour(self, settings):
         """Playing a replacement under the app tour's name is not a second tour."""
         settings.PAGE_TOURS_OVERRIDES = {OVERRIDDEN: REPLACEMENT}
-        before = {name: len(tours) for name, tours in declared_tours().items()}
+        before = {name: len(tours) for name, tours in declarations().items()}
 
         str(views.APP_TOUR)
 
-        after = {name: len(tours) for name, tours in declared_tours().items()}
+        after = {name: len(tours) for name, tours in declarations().items()}
         assert after == before
 
     def test_none_turns_the_tour_off(self, settings):
@@ -539,7 +542,7 @@ class TestTourOverrides:
 
         response = client.get(reverse("overridden-off"))
 
-        assert "page-tour-steps" not in response.content.decode()
+        assert "page-tours-tour" not in response.content.decode()
 
     @pytest.mark.parametrize(
         "url", ["overridden", "overridden-again", "overridden-function"]
@@ -550,7 +553,7 @@ class TestTourOverrides:
 
         response = client.get(reverse(url))
 
-        assert page_steps(response) == views.REPLACEMENT_TOUR.as_driver_steps()
+        assert page_steps(response) == views.REPLACEMENT_TOUR.as_driver()["steps"]
 
     def test_another_tour_is_untouched(self, settings):
         """A tour the setting does not name renders as declared."""
@@ -558,7 +561,7 @@ class TestTourOverrides:
 
         payload = payload_of(views.UNTOUCHED_TOUR)
 
-        assert payload["steps"] == views.UNTOUCHED_TOUR.as_driver_steps()
+        assert payload["config"]["steps"] == views.UNTOUCHED_TOUR.as_driver()["steps"]
 
     @pytest.mark.parametrize(
         ("declared", "path", "played"),
@@ -593,7 +596,10 @@ class TestTourOverrides:
 
         settings.PAGE_TOURS_OVERRIDES = {}
 
-        assert payload_of(views.APP_TOUR)["steps"] == views.APP_TOUR.as_driver_steps()
+        assert (
+            payload_of(views.APP_TOUR)["config"]["steps"]
+            == views.APP_TOUR.as_driver()["steps"]
+        )
 
     def test_a_bad_entry_is_refused_when_the_tour_renders(self, settings):
         """An entry set after start-up that cannot be resolved raises."""
@@ -652,18 +658,21 @@ class TestTourOverridesRefused:
         """The replacements and the tours turned off are returned by name."""
         settings.PAGE_TOURS_OVERRIDES = {OVERRIDDEN: REPLACEMENT, "other": None}
 
-        assert tour_overrides() == {OVERRIDDEN: views.REPLACEMENT_TOUR, "other": None}
+        assert declaration_overrides() == {
+            OVERRIDDEN: views.REPLACEMENT_TOUR,
+            "other": None,
+        }
 
     def test_no_setting_resolves_to_nothing(self):
         """A project that sets nothing changes no tour."""
-        assert tour_overrides() == {}
+        assert declaration_overrides() == {}
 
     def test_one_bad_entry_refuses_the_whole_setting(self, settings):
         """A good entry does not hide a bad one."""
         settings.PAGE_TOURS_OVERRIDES = {OVERRIDDEN: REPLACEMENT, "other": 42}
 
         with pytest.raises(ImproperlyConfigured):
-            tour_overrides()
+            declaration_overrides()
 
 
 class TestDeclaredTours:
@@ -673,14 +682,14 @@ class TestDeclaredTours:
         """A tour can be found by its name once it exists."""
         tour = Tour(name="tests.recorded", steps=[STEP])
 
-        assert declared_tours()["tests.recorded"] == [tour]
+        assert declarations()["tests.recorded"] == [tour]
 
     def test_two_tours_with_one_name_are_both_recorded(self):
         """Both are kept, so the check can report the clash."""
         first = Tour(name="tests.twice", steps=[STEP])
         second = Tour(name="tests.twice", steps=[STEP], version=2)
 
-        recorded = declared_tours()["tests.twice"]
+        recorded = declarations()["tests.twice"]
 
         assert len(recorded) == 2
         assert any(tour is first for tour in recorded)
@@ -691,7 +700,7 @@ class TestDeclaredTours:
         Tour(name="tests.forgotten", steps=[STEP])
         gc.collect()
 
-        assert "tests.forgotten" not in declared_tours()
+        assert "tests.forgotten" not in declarations()
 
     def test_tours_made_and_dropped_leave_nothing_behind(self):
         """A view that builds its tour on every request does not grow the record."""
@@ -699,10 +708,10 @@ class TestDeclaredTours:
             Tour(name="tests.per-request", steps=[STEP])
         gc.collect()
 
-        assert "tests.per-request" not in tours_module._declared
+        assert "tests.per-request" not in driver_module.declared
 
     def test_the_tours_of_the_routed_views_are_declared(self):
         """A tour declared in a view module is recorded when the module is imported."""
         assert any(
-            tour is views.APP_TOUR for tour in declared_tours()[views.APP_TOUR.name]
+            tour is views.APP_TOUR for tour in declarations()[views.APP_TOUR.name]
         )

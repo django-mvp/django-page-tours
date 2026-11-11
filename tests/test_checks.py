@@ -6,11 +6,13 @@ from django.core import checks
 from django.core.checks import run_checks
 from django.core.management import call_command
 
+from page_tours.hints import Hint, Hints
 from page_tours.parts import TourParts
 from page_tours.tours import Tour, TourStep
 from tests import views
 
 STEP = TourStep(title="Title", description="Body")
+HINT = Hint(element="#menu", title="Title", description="Body")
 
 
 def warnings_of(check_id):
@@ -124,6 +126,76 @@ class TestUniqueNamesCheck:
         assert {first.name, second.name}.isdisjoint(found)
 
 
+class TestOverridesCheckForHints:
+    """The stale-key warning knows the names of hints."""
+
+    def test_it_is_silent_for_a_key_that_names_only_hints(self, settings):
+        """A name that only hints carry exists."""
+        hints = Hints(name="tests.only-hints", hints=[HINT])
+        settings.PAGE_TOURS_OVERRIDES = {hints.name: None}
+
+        assert warnings_of("page_tours.W002") == {}
+
+    def test_it_warns_for_a_key_that_names_no_declaration_of_any_kind(self, settings):
+        """Hints existing does not excuse a stale key."""
+        hints = Hints(name="tests.some-hints", hints=[HINT])
+        settings.PAGE_TOURS_OVERRIDES = {"tests.not-declared": None}
+
+        assert set(warnings_of("page_tours.W002")) == {"tests.not-declared"}
+        assert hints.name not in warnings_of("page_tours.W002")
+
+
+class TestUniqueNamesCheckForHints:
+    """The duplicate-name warning covers hints and the mix of hints and tours."""
+
+    def test_it_warns_for_two_hints_with_one_name_and_different_hints(self):
+        """They would share what a browser remembers and one override."""
+        first = Hints(name="tests.hints-clash", hints=[HINT])
+        second = Hints(
+            name="tests.hints-clash",
+            hints=[Hint(element="#other", title="Other", description="X")],
+        )
+
+        found = warnings_of("page_tours.W005")
+
+        assert "tests.hints-clash" in found
+        assert found["tests.hints-clash"].level == checks.WARNING
+        assert first != second
+
+    def test_it_is_silent_for_the_same_hints_declared_twice(self):
+        """Hints made twice with the same hints are one declaration."""
+        first = Hints(name="tests.hints-twins", hints=[HINT])
+        second = Hints(name="tests.hints-twins", hints=[HINT])
+
+        assert "tests.hints-twins" not in warnings_of("page_tours.W005")
+        assert first == second
+
+    def test_the_same_hints_at_another_version_are_one_declaration(self):
+        """One set of hints routed at two versions is how a new version is tried."""
+        first = Hints(name="tests.hints-versions", hints=[HINT])
+        second = Hints(name="tests.hints-versions", hints=[HINT], version=2)
+
+        assert "tests.hints-versions" not in warnings_of("page_tours.W005")
+        assert first != second
+
+    def test_it_warns_for_a_tour_and_hints_under_one_name(self):
+        """One name is one namespace for every kind of declaration."""
+        kept = [
+            Tour(name="tests.mixed", steps=[STEP]),
+            Hints(name="tests.mixed", hints=[HINT]),
+        ]
+
+        assert "tests.mixed" in warnings_of("page_tours.W005")
+        del kept
+
+    def test_it_is_silent_for_a_tour_and_hints_with_their_own_names(self):
+        """Different names never clash, whatever the kind."""
+        tour = Tour(name="tests.mixed-tour", steps=[STEP])
+        hints = Hints(name="tests.mixed-hints", hints=[HINT])
+
+        assert {tour.name, hints.name}.isdisjoint(warnings_of("page_tours.W005"))
+
+
 class TestClassesCheck:
     """The warnings for classes configured for the wrong parts or in the wrong shape."""
 
@@ -166,6 +238,25 @@ class TestClassesCheck:
 
         assert [issue.id for issue in found] == ["page_tours.W004"]
         assert "PAGE_TOURS_CLASSES" in found[0].msg
+
+    def test_the_beacon_is_a_known_part(self, settings):
+        """The beacon of a hint is not reported as an unknown part."""
+        assert self.issues(settings, {"beacon": "dot"}) == []
+
+    def test_a_beacon_value_that_is_not_a_string_gives_w004_naming_the_beacon(
+        self, settings
+    ):
+        """A list of class names is not a string of them, for the beacon too."""
+        found = self.issues(settings, {"beacon": ["dot"]})
+
+        assert [issue.id for issue in found] == ["page_tours.W004"]
+        assert "beacon" in found[0].msg
+
+    def test_an_unknown_part_is_still_reported_beside_the_beacon(self, settings):
+        """Adding the beacon leaves the unknown-part warning in place."""
+        found = self.issues(settings, {"beacon": "dot", "footer": "x"})
+
+        assert [issue.id for issue in found] == ["page_tours.W003"]
 
     def test_each_wrong_entry_gets_its_own_warning(self, settings):
         """Two mistakes are two warnings."""

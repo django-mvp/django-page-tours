@@ -15,13 +15,14 @@ PARTS = [
     "done",
     "close",
     "highlight",
+    "beacon",
 ]
 
 
 class TestTourParts:
     """The parts of a shown step and the classes each one carries."""
 
-    def test_the_parts_are_the_nine_of_a_shown_step(self):
+    def test_the_parts_are_the_nine_of_a_step_and_the_beacon_of_a_hint(self):
         """The list of parts exists once, in this order."""
         assert list(TourParts.parts) == PARTS
 
@@ -223,3 +224,47 @@ class TestTourPartsAppDefaults:
 
         assert len(sources) == 2
         assert "design_system" in sources[1]
+
+
+class TestBeaconPart:
+    """The beacon of a hint is a part like those of a step."""
+
+    def test_the_beacon_is_named_page_tour_beacon(self):
+        """The documented name is built from the part's key."""
+        assert TourParts.name("beacon") == "page-tour-beacon"
+
+    def test_the_beacon_carries_its_name_with_no_setting(self, settings):
+        """A project that configures nothing still gets the beacon named."""
+        settings.PAGE_TOURS_CLASSES = {}
+
+        assert TourParts.classes()["beacon"] == ["page-tour-beacon"]
+
+    def test_the_beacon_carries_its_name_then_its_configured_classes(self, settings):
+        """The documented name comes first, the configured classes follow."""
+        settings.PAGE_TOURS_CLASSES = {"beacon": "dot pulse"}
+
+        assert TourParts.classes()["beacon"] == ["page-tour-beacon", "dot", "pulse"]
+
+    def test_no_other_part_carries_the_beacon_classes(self, settings):
+        """Classes configured for the beacon stay on the beacon."""
+        settings.PAGE_TOURS_CLASSES = {"beacon": "dot"}
+
+        classes = TourParts.classes()
+        del classes["beacon"]
+        assert all("dot" not in tokens for tokens in classes.values())
+
+    def test_an_installed_apps_beacon_classes_apply_with_no_setting(
+        self, settings, installed
+    ):
+        """A design system styles the beacon with nothing configured."""
+        settings.PAGE_TOURS_CLASSES = {}
+        installed(DESIGN_SYSTEM)
+
+        assert TourParts.classes()["beacon"] == ["page-tour-beacon", "ds-beacon"]
+
+    def test_the_setting_replaces_the_apps_beacon_classes(self, settings, installed):
+        """The project wins for the beacon when it configures it."""
+        settings.PAGE_TOURS_CLASSES = {"beacon": "dot"}
+        installed(DESIGN_SYSTEM)
+
+        assert TourParts.classes()["beacon"] == ["page-tour-beacon", "dot"]

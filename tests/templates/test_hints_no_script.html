@@ -1,0 +1,16 @@
+{% load static %}<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Test page</title>
+    <link rel="stylesheet" href="{% static 'page_tours/page-tours.css' %}">
+    <script src="{% static 'page_tours/vendor/driver.js-1.11.0/driver.js.iife.js' %}" defer></script>
+    <script src="{% static 'page_tours/page-tours.js' %}" defer></script>
+  </head>
+  <body>
+    <h1>Page</h1>
+    <button id="first" type="button">First</button>
+    <button id="restore" type="button" data-page-hints-restore hidden>Restore</button>
+    {{ hints }}
+  </body>
+</html>

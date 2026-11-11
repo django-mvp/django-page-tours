@@ -1,15 +1,15 @@
 # ADR 0006 — A tour is named by its developer
 
 **Status:** accepted. Supersedes ADR 0002 and ADR 0004. Amended by ADR 0007, which changes how a
-page gets its tour.
+page gets its tour, and by ADR 0008, which changes what the browser stores.
 
 ## Decision
 
 A tour carries a name, given where it is declared: `Tour(name="dashboard", steps=[...])`. The
 name is required and is the tour's identity everywhere.
 
-- The browser remembers a seen tour under `page-tours:seen:<name>`, holding the version that
-  played (ADR 0003).
+- The browser remembers a seen tour under `page-tours:seen:<name>`, for the version that
+  played (ADR 0003), in the shape ADR 0008 gives every declaration's record.
 - A project replaces or turns off an installed app's tour with `PAGE_TOURS_OVERRIDES`, keyed by
   tour name. Each value is the dotted path of a replacement `Tour`, or `None` to turn the tour off,
   and every entry is resolved when the project starts. A replacement has a name of its own, and

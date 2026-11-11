@@ -12,4 +12,5 @@ class DesignSystemConfig(AppConfig):
         "box": "ds-box ds-raised",
         "next": "ds-button",
         "done": "ds-button",
+        "beacon": "ds-beacon",
     }

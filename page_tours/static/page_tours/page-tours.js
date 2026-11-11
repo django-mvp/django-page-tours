@@ -1,96 +1,104 @@
 (function () {
   "use strict";
 
-  // The page's tour, from the element `{{ tour }}` renders. The page is looked
-  // at only once it is parsed, so the element may sit anywhere in it and the
-  // scripts may load in any way. A page has one tour: should the element appear
-  // twice, the first is played and the other is left alone.
-  function play() {
-    var script = document.getElementById("page-tour-steps");
-    var driver = window.driver && window.driver.js && window.driver.js.driver;
-    if (!script || !driver) {
-      return;
-    }
-
-    // Declared first, the page-tours cascade layer is the lowest of the page's.
-    // The link is found by the file it loads, which a hashed name still contains.
-    var stylesheet = document.querySelector(
-      'link[rel~="stylesheet"][href*="page_tours/page-tours."]'
-    );
-    if (stylesheet && document.head.firstElementChild !== stylesheet) {
-      document.head.prepend(stylesheet);
-    }
-
-    function visibleElement(selector) {
-      try {
-        var el = document.querySelector(selector);
-        if (el && el.checkVisibility({ visibilityProperty: true, opacityProperty: true })) {
-          return el;
-        }
-      } catch (error) {
-        // An invalid selector counts as an element that is not there.
+  // The element of the selector, when it is there and can be seen.
+  function visibleElement(selector) {
+    try {
+      var el = document.querySelector(selector);
+      if (el && el.checkVisibility({ visibilityProperty: true, opacityProperty: true })) {
+        return el;
       }
-      return undefined;
+    } catch (error) {
+      // An invalid selector counts as an element that is not there.
     }
+    return undefined;
+  }
 
-    var payload = JSON.parse(script.textContent);
-    var seenKey = "page-tours:seen:" + payload.id;
-    // The entry holds the version that played. A browser that saw the tour before
-    // tours had versions holds "1", which is the version a tour has by default.
-    var seenVersion = String(payload.version);
-    var steps = payload.steps.map(function (step) {
+  // What a visitor did under a declaration's name: a list of ids kept in the
+  // browser for the version that is playing. An entry of another version, of
+  // another shape or that cannot be read counts as nothing done.
+  function memory(kind, payload) {
+    var key = "page-tours:" + kind + ":" + payload.id;
+    return {
+      get: function () {
+        try {
+          var entry = JSON.parse(window.localStorage.getItem(key));
+          if (entry && entry.version === payload.version && Array.isArray(entry.ids)) {
+            return entry.ids;
+          }
+        } catch (error) {
+          // Storage that cannot be read holds nothing.
+        }
+        return [];
+      },
+      set: function (ids) {
+        try {
+          window.localStorage.setItem(
+            key,
+            JSON.stringify({ version: payload.version, ids: ids })
+          );
+        } catch (error) {
+          // Storage that cannot be written means nothing is remembered.
+        }
+      },
+      clear: function () {
+        try {
+          window.localStorage.removeItem(key);
+        } catch (error) {
+          // Storage that cannot be written means nothing is remembered.
+        }
+      },
+    };
+  }
+
+  function addClasses(parts, element, part) {
+    var tokens = parts && parts[part];
+    if (element && tokens && tokens.length) {
+      element.classList.add.apply(element.classList, tokens);
+    }
+  }
+
+  // Gives every part of the shown popover its documented name and the classes
+  // the site configured for it, and nothing else: no attribute, text or role.
+  // Where there is no driver to ask, the popover is not a step of a tour and
+  // its button is the next one.
+  function popoverParts(parts) {
+    return function (popover, opts) {
+      var last = opts && opts.driver && opts.driver.isLastStep();
+      addClasses(parts, popover.wrapper, "box");
+      addClasses(parts, popover.title, "title");
+      addClasses(parts, popover.description, "text");
+      addClasses(parts, popover.progress, "progress");
+      addClasses(parts, popover.previousButton, "previous");
+      addClasses(parts, popover.nextButton, last ? "done" : "next");
+      addClasses(parts, popover.closeButton, "close");
+    };
+  }
+
+  // Plays the tour a payload describes.
+  function playTour(payload, driver) {
+    var seen = memory("seen", payload);
+    var nameParts = popoverParts(payload.parts);
+    var steps = payload.config.steps.map(function (step) {
       var driverStep = Object.assign({}, step);
       if (step.element) {
         driverStep.element = function () {
           return visibleElement(step.element);
         };
+      } else {
+        delete driverStep.element;
       }
       return driverStep;
     });
 
     function showable() {
-      return payload.steps.some(function (step) {
+      return payload.config.steps.some(function (step) {
         return !step.element || visibleElement(step.element);
       });
     }
 
-    function isSeen() {
-      try {
-        return window.localStorage.getItem(seenKey) === seenVersion;
-      } catch (error) {
-        return false;
-      }
-    }
-
-    function markSeen() {
-      try {
-        window.localStorage.setItem(seenKey, seenVersion);
-      } catch (error) {
-        // Storage that cannot be written means the tour plays on every visit.
-      }
-    }
-
     var tour;
     var returnFocusTo;
-
-    function addClasses(element, part) {
-      var tokens = payload.parts && payload.parts[part];
-      if (element && tokens && tokens.length) {
-        element.classList.add.apply(element.classList, tokens);
-      }
-    }
-
-    // Gives every part of the shown step its documented name and the classes the
-    // site configured for it, and nothing else: no attribute, text or role.
-    function nameParts(popover, opts) {
-      addClasses(popover.wrapper, "box");
-      addClasses(popover.title, "title");
-      addClasses(popover.description, "text");
-      addClasses(popover.progress, "progress");
-      addClasses(popover.previousButton, "previous");
-      addClasses(popover.nextButton, opts.driver.isLastStep() ? "done" : "next");
-      addClasses(popover.closeButton, "close");
-    }
 
     // Driver.js writes the overlay's fill and opacity as inline styles, which no
     // site rule can beat. As attributes of the svg they look the same and give way.
@@ -101,7 +109,7 @@
       if (!overlay) {
         return;
       }
-      addClasses(overlay, "highlight");
+      addClasses(payload.parts, overlay, "highlight");
       var path = overlay.querySelector("path");
       [
         ["fill", "fill"],
@@ -215,7 +223,7 @@
         returnFocusTo = document.activeElement;
         // The tour's own options go first, so the settings the package
         // depends on below replace any of the same name.
-        tour = driver(Object.assign({}, payload.options, {
+        tour = driver(Object.assign({}, payload.config, {
           steps: steps,
           skipMissingElement: true,
           onPopoverRender: guarded(nameParts),
@@ -235,7 +243,7 @@
         );
         overlayWatcher.observe(document.body, { childList: true });
         tour.drive();
-        markSeen();
+        seen.set([payload.id]);
       } catch (error) {
         endTour();
       }
@@ -250,9 +258,110 @@
       control.hidden = false;
     });
 
-    if (payload.autoplay && !isSeen()) {
+    if (payload.autoplay && seen.get().length === 0) {
       start();
     }
+  }
+
+  // Shows the hints a payload describes. A hint's key is worked out in the
+  // script only, so the build's own `id` stays as declared.
+  function playHints(payload, hintsDriver) {
+    var config = payload.config;
+    var shared = config.beacon || {};
+    var dismissed = memory("dismissed", payload);
+
+    function keyOf(hint) {
+      return hint.id || hint.element;
+    }
+
+    var hints = config.hints.map(function (hint) {
+      var own = hint.beacon || {};
+      var beacon = Object.assign({}, own);
+      var classes = ((payload.parts && payload.parts.beacon) || []).concat(
+        own.className || shared.className || []
+      );
+      if (classes.length) {
+        beacon.className = classes.join(" ");
+      }
+      return Object.assign({}, hint, {
+        beacon: beacon,
+        popover: Object.assign({}, hint.popover, {
+          onPopoverRender: popoverParts(payload.parts),
+        }),
+      });
+    });
+
+    function undismissed() {
+      var keys = dismissed.get();
+      return hints.filter(function (hint) {
+        return keys.indexOf(keyOf(hint)) === -1;
+      });
+    }
+
+    // Where nothing can be remembered, Driver.js still keeps a dismissed hint
+    // hidden until the page is left.
+    var instance = hintsDriver(
+      Object.assign({}, config, {
+        hints: undismissed(),
+        onDismiss: function (element, hint) {
+          var keys = dismissed.get();
+          if (keys.indexOf(keyOf(hint)) === -1) {
+            dismissed.set(keys.concat(keyOf(hint)));
+          }
+        },
+      })
+    );
+    instance.show();
+
+    // A restore control is the developer's own element, written with `hidden`.
+    document.querySelectorAll("[data-page-hints-restore]").forEach(function (control) {
+      control.addEventListener("click", function () {
+        dismissed.clear();
+        instance.setHints(hints);
+        instance.show();
+      });
+      control.hidden = false;
+    });
+  }
+
+  // Plays every kind of declaration the page carries, each from its own element
+  // and each in its own try, so one that fails neither stops the other nor
+  // raises on the page. Hints come first, so they are on the page before a tour
+  // starts. The page is looked at only once it is parsed, so an element may sit
+  // anywhere in it and the scripts may load in any way. A page has one of each
+  // kind: should an element appear twice, the first is played and the other is
+  // left alone.
+  function play() {
+    var tourDriver = window.driver && window.driver.js && window.driver.js.driver;
+    var hintsDriver = window.driverHints && window.driverHints.hints;
+    var kinds = [
+      ["hints", playHints, hintsDriver],
+      ["tour", playTour, tourDriver],
+    ];
+    var present = kinds.filter(function (kind) {
+      return kind[2] && document.getElementById("page-tours-" + kind[0]);
+    });
+    if (present.length === 0) {
+      return;
+    }
+
+    // Declared first, the page-tours cascade layer is the lowest of the page's.
+    // The link is found by the file it loads, which a hashed name still contains.
+    var stylesheet = document.querySelector(
+      'link[rel~="stylesheet"][href*="page_tours/page-tours."]'
+    );
+    if (stylesheet && document.head.firstElementChild !== stylesheet) {
+      document.head.prepend(stylesheet);
+    }
+
+    present.forEach(function (kind) {
+      try {
+        var script = document.getElementById("page-tours-" + kind[0]);
+        kind[1](JSON.parse(script.textContent), kind[2]);
+      } catch (error) {
+        // A declaration that cannot be played leaves the page as it was.
+      }
+    });
   }
 
   if (document.readyState === "loading") {

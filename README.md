@@ -120,6 +120,10 @@ as Driver.js names them, such as `Tour(showProgress=True)`. See the
 [Driver.js configuration reference](https://driverjs.com/docs/configuration) for each option.
 Options that take a function are not available.
 
+The package also puts hints on a page: markers a visitor opens in any order and dismisses for good
+in their browser. `Hints` declares them, and `{{ hints }}` renders them. See the
+[documentation](https://django-mvp.github.io/django-page-tours/developer/hints.html).
+
 A project can replace the tour of an installed app, or turn it off, from its own settings with
 `PAGE_TOURS_OVERRIDES`, keyed by the tour's name, without editing the app.
 
