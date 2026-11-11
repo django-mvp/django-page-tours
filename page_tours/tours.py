@@ -36,10 +36,6 @@ STEP_LEVEL_FIELDS = {
 
 Button = Literal["next", "previous", "close"]
 
-# Driver.js's advanceOn: no event, or the event or events on the element that
-# move to the next step.
-AdvanceOn = Literal[False] | str | tuple[str, ...]
-
 # Driver.js's own default progress text.
 PROGRESS_TEXT = "{{current}} of {{total}}"
 
@@ -106,7 +102,7 @@ class TourStep:
     description: str | Promise = ""
     element: str = ""
     disableActiveInteraction: bool | None = None
-    advanceOn: AdvanceOn | None = None
+    advanceOn: Literal[False] | str | tuple[str, ...] | None = None
     waitForElement: int | None = None
     side: Literal["top", "right", "bottom", "left"] | None = None
     align: Literal["start", "center", "end"] | None = None
@@ -201,7 +197,7 @@ class Tour:
     smoothScroll: bool = False
     disableActiveInteraction: bool = False
     allowKeyboardControl: bool = True
-    advanceOn: AdvanceOn = False
+    advanceOn: Literal[False] | str | tuple[str, ...] = False
     waitForElement: int = 0
     stagePadding: int = 10
     stageRadius: int = 5
