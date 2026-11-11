@@ -204,3 +204,20 @@ D19 was passed at the specification gate on 2026-11-11.
 (which would record itself under that name). Taken while building the shared bases.
 
 **ADR:** none — a signature inside the base, covered by D14's ADR
+
+## D22 — Code review outcome
+
+One review, verdict request changes: one high, one medium, four low.
+
+- Hints refused an empty list, which the specification's Edge Cases allow: the refusal is
+  removed and a test renders empty hints (T016).
+- The styling page said a hint's button carries `done`; it carries `next` (T017).
+- Three new lines past 88 characters, `th` cells for two demo table rows, and two tests that could
+  not fail (one compared the payload with the function that builds it, one ended on an assertion
+  true by construction) are fixed (T018).
+- Not changed: FR-021 says tours stay declared exactly as they are, and D13 made declarations
+  keyword-only. Every tour in the documentation, the demo and the tests was already declared with
+  keywords, so none changes, and the changelog names the break for anyone who wrote positional
+  arguments.
+
+**ADR:** none — review outcome, recorded

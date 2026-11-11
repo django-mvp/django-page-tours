@@ -125,3 +125,11 @@ open a hint, and confirm the popover's parts and the beacon carry them.
   part's name and classes ahead of the hint's own class, and a hint with no class keeps the hints'
   beacon class) and 3 (an installed app's beacon classes apply when the setting has none). The
   styling page documents the beacon part (FR-019, SC-006).
+
+## Review fixes
+
+- [x] T016 [US1] Hints declared with an empty list render and show nothing, as the Edge Cases
+  say, instead of being refused.
+- [x] T017 [US1] The styling page names the part a hint's button carries: `next`.
+- [x] T018 [US1] New lines kept within 88 characters, the demo table's best months marked with
+  `td` cells, and two tests made able to fail.
