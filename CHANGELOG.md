@@ -10,8 +10,7 @@ All notable changes to this project are documented in this file. The format foll
 
 - **Breaking:** `TourStep`'s `text` is now `description`, matching Driver.js. To upgrade, rename the
   argument: `TourStep(title="Welcome", text="Hello")` becomes
-  `TourStep(title="Welcome", description="Hello")`. `element` now comes first among the fields, so
-  pass every argument by name.
+  `TourStep(title="Welcome", description="Hello")`.
 - A step takes Driver.js's per-step options, under the names Driver.js gives them: `side`, `align`,
   `popoverClass`, `showButtons`, `disableButtons`, `showProgress`, `progressText`, `nextBtnText`,
   `prevBtnText`, `doneBtnText`, `disableActiveInteraction`, `advanceOnClick` and `waitForElement`. An

@@ -72,11 +72,11 @@ class TourStep:
     writes them into the page as HTML.
 
     Args:
-        element: A CSS selector for the element the step points at. Empty means
-            the step is attached to nothing.
         title: The heading of the popover. Without one, the popover shows no
             heading.
         description: The body of the popover.
+        element: A CSS selector for the element the step points at. Empty means
+            the step is attached to nothing.
         disableActiveInteraction: Whether the highlighted element ignores clicks
             on this step.
         advanceOnClick: Whether clicking the element moves to the next step.
@@ -97,9 +97,9 @@ class TourStep:
         doneBtnText: The text of the button when this is the last step.
     """
 
-    element: str = ""
     title: str | Promise = ""
     description: str | Promise = ""
+    element: str = ""
     disableActiveInteraction: bool | None = None
     advanceOnClick: bool | None = None
     waitForElement: int | None = None
@@ -289,9 +289,9 @@ class Tour:
     def as_driver_steps(self) -> list[dict[str, Any]]:
         """Convert the steps to the form Driver.js takes.
 
-        Title, description and button texts are converted with ``str()`` when this
-        is called, so the active language applies. Fields left as ``None``, and an
-        empty ``element``, are left out so that the tour's value applies.
+        Fields left as ``None`` or empty are left out, so that the tour's value
+        applies. Translated text is converted with ``str()`` when this is called,
+        so the active language applies.
 
         Returns:
             One Driver.js step per step, in the declared order.
