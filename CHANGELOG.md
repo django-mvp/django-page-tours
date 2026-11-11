@@ -8,6 +8,27 @@ All notable changes to this project are documented in this file. The format foll
 
 ### Changed
 
+- **Breaking:** Driver.js 1.11.0 is shipped in place of 1.10.2, under
+  `page_tours/vendor/driver.js-1.11.0/`. To upgrade, change the path of the script in your base
+  template to `{% static 'page_tours/vendor/driver.js-1.11.0/driver.js.iife.js' %}`. The release's
+  hints and checklist builds are shipped beside it: `hints.iife.js`, `hints.css`,
+  `checklist.iife.js` and `checklist.css`. sha256 of the archive `npm pack driver.js@1.11.0`
+  downloads:
+  `d30f1b74d5c7864112d456cbcb21f030f77d605b844d468b7a195f19c7442c2a`.
+- **Breaking:** `advanceOnClick` on `Tour` and `TourStep` is now `advanceOn`, as Driver.js 1.11.0
+  names it. It takes `False`, an event name or a tuple of event names. To upgrade, replace
+  `advanceOnClick=True` with `advanceOn="click"`.
+- `overlayClickBehavior` also takes `"none"`, so clicking the overlay does nothing.
+- **Breaking:** `TourStep`'s `text` is now `description`, matching Driver.js. To upgrade, rename the
+  argument: `TourStep(title="Welcome", text="Hello")` becomes
+  `TourStep(title="Welcome", description="Hello")`.
+- A step takes Driver.js's per-step options, under the names Driver.js gives them: `side`, `align`,
+  `popoverClass`, `showButtons`, `disableButtons`, `showProgress`, `progressText`, `nextBtnText`,
+  `prevBtnText`, `doneBtnText`, `disableActiveInteraction`, `advanceOn` and `waitForElement`. An
+  option a step leaves out uses the tour's value.
+- Titles and descriptions are passed to Driver.js as they are, so HTML in them renders. Never build
+  one from a visitor's input.
+- A step no longer refuses an empty title or description.
 - **Breaking:** a page outputs its own tour with `{{ tour }}`, in place of `{% page_tour %}` in the
   base template. A `Tour` renders itself as the `<script type="application/json">` element the
   package's script plays it from, so `{{ tour }}` needs no tag library and Django does not escape
@@ -21,7 +42,7 @@ All notable changes to this project are documented in this file. The format foll
      ```django
      {% load static %}
      <link rel="stylesheet" href="{% static 'page_tours/page-tours.css' %}">
-     <script src="{% static 'page_tours/vendor/driver.js-1.10.2/driver.js.iife.js' %}" defer></script>
+     <script src="{% static 'page_tours/vendor/driver.js-1.11.0/driver.js.iife.js' %}" defer></script>
      <script src="{% static 'page_tours/page-tours.js' %}" defer></script>
      ```
 
@@ -62,10 +83,12 @@ All notable changes to this project are documented in this file. The format foll
 
 ### Added
 
-- `Tour(driver_options={...})` passes options of its own to the Driver.js constructor as they
-  are, for what the package does not set, such as `{"showProgress": True}`. The settings the
-  package depends on win over an option of the same name. A value with no JSON form raises
-  `ImproperlyConfigured` when the tour is declared.
+- `Tour` has a field for each Driver.js 1.11.0 configuration option that takes a plain value,
+  named and defaulted as in Driver.js: `Tour(showProgress=True)`. Options that take a function are not available. See
+  <https://driverjs.com/docs/configuration>.
+- The labels of a tour's controls (`nextBtnText`, `prevBtnText`, `doneBtnText` and
+  `closeBtnLabel`) can be set per tour. They still default to the translated strings, and a
+  label you set is shown as markup, as Driver.js shows it (closes #38).
 - System check `page_tours.W005` warns when tours with different steps are declared with one
   name, since they would share what a browser remembers.
 - `page_tours.tours.declared_tours()` returns every tour that exists, by name, so a project can

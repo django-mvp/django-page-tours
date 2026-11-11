@@ -80,7 +80,7 @@ book_tour = Tour(
         *BOOK_TOUR.steps[:1],
         TourStep(
             title="Borrow it here",
-            text="This library lends each book for a week. Press the button.",
+            description="This library lends each book for a week. Press the button.",
             element="#library-borrow",
         ),
     )

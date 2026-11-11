@@ -74,7 +74,7 @@ framework is where the package already reports a project's setup (FR-008).
 ## D9 — The replay control and the tour's wording are out of scope
 
 The replay control already takes the site's own content and classes (issue #6). What a step says
-belongs to its declaration, and the controls' labels to the package's translations.
+belongs to its declaration, and the controls' labels to the package's translations or the tour's own fields.
 
 **ADR:** none — a scope boundary of this feature, which nothing downstream inherits
 
