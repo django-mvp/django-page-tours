@@ -6,6 +6,7 @@ from django.core import checks
 from django.core.checks import run_checks
 from django.core.management import call_command
 
+from page_tours.checklists import Checklist, ChecklistItem
 from page_tours.hints import Hint, Hints
 from page_tours.parts import TourParts
 from page_tours.tours import Tour, TourStep
@@ -13,6 +14,7 @@ from tests import views
 
 STEP = TourStep(title="Title", description="Body")
 HINT = Hint(element="#menu", title="Title", description="Body")
+ITEM = ChecklistItem(id="first", title="First")
 
 
 def warnings_of(check_id):
@@ -339,3 +341,49 @@ class TestClassesCheck:
         ]
 
         assert self.issues(settings, {}) == []
+
+
+class TestOverridesCheckForChecklists:
+    """The stale-key warning knows the names of checklists."""
+
+    def test_it_is_silent_for_a_key_that_names_only_a_checklist(self, settings):
+        """A name that only a checklist carries exists."""
+        checklist = Checklist(name="tests.only-checklist", items=[ITEM])
+        settings.PAGE_TOURS_OVERRIDES = {checklist.name: None}
+
+        assert warnings_of("page_tours.W002") == {}
+
+
+class TestUniqueNamesCheckForChecklists:
+    """The duplicate-name warning covers checklists."""
+
+    def test_it_warns_for_two_checklists_with_different_items_under_one_name(self):
+        """What a browser ticked under the name would count for both."""
+        first = Checklist(name="tests.list-clash", items=[ITEM])
+        second = Checklist(
+            name="tests.list-clash", items=[ChecklistItem(id="other", title="Other")]
+        )
+
+        found = warnings_of("page_tours.W005")
+
+        assert "tests.list-clash" in found
+        assert found["tests.list-clash"].level == checks.WARNING
+        assert first != second
+
+    def test_it_is_silent_for_two_checklists_that_differ_only_in_completed(self):
+        """What the app reports done is not what the checklist lists."""
+        first = Checklist(name="tests.list-reported", items=[ITEM])
+        second = Checklist(
+            name="tests.list-reported", items=[ITEM], completed=["first"]
+        )
+
+        assert "tests.list-reported" not in warnings_of("page_tours.W005")
+        assert first != second
+
+    def test_it_warns_for_a_tour_and_a_checklist_under_one_name(self):
+        """The name is not shared between kinds."""
+        tour = Tour(name="tests.list-and-tour", steps=[STEP])
+        checklist = Checklist(name="tests.list-and-tour", items=[ITEM])
+
+        assert "tests.list-and-tour" in warnings_of("page_tours.W005")
+        assert tour != checklist
