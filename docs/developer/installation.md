@@ -36,9 +36,15 @@ them once, in the `<head>` of your base template:
 <head>
   ...
   <link rel="stylesheet" href="{% static 'page_tours/page-tours.css' %}">
-  <script src="{% static 'page_tours/vendor/driver.js-1.10.2/driver.js.iife.js' %}" defer></script>
+  <script src="{% static 'page_tours/vendor/driver.js-1.11.0/driver.js.iife.js' %}" defer></script>
   <script src="{% static 'page_tours/page-tours.js' %}" defer></script>
 </head>
+```
+
+To put [hints](hints.md) on pages as well, add Driver.js's hints script after its main one:
+
+```django
+  <script src="{% static 'page_tours/vendor/driver.js-1.11.0/hints.iife.js' %}" defer></script>
 ```
 
 - **Load Driver.js before `page-tours.js`.** The package's script plays the tour with it.
@@ -49,8 +55,8 @@ them once, in the `<head>` of your base template:
   start of the `<head>`, so that Driver.js's styles sit under every style of your own (see
   [Styling tours](styling-tours.md)). The script finds the link by its path,
   `page_tours/page-tours.`, so a hashed file name from `ManifestStaticFilesStorage` is found too.
-- **On a page with no tour the files do nothing.** Nothing shows, and a
-  [replay control](replaying-a-tour.md) marked `hidden` stays hidden.
+- **On a page with no tour and no hints the files do nothing.** Nothing shows, and a
+  [replay control](replaying-a-tour.md) or a hints restore control marked `hidden` stays hidden.
 
 The files come from your own static files, so nothing is loaded from another site. Each page
 then outputs its own tour with `{{ tour }}`, the way a form outputs its assets with

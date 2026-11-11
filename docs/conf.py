@@ -23,3 +23,6 @@ autodoc2_docstring_parser_regexes = [(r".*", "google_docstrings")]
 # adr/ and agents/ must be readable from a checkout, but neither is a page of the
 # published site, which describes what is true now rather than decision history.
 exclude_patterns = [*exclude_patterns, "adr/**", "agents/**", "ROADMAP.md"]
+
+# The constants the package keeps its defaults in are not part of its API.
+autodoc2_hidden_objects = ["inherited", "undoc"]

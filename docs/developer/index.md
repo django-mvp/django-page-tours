@@ -14,6 +14,7 @@ installation
 :maxdepth: 1
 
 tours
+hints
 replaying-a-tour
 tours-from-reusable-apps
 styling-tours

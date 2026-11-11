@@ -14,7 +14,7 @@
 
 A developer gives one page of their site a short guided tour by declaring it in Python, beside
 the view that renders the page, as an ordered list of tour steps. Each step has a title and a
-short text, and is either attached to one element of the page or attached to nothing, which suits
+short description, and is either attached to one element of the page or attached to nothing, which suits
 an opening welcome. When a visitor opens the page, the tour plays: they can move forward and back
 through the steps and close it at any point. The tour never makes the page less usable. A step
 whose element is not on the page is skipped, a tour that fails leaves the page as it was, and with
@@ -27,9 +27,9 @@ the package, so nothing is loaded from another origin and no front-end build ste
 
 A developer adds the package to their project once, then gives any page a tour by declaring it in
 Python beside the view that renders that page. The tour is an ordered list of steps. Each step has
-a title and a short text, and either names the element of the page it is attached to or is
+a title and a short description, and either names the element of the page it is attached to or is
 attached to nothing. The developer writes no JavaScript and runs no front-end tooling. Step titles
-and texts can be marked for translation like any other string in their project.
+and descriptions can be marked for translation like any other string in their project.
 
 **Why this priority**: Without a way to declare a tour, there is nothing for a visitor to see.
 This is the package's reason to exist (G1).
@@ -54,10 +54,10 @@ order, with no JavaScript written by hand and no request to another origin.
    needs is served by the site itself, and none comes from another origin.
 6. **Given** a step whose title and text are marked for translation, **When** the page is served
    in a language the project has a translation for, **Then** the step carries the translated title
-   and text.
-7. **Given** a step whose title or text contains markup characters, **When** the page renders,
-   **Then** the step carries them as text and they are never interpreted as markup.
-8. **Given** a tour declared with no steps, or a step with no title or no text, **When** the
+   and description.
+7. **Given** a step whose title or description contains HTML, **When** the page renders,
+   **Then** the step carries it unchanged, and Driver.js shows it as HTML.
+8. **Given** a tour declared with no name or no steps, **When** the
    project starts or the tour is declared, **Then** the developer is told what is wrong, before
    any visitor sees the page.
 9. **Given** a view with a tour, **When** the page is opened by a signed-in visitor and by an
@@ -104,37 +104,36 @@ action, and that every control the page offers works afterwards.
    move forward and back and close it, focus is inside each step as it shows, and when the tour
    ends, at any step and however it ends, focus is back where it was before the tour started.
 10. **Given** a tour that is playing, **When** a step shows, **Then** a screen reader announces it
-    as a dialog named by the step's title and described by its text.
+    as a dialog named by the step's title and described by its description.
 11. **Given** a page served in a language the project has a translation for, **When** its tour
     plays, **Then** the tour's own controls (next, previous, done and the close button's name)
-    are in that language and shown as text.
+    are in that language.
 
 ---
 
-### User Story 3 - A developer passes Driver.js options of its own (Priority: P3)
+### User Story 3 - A developer sets Driver.js options on the tour (Priority: P3)
 
-A developer wants a tour to use something Driver.js already does that the package's own fields do
-not cover, such as showing the step count or turning the animation off. They pass those options
-with the tour, by Driver.js's own names, and the package hands them to Driver.js as they are.
-Whether an option works with the Driver.js the package ships is the developer's to check.
+A developer wants a tour to use something Driver.js already does, such as showing the step
+count, turning the animation off or wording a button differently. The tour has a field for each
+Driver.js configuration option that takes a plain value, named exactly as the option is,
+and the package hands the values to Driver.js as they are. The fields default to
+Driver.js's own defaults. Options that take a JavaScript function are not available.
 
-**Why this priority**: The package leans on Driver.js for what it already does, rather than
-wrapping each option in its own field. Without this, every Driver.js option a developer wants
-waits on a release of the package (G1).
+**Why this priority**: The package leans on Driver.js for what it already does, so moving between
+Driver.js's documentation and a tour is one to one, and a developer gets type hints and linting
+for each option (G1).
 
-**Independent Test**: Declare a tour that turns on Driver.js's step count, open its page, and
-confirm the step count shows.
+**Independent Test**: Declare a tour with `showProgress=True`, open its page, and confirm the
+step count shows.
 
 **Acceptance Scenarios**:
 
-1. **Given** a tour declared with Driver.js options the package does not set, **When** the tour
-   plays, **Then** Driver.js plays it with those options.
-2. **Given** a tour declared with an option the package sets itself, such as the steps, the
-   skipping of missing elements or a control's label, **When** the tour plays, **Then** the
-   package's own setting applies and the option changes nothing.
-3. **Given** a tour declared with options that are not a mapping of names to values, or with a
-   value that has no JSON form, **When** the tour is declared, **Then** the developer is told
-   what is wrong, before any visitor sees the page.
+1. **Given** a tour with a Driver.js option set as a field, **When** the tour plays, **Then**
+   Driver.js plays it with that option.
+2. **Given** a tour that sets no option, **When** the tour plays, **Then** Driver.js plays it
+   with its own defaults, and the control labels are in the language the page is served in.
+3. **Given** a tour that sets a control's label, **When** the tour plays, **Then** the control
+   shows that label.
 4. **Given** a tour replaced through `PAGE_TOURS_OVERRIDES`, **When** it plays, **Then** it plays
    with the replacement's options.
 
@@ -151,7 +150,7 @@ confirm the step count shows.
   view that renders the page.
 - The package's static files are not collected: the tour does not play and the page renders as if
   it had no tour (FR-009).
-- A step's text is long: it is shown in full; the package does not cut it short.
+- A step's description is long: it is shown in full; the package does not cut it short.
 
 ## Requirements *(mandatory)*
 
@@ -164,15 +163,15 @@ confirm the step count shows.
   kind puts its tour in the page's template context under `tour`, like any other value, and the
   page's template outputs it with `{{ tour }}` (ADR 0007). Neither needs a decorator, a tag
   library or a setting beyond the one-time setup. (US1)
-- **FR-003**: Each tour step MUST have a title and a text, and MAY name one element of the page it
+- **FR-003**: Each tour step MAY have a title and a description, and MAY name one element of the page it
   is attached to. A step that names no element MUST be shown on its own, attached to nothing.
   (US1)
-- **FR-004**: A tour with no name or no steps, or a step missing its title or its text, MUST be
+- **FR-004**: A tour with no name or no steps MUST be
   reported to the developer as an error before any visitor is shown the page. (US1)
-- **FR-005**: Step titles and texts MUST accept strings marked for translation, and MUST be shown
+- **FR-005**: Step titles and descriptions MUST accept strings marked for translation, and MUST be shown
   in the language the page is served in when a translation exists. (US1)
-- **FR-006**: Step titles and texts MUST reach the visitor as text, escaped, and never be
-  interpreted as markup. (US1)
+- **FR-006**: Step titles and descriptions MUST reach Driver.js as the developer wrote them,
+  unescaped. (US1)
 - **FR-007**: A page whose view declares no tour MUST render and behave exactly as it does
   without the package. The package's scripts and stylesheet MAY be loaded on it, and MUST then
   do nothing. (US1)
@@ -198,23 +197,23 @@ confirm the step count shows.
   attached to nothing, and a step whose element is missing. (US1, US2)
 - **FR-016**: A visitor MUST be able to start, follow and close a tour from the keyboard alone.
   Focus MUST move into each step as it shows and, when the tour ends, MUST go back to where it
-  was before the tour started. A screen reader MUST announce each step's title and text. (US2)
+  was before the tour started. A screen reader MUST announce each step's title and description. (US2)
 - **FR-017**: The tour's own controls MUST be shown in the language the page is served in when a
-  translation exists, and in English otherwise, reaching the visitor as text. The package MUST
+  translation exists, and in English otherwise, unless the tour sets its own labels. The package MUST
   ship an English catalogue of its own strings. (US2)
-- **FR-018**: A developer MUST be able to pass a tour options of its own, by Driver.js's names,
-  which reach the Driver.js constructor unchanged. The options the package sets itself (the
-  steps, the skipping of missing elements, the control labels and the hooks the package uses)
-  MUST win over an option of the same name. Options that are not a mapping of names to values,
-  or a value with no JSON form, MUST be reported as an error when the tour is declared. The
+- **FR-018**: A tour MUST have a field for each Driver.js configuration option that takes a
+  plain value, named exactly as the option is and defaulting to Driver.js's own default,
+  and the option MUST reach the Driver.js constructor under that name. The options the
+  package sets itself (the steps, the skipping of missing elements and the hooks the package
+  uses) are not fields, and options that take a JavaScript function are not available. The
   package MUST NOT check what an option does. (US3)
 
 ### Key Entities
 
 - **Tour**: A short, guided walk through one page, made of an ordered list of tour steps, with a
-  name the developer gives it (ADR 0006) and any Driver.js options of its own. It belongs to the
+  name the developer gives it (ADR 0006) and Driver.js options as fields. It belongs to the
   view that renders the page.
-- **Tour step**: One stop in a tour. A title and a text, and optionally the element of the page it
+- **Tour step**: One stop in a tour. A title and a description, and optionally the element of the page it
   is attached to.
 
 ## Success Criteria *(mandatory)*
@@ -243,8 +242,8 @@ confirm the step count shows.
 - Q: How often does the tour play? → A: By itself the first time a browser opens the page. The
   browser remembers that it was seen, as the Seen tours and replay specification describes.
   (FR-010)
-- Q: Can step text carry markup such as links or bold? → A: No. Titles and texts are text and
-  reach the visitor escaped. (FR-006)
+- Q: Can a step description carry markup such as links or bold? → A: Yes. Titles and
+  descriptions reach Driver.js unchanged and are shown as HTML. (FR-006)
 - Q: Which views can have a tour? → A: Class-based and function-based views alike. (FR-002)
 - Q: What does a developer do once, before declaring tours? → A: Install the app and include the
   package's stylesheet and two scripts in their base template. After that, each tour is declared
@@ -259,7 +258,7 @@ confirm the step count shows.
 - Tours look as Driver.js draws them by default (CONSTITUTION Article XIV). Giving tours a site's
   own look is a later feature (roadmap R5).
 - The tour's own controls are drawn by Driver.js, with labels from the package's own catalogue
-  (FR-017). Driver.js's step count is not shown unless the tour turns it on (User Story 3).
+  unless the tour sets its own (FR-017). Driver.js's step count is not shown unless the tour turns it on (User Story 3).
 - A tour belongs to one page. Tours across several pages are out of scope.
 - Tours shipped by reusable apps (R6) and tour versions (R7) are later features. This feature
   declares tours in a way that does not block either.

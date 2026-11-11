@@ -50,9 +50,10 @@ on a page without a tour the tag emits nothing but whitespace.
 ```python
 @dataclass(frozen=True)
 class TourStep:
-    title: str | Promise
-    text: str | Promise
     element: str = ""  # a CSS selector; empty means attached to nothing
+    title: str | Promise = ""
+    description: str | Promise = ""
+    # ... then Driver.js's per-step options, each defaulting to None
 
 
 @dataclass(frozen=True)
@@ -67,8 +68,7 @@ class Tour:
 def with_tour(tour: Tour) -> Callable[[F], F]: ...
 ```
 
-- **Validation at declaration (FR-004).** `TourStep.__post_init__` raises `ImproperlyConfigured`
-  when `title` or `text` is empty or only whitespace. `Tour.__post_init__` raises
+- **Validation at declaration (FR-004).** `Tour.__post_init__` raises
   `ImproperlyConfigured` when `steps` is empty, and stores `steps` as a tuple so a declared tour
   cannot change later. Tours are declared at import time, so the error appears when the project
   starts, before any visitor. An empty `element` is the same as none.
@@ -90,9 +90,11 @@ def with_tour(tour: Tour) -> Callable[[F], F]: ...
   otherwise `request.page_tour` of `context["request"]` when it is a `Tour`, otherwise `None`.
   `getattr` with a default throughout.
 - **`Tour.as_driver_steps()`** returns one dict per step, in the declared order:
-  `{"title": escape(str(title)), "text": escape(str(text))}`, plus `"element": selector` when the
-  step has one. `str()` runs at render time, so the active language applies (FR-005).
-  `escape()` makes Driver.js's `innerHTML` show the characters as text (FR-006, research).
+  a Driver.js step, `{"element"?, "popover": {"title", "description", ...}, ...}`. The step-level
+  options (`element`, `disableActiveInteraction`, `advanceOnClick`, `waitForElement`) sit on the
+  step and every other field in `popover`. A field left as `None`, and an empty `element`, is left
+  out so the tour's value applies. `str()` runs at render time, so the active language applies
+  (FR-005). Title and description are passed unescaped (FR-006).
 - Exported from `page_tours/__init__.py`: `Tour`, `TourStep`, `with_tour`. Importing the package
   imports no models, so this is safe at settings time.
 
@@ -141,7 +143,7 @@ An IIFE, no globals of its own, no build step:
 
 1. Find `#page-tour-steps`. Missing, or `window.driver?.js?.driver` missing (the Driver.js file
    failed to load or static files were not collected) → return, page untouched (FR-009).
-2. Parse the JSON. Map each step to `{popover: {title, description: text}}`, and for a step with
+2. Parse the JSON. Map each step to a shallow copy of itself, and for a step with
    an `element`, `element: () => visibleElement(selector)`, where `visibleElement` returns the
    first match of `document.querySelector(selector)` when it exists and
    `el.checkVisibility({visibilityProperty: true, opacityProperty: true})` is true, and

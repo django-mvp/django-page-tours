@@ -6,26 +6,23 @@ from django.utils import translation
 from django.utils.translation import gettext_lazy
 from django.views.generic import TemplateView
 
-from page_tours import Tour, TourStep
-
-MARKUP_TITLE = "<b>bold</b> & co"
+from page_tours import Beacon, Hint, Hints, Tour, TourStep
 
 CLASS_TOUR = Tour(
     name="tests.class",
     steps=[
-        TourStep(title="Welcome", text="Start here."),
-        TourStep(title="The heading", text="What the page is.", element="h1"),
-        TourStep(title="The control", text="Press it.", element="#control"),
+        TourStep(title="Welcome", description="Start here."),
+        TourStep(title="The heading", description="What the page is.", element="h1"),
+        TourStep(title="The control", description="Press it.", element="#control"),
     ],
 )
 FUNCTION_TOUR = Tour(
-    name="tests.function", steps=[TourStep(title="From a function", text="Plain view.")]
-)
-MARKUP_TOUR = Tour(
-    name="tests.markup", steps=[TourStep(title=MARKUP_TITLE, text="<i>text</i> & more")]
+    name="tests.function",
+    steps=[TourStep(title="From a function", description="Plain view.")],
 )
 TRANSLATED_TOUR = Tour(
-    name="tests.translated", steps=[TourStep(title=gettext_lazy("Yes"), text="Body.")]
+    name="tests.translated",
+    steps=[TourStep(title=gettext_lazy("Yes"), description="Body.")],
 )
 
 
@@ -42,7 +39,7 @@ def steps_for(name, *selectors):
     return Tour(
         name=name,
         steps=[
-            TourStep(title=f"Step {number}", text="Text.", element=selector)
+            TourStep(title=f"Step {number}", description="Text.", element=selector)
             for number, selector in enumerate(selectors, start=1)
         ],
     )
@@ -51,20 +48,8 @@ def steps_for(name, *selectors):
 OPTIONS_TOUR = Tour(
     name="tests.options",
     steps=CLASS_TOUR.steps,
-    driver_options={"showProgress": True, "progressText": "{{current}} / {{total}}"},
-)
-OWN_SETTINGS_TOUR = Tour(
-    name="tests.own-settings",
-    steps=[
-        TourStep(title="Missing", text="Text.", element="#missing"),
-        TourStep(title="The heading", text="Text.", element="h1"),
-    ],
-    driver_options={
-        "steps": [],
-        "skipMissingElement": False,
-        "nextBtnText": "Mine",
-        "closeBtnLabel": "Mine",
-    },
+    showProgress=True,
+    progressText="{{current}} / {{total}}",
 )
 
 
@@ -79,18 +64,6 @@ class OptionsTourView(ClassTourView):
     """A page whose tour passes options of its own to Driver.js."""
 
     extra_context = {"tour": OPTIONS_TOUR}
-
-
-class OwnSettingsTourView(ClassTourView):
-    """A page whose tour's options try to replace what the package sets."""
-
-    extra_context = {"tour": OWN_SETTINGS_TOUR}
-
-
-class MarkupTourView(ClassTourView):
-    """A page whose step carries markup characters."""
-
-    extra_context = {"tour": MARKUP_TOUR}
 
 
 class TranslatedTourView(ClassTourView):
@@ -270,8 +243,8 @@ def on_request_tour():
     return Tour(
         name="tests.on-request",
         steps=[
-            TourStep(title="Step 1", text="Text.", element="h1"),
-            TourStep(title="Step 2", text="Text.", element="#control"),
+            TourStep(title="Step 1", description="Text.", element="h1"),
+            TourStep(title="Step 2", description="Text.", element="#control"),
         ],
         autoplay=False,
     )
@@ -295,7 +268,9 @@ class VersionedTourView(ControlsTourView):
 VERSION_TWO = Tour(name="tests.versioned", steps=VERSIONED_TOUR.steps, version=2)
 VERSION_TWO_EDITED = Tour(
     name="tests.versioned",
-    steps=[TourStep(title="Step 1", text="Text, with a typo fixed.", element="h1")],
+    steps=[
+        TourStep(title="Step 1", description="Text, with a typo fixed.", element="h1")
+    ],
     version=2,
 )
 ON_REQUEST_VERSION_TWO = Tour(
@@ -329,9 +304,9 @@ class ControlInBaseNoTourView(TemplateView):
 APP_TOUR = Tour(
     name="app.page",
     steps=[
-        TourStep(title="Step 1", text="Text.", element="h1"),
-        TourStep(title="Step 2", text="Text.", element="#control"),
-        TourStep(title="Step 3", text="Text."),
+        TourStep(title="Step 1", description="Text.", element="h1"),
+        TourStep(title="Step 2", description="Text.", element="#control"),
+        TourStep(title="Step 3", description="Text."),
     ],
     version=2,
 )
@@ -341,15 +316,15 @@ OWN_TOUR = steps_for("tests.own", "h1")
 REPLACEMENT_TOUR = Tour(
     name="tests.replacement",
     steps=[
-        TourStep(title="Ours 1", text="Our first.", element="h1"),
-        TourStep(title="Ours 2", text="Our second.", element="#control"),
+        TourStep(title="Ours 1", description="Our first.", element="h1"),
+        TourStep(title="Ours 2", description="Our second.", element="#control"),
     ],
 )
 REWORDED_TOUR = Tour(
     name="tests.reworded",
     steps=[
         APP_TOUR.steps[0],
-        TourStep(title="Step 2", text="Reworded for us.", element="#control"),
+        TourStep(title="Step 2", description="Reworded for us.", element="#control"),
         APP_TOUR.steps[2],
     ],
 )
@@ -430,3 +405,140 @@ class TourTwiceView(TemplateView):
 
     template_name = "test_tour_twice.html"
     extra_context = {"tour": steps_for("tests.rendered-twice", "h1", "#control")}
+
+
+THREE_HINTS = Hints(
+    name="tests.browser.three",
+    hints=[
+        Hint(element="#first", title="First hint", description="One."),
+        Hint(element="#second", title="Second hint", description="Two."),
+        Hint(element="#third", title="Third hint", description="Three."),
+    ],
+)
+OWN_BEACON_HINTS = Hints(
+    name="tests.browser.own-beacon",
+    buttonText="Shared button",
+    beacon=Beacon(className="shared-beacon"),
+    hints=[
+        Hint(
+            element="#first",
+            title="Own",
+            description="One.",
+            buttonText="Own button",
+            beacon=Beacon(className="own-beacon", animate=False),
+        ),
+        Hint(element="#second", title="Shared", description="Two."),
+    ],
+)
+MISSING_ELEMENT_HINTS = Hints(
+    name="tests.browser.missing",
+    hints=[
+        Hint(element="#first", title="First hint", description="One."),
+        Hint(element="#absent", title="Absent hint", description="Nowhere."),
+        Hint(element="#third", title="Third hint", description="Three."),
+    ],
+)
+RAISED_HINTS = Hints(name=THREE_HINTS.name, hints=THREE_HINTS.hints, version=2)
+OVERLAY_HINTS = Hints(
+    name="tests.browser.overlay", overlay=True, hints=list(THREE_HINTS.hints)
+)
+IDENTIFIED_HINTS = Hints(
+    name="tests.browser.identified",
+    hints=[
+        Hint(element="#first", id="alpha", title="Alpha", description="One."),
+        Hint(element="#second", id="beta", title="Beta", description="Two."),
+    ],
+)
+MOVED_HINTS = Hints(
+    name=IDENTIFIED_HINTS.name,
+    hints=[
+        Hint(element="#third", id="alpha", title="Alpha", description="One."),
+        Hint(element="#second", id="beta", title="Beta", description="Two."),
+    ],
+)
+SHARED_ELEMENT_HINTS = Hints(
+    name="tests.browser.shared-element",
+    hints=[
+        Hint(element="#first", title="Left", description="One."),
+        Hint(element="#first", title="Right", description="Two."),
+        Hint(element="#second", title="Other", description="Three."),
+    ],
+)
+HINTS_TOUR = Tour(
+    name="tests.browser.hints-tour",
+    steps=[
+        TourStep(title="Tour step", description="About a hint.", element="#first"),
+    ],
+)
+
+
+class HintsView(TemplateView):
+    """A page with three hints."""
+
+    template_name = "test_hints_page.html"
+    extra_context = {"hints": THREE_HINTS}
+
+
+class OwnBeaconHintsView(HintsView):
+    """A page whose first hint has a beacon and button text of its own."""
+
+    extra_context = {"hints": OWN_BEACON_HINTS}
+
+
+class MissingElementHintsView(HintsView):
+    """A page whose second hint points at an element that is not there."""
+
+    extra_context = {"hints": MISSING_ELEMENT_HINTS}
+
+
+class HintsAndTourView(HintsView):
+    """A page with hints and a tour that plays by itself."""
+
+    extra_context = {"hints": THREE_HINTS, "tour": HINTS_TOUR}
+
+
+class NoHintsView(TemplateView):
+    """A page with a restore control and no hints."""
+
+    template_name = "test_hints_page.html"
+
+
+class HintsWithoutScriptView(TemplateView):
+    """A page with hints whose template does not load the hints script."""
+
+    template_name = "test_hints_no_script.html"
+    extra_context = {"hints": THREE_HINTS}
+
+
+class HintsAgainView(HintsView):
+    """The same hints as the hints page, rendered at another address."""
+
+
+class RaisedHintsView(HintsView):
+    """The hints of the hints page, declared at a higher version."""
+
+    extra_context = {"hints": RAISED_HINTS}
+
+
+class OverlayHintsView(HintsView):
+    """A page whose hints dim the page while a popover is open."""
+
+    extra_context = {"hints": OVERLAY_HINTS}
+
+
+class IdentifiedHintsView(HintsView):
+    """A page whose hints have identifiers."""
+
+    extra_context = {"hints": IDENTIFIED_HINTS}
+
+
+class MovedHintsView(HintsView):
+    """The identified hints, one of them now pointing at another element."""
+
+    extra_context = {"hints": MOVED_HINTS}
+
+
+class SharedElementHintsView(HintsView):
+    """A page with two hints on one element, neither with an identifier."""
+
+    extra_context = {"hints": SHARED_ELEMENT_HINTS}

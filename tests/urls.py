@@ -27,7 +27,6 @@ urlpatterns = [
         name="bare-without-tour",
     ),
     path("options/", views.OptionsTourView.as_view(), name="options-tour"),
-    path("own-settings/", views.OwnSettingsTourView.as_view(), name="own-settings"),
     path("replay/", views.ReplayView.as_view(), name="replay"),
     path("replay-no-tour/", views.ReplayNoTourView.as_view(), name="replay-no-tour"),
     path(
@@ -83,7 +82,6 @@ urlpatterns = [
     path("tour/", views.ClassTourView.as_view(), name="class-tour"),
     path("tour-again/", views.ClassTourView.as_view(), name="class-tour-again"),
     path("function-tour/", views.function_tour_view, name="function-tour"),
-    path("markup-tour/", views.MarkupTourView.as_view(), name="markup-tour"),
     path(
         "translated-tour/", views.TranslatedTourView.as_view(), name="translated-tour"
     ),
@@ -110,5 +108,33 @@ urlpatterns = [
         "overridden-function/",
         views.overridden_function_view,
         name="overridden-function",
+    ),
+    path("hints/", views.HintsView.as_view(), name="hints"),
+    path("hints-own-beacon/", views.OwnBeaconHintsView.as_view(), name="own-beacon"),
+    path(
+        "hints-missing-element/",
+        views.MissingElementHintsView.as_view(),
+        name="hints-missing-element",
+    ),
+    path("hints-and-tour/", views.HintsAndTourView.as_view(), name="hints-and-tour"),
+    path("hints-again/", views.HintsAgainView.as_view(), name="hints-again"),
+    path("hints-raised/", views.RaisedHintsView.as_view(), name="hints-raised"),
+    path("hints-overlay/", views.OverlayHintsView.as_view(), name="hints-overlay"),
+    path(
+        "hints-identified/",
+        views.IdentifiedHintsView.as_view(),
+        name="hints-identified",
+    ),
+    path("hints-moved/", views.MovedHintsView.as_view(), name="hints-moved"),
+    path(
+        "hints-shared-element/",
+        views.SharedElementHintsView.as_view(),
+        name="hints-shared-element",
+    ),
+    path("no-hints/", views.NoHintsView.as_view(), name="no-hints"),
+    path(
+        "hints-without-script/",
+        views.HintsWithoutScriptView.as_view(),
+        name="hints-without-script",
     ),
 ]

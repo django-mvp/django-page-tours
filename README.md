@@ -26,7 +26,7 @@ django-page-tours moves the steps into Python, next to the page, and handles the
 ## Scope & philosophy
 
 **What it is.** A tour belongs to one page. A developer declares its steps in Python, each one
-pointing at an element on the page with a title and a short text. The first time someone opens
+pointing at an element on the page with a title and a short description. The first time someone opens
 the page, the tour plays. They can step through it, skip it or close it, and once they have seen
 it, their browser remembers and it does not play again unless they ask for it. When the tour
 changes enough to matter, the developer gives it a new version, and people who saw the old one
@@ -63,7 +63,7 @@ Include the package's stylesheet and scripts once, in the `<head>` of your base 
 <head>
   ...
   <link rel="stylesheet" href="{% static 'page_tours/page-tours.css' %}">
-  <script src="{% static 'page_tours/vendor/driver.js-1.10.2/driver.js.iife.js' %}" defer></script>
+  <script src="{% static 'page_tours/vendor/driver.js-1.11.0/driver.js.iife.js' %}" defer></script>
   <script src="{% static 'page_tours/page-tours.js' %}" defer></script>
 </head>
 ```
@@ -80,8 +80,8 @@ from page_tours import Tour, TourStep
 DASHBOARD_TOUR = Tour(
     name="dashboard",
     steps=[
-        TourStep(title="Welcome", text="A quick look around."),
-        TourStep(title="Projects", text="Your work is here.", element="#projects"),
+        TourStep(title="Welcome", description="A quick look around."),
+        TourStep(title="Projects", description="Your work is here.", element="#projects"),
     ],
 )
 
@@ -115,12 +115,21 @@ page. The package's script makes it start the tour:
 <button type="button" class="btn" data-page-tour-replay>Show the tour</button>
 ```
 
+`Tour` mirrors Driver.js's configuration object, so a tour sets Driver.js options as fields named
+as Driver.js names them, such as `Tour(showProgress=True)`. See the
+[Driver.js configuration reference](https://driverjs.com/docs/configuration) for each option.
+Options that take a function are not available.
+
+The package also puts hints on a page: markers a visitor opens in any order and dismisses for good
+in their browser. `Hints` declares them, and `{{ hints }}` renders them. See the
+[documentation](https://django-mvp.github.io/django-page-tours/developer/hints.html).
+
 A project can replace the tour of an installed app, or turn it off, from its own settings with
 `PAGE_TOURS_OVERRIDES`, keyed by the tour's name, without editing the app.
 
 The [documentation](https://django-mvp.github.io/django-page-tours/) covers naming a tour, function-based views,
 steps attached to elements, tour versions, replaying a tour and tours that play only on request,
-tours from reusable apps, styling, and translation.
+tours from reusable apps, Driver.js options, styling, and translation.
 
 ## Styling
 

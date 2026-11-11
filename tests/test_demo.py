@@ -12,6 +12,7 @@ from playwright.sync_api import expect
 from demo import settings as demo_settings
 from demo.library.views import BOOK_LIST_TOUR, BOOK_TOUR
 from demo.tours import book_tour
+from demo.views import REPORT_HINTS, REPORT_TOUR
 from page_tours.parts import TourParts
 
 pytestmark = pytest.mark.urls("demo.urls")
@@ -37,11 +38,11 @@ class TestTourPage:
     def steps(self, page):
         """Return the steps the page hands to the browser."""
         match = re.search(
-            r'<script id="page-tour-steps" type="application/json">(.*?)</script>',
+            r'<script id="page-tours-tour" type="application/json">(.*?)</script>',
             page,
             re.DOTALL,
         )
-        return json.loads(match.group(1))["steps"]
+        return json.loads(match.group(1))["config"]["steps"]
 
     def test_it_responds(self, client):
         """The page renders for an anonymous visitor."""
@@ -56,36 +57,36 @@ class TestTourPage:
     def test_its_tour_has_a_step_attached_to_an_element_on_the_page(self, client):
         """A step names an element that is in the page's HTML."""
         page = client.get(reverse("tour")).content.decode()
-        selectors = [s["element"] for s in self.steps(page) if "element" in s]
+        selectors = [s["element"] for s in self.steps(page) if s["element"]]
         assert any(f'id="{s.removeprefix("#")}"' in page for s in selectors)
 
     def test_its_tour_has_a_step_attached_to_nothing(self, client):
         """A step carries no element key."""
         page = client.get(reverse("tour")).content.decode()
-        assert any("element" not in s for s in self.steps(page))
+        assert any(not s["element"] for s in self.steps(page))
 
     def test_its_tour_has_a_step_whose_element_is_not_on_the_page(self, client):
         """A step names an element the page does not contain."""
         page = client.get(reverse("tour")).content.decode()
-        selectors = [s["element"] for s in self.steps(page) if "element" in s]
+        selectors = [s["element"] for s in self.steps(page) if s["element"]]
         assert any(f'id="{s.removeprefix("#")}"' not in page for s in selectors)
 
 
 class TestDriverOptionsPage:
-    """The demo page whose tour passes Driver.js options of its own."""
+    """The demo page whose tour sets Driver.js options as fields."""
 
     def page(self, client, name="driver-options"):
         """Return the rendered page."""
         return client.get(reverse(name)).content.decode()
 
     def test_its_tour_turns_on_the_step_count(self, client):
-        """The tour carries Driver.js's step count option, turned on."""
+        """The tour sets its ``showProgress`` field, which arrives as Driver.js's."""
         match = re.search(
-            r'<script id="page-tour-steps" type="application/json">(.*?)</script>',
+            r'<script id="page-tours-tour" type="application/json">(.*?)</script>',
             self.page(client),
             re.DOTALL,
         )
-        assert json.loads(match.group(1))["options"]["showProgress"] is True
+        assert json.loads(match.group(1))["config"]["showProgress"] is True
 
     def test_it_is_linked_from_the_page_bar(self, client):
         """The bar every demo page shares links the page."""
@@ -106,7 +107,7 @@ class TestDemoTourPages:
     def payload(self, page):
         """Return the payload the page hands to the browser."""
         match = re.search(
-            r'<script id="page-tour-steps" type="application/json">(.*?)</script>',
+            r'<script id="page-tours-tour" type="application/json">(.*?)</script>',
             page,
             re.DOTALL,
         )
@@ -122,7 +123,7 @@ class TestDemoTourPages:
         response = client.get(reverse(name))
 
         assert response.status_code == 200
-        assert 'id="page-tour-steps"' in response.content.decode()
+        assert 'id="page-tours-tour"' in response.content.decode()
 
     def test_the_plays_once_page_plays_by_itself(self, client):
         """Its payload says the tour autoplays."""
@@ -173,14 +174,14 @@ class TestDemoTourPages:
         page = client.get(reverse(name)).content.decode()
 
         assert "page_tours/page-tours.css" in page
-        assert "page_tours/vendor/driver.js-1.10.2/driver.js.iife.js" in page
+        assert "page_tours/vendor/driver.js-1.11.0/driver.js.iife.js" in page
         assert "page_tours/page-tours.js" in page
 
     def test_the_overview_carries_no_tour(self, client):
         """With no tour on the page, the script leaves its control hidden."""
         page = client.get(reverse("overview")).content.decode()
 
-        assert 'id="page-tour-steps"' not in page
+        assert 'id="page-tours-tour"' not in page
 
     def test_the_on_request_page_places_a_second_control_in_its_body(self, client):
         """The page carries two controls: the bar's and its own."""
@@ -202,7 +203,7 @@ class TestLibraryPages:
     def payload(self, page):
         """Return the payload the page hands to the browser."""
         match = re.search(
-            r'<script id="page-tour-steps" type="application/json">(.*?)</script>',
+            r'<script id="page-tours-tour" type="application/json">(.*?)</script>',
             page,
             re.DOTALL,
         )
@@ -221,38 +222,40 @@ class TestLibraryPages:
         """Its payload is the app's own tour."""
         page = client.get(reverse("library-books")).content.decode()
 
-        assert self.payload(page)["steps"] == BOOK_LIST_TOUR.as_driver_steps()
+        assert (
+            self.payload(page)["config"]["steps"] == BOOK_LIST_TOUR.as_driver()["steps"]
+        )
 
     def test_the_book_page_plays_the_projects_replacement(self, client):
         """Its payload carries the replacement's steps under the app tour's name."""
         payload = self.payload(client.get(reverse("library-book")).content.decode())
 
-        assert payload["steps"] == book_tour.as_driver_steps()
+        assert payload["config"]["steps"] == book_tour.as_driver()["steps"]
         assert payload["id"] == BOOK_TOUR.name
 
     def test_the_replacement_differs_from_the_apps_tour(self):
         """The project reworded a step, so the two tours are not the same."""
-        assert book_tour.as_driver_steps() != BOOK_TOUR.as_driver_steps()
+        assert book_tour.as_driver()["steps"] != BOOK_TOUR.as_driver()["steps"]
 
     def test_the_loans_page_has_no_tour_payload(self, client):
         """The project turned its tour off."""
         page = client.get(reverse("library-loans")).content.decode()
 
-        assert 'id="page-tour-steps"' not in page
+        assert 'id="page-tours-tour"' not in page
 
     def test_the_loans_page_does_not_show_the_replay_control(self, client):
         """With no tour the script leaves the bar's control hidden."""
         page = client.get(reverse("library-loans")).content.decode()
 
         assert "data-page-tour-replay hidden" in self.bar(page)
-        assert 'id="page-tour-steps"' not in page
+        assert 'id="page-tours-tour"' not in page
 
     @pytest.mark.parametrize("name", ["library-books", "library-book"])
     def test_every_step_with_an_element_points_at_the_page(self, client, name):
         """The markup each step points at is in the page."""
         page = client.get(reverse(name)).content.decode()
         selectors = [
-            s["element"] for s in self.payload(page)["steps"] if "element" in s
+            s["element"] for s in self.payload(page)["config"]["steps"] if s["element"]
         ]
 
         assert selectors
@@ -349,7 +352,7 @@ class TestOwnLookPage:
     def payload(self, page):
         """Return the payload the page hands to the browser."""
         match = re.search(
-            r'<script id="page-tour-steps" type="application/json">(.*?)</script>',
+            r'<script id="page-tours-tour" type="application/json">(.*?)</script>',
             page,
             re.DOTALL,
         )
@@ -360,19 +363,19 @@ class TestOwnLookPage:
         response = client.get(reverse("own-look"))
 
         assert response.status_code == 200
-        assert 'id="page-tour-steps"' in response.content.decode()
+        assert 'id="page-tours-tour"' in response.content.decode()
 
     def test_its_tour_has_a_step_attached_to_nothing(self, client):
         """A step carries no element key."""
         page = client.get(reverse("own-look")).content.decode()
 
-        assert any("element" not in s for s in self.payload(page)["steps"])
+        assert any(not s["element"] for s in self.payload(page)["config"]["steps"])
 
     def test_its_tour_has_a_step_attached_to_an_element_on_the_page(self, client):
         """A step names an element that is in the page's HTML."""
         page = client.get(reverse("own-look")).content.decode()
         selectors = [
-            s["element"] for s in self.payload(page)["steps"] if "element" in s
+            s["element"] for s in self.payload(page)["config"]["steps"] if s["element"]
         ]
 
         assert any(f'id="{s.removeprefix("#")}"' in page for s in selectors)
@@ -405,3 +408,77 @@ class TestOwnLookPage:
         page = client.get(reverse("overview")).content.decode()
 
         assert f'href="{reverse("own-look")}"' in page.split("</nav>", 1)[1]
+
+
+class TestHintsPage:
+    """The demo page that carries hints and a tour."""
+
+    def page(self, client, name="hints"):
+        """Return the rendered page."""
+        return client.get(reverse(name)).content.decode()
+
+    def payload(self, page, kind):
+        """Return the payload the page hands to the browser for a declaration."""
+        match = re.search(
+            rf'<script id="page-tours-{kind}" type="application/json">(.*?)</script>',
+            page,
+            re.DOTALL,
+        )
+        assert match is not None
+        return json.loads(match.group(1))
+
+    def test_it_responds(self, client):
+        """The page renders for an anonymous visitor."""
+        assert client.get(reverse("hints")).status_code == 200
+
+    def test_it_carries_the_hints_of_its_view(self, client):
+        """The payload names the hints and holds each of their elements."""
+        payload = self.payload(self.page(client), "hints")
+
+        assert payload["id"] == REPORT_HINTS.name
+        assert [h["element"] for h in payload["config"]["hints"]] == [
+            hint.element for hint in REPORT_HINTS.hints
+        ]
+
+    def test_it_carries_the_tour_of_its_view(self, client):
+        """The payload names the tour."""
+        payload = self.payload(self.page(client), "tour")
+
+        assert payload["id"] == REPORT_TOUR.name
+
+    def test_its_tour_does_not_play_by_itself(self, client):
+        """The hints stay in view until the replay control is used."""
+        assert self.payload(self.page(client), "tour")["autoplay"] is False
+
+    def test_it_places_the_restore_control_hidden(self, client):
+        """The page carries the control, hidden, for the script to reveal."""
+        assert "data-page-hints-restore hidden" in self.page(client)
+
+    def test_it_places_a_replay_control_in_its_body(self, client):
+        """The page carries two replay controls: the bar's and its own."""
+        assert self.page(client).count("data-page-tour-replay") == 2
+
+    def test_every_hint_points_at_an_element_on_the_page(self, client):
+        """Each hint's selector is an id the page's HTML carries."""
+        page = self.page(client)
+
+        for hint in REPORT_HINTS.hints:
+            assert f'id="{hint.element.removeprefix("#")}"' in page
+
+    def test_it_is_linked_from_the_page_bar(self, client):
+        """The bar every demo page shares links the page."""
+        bar = self.page(client, "overview").split('aria-label="Demo pages"', 1)[1]
+
+        assert f'href="{reverse("hints")}"' in bar.split("</nav>", 1)[0]
+
+    def test_the_overview_links_it(self, client):
+        """The overview names the page outside the page bar."""
+        body = self.page(client, "overview").split("</nav>", 1)[1]
+
+        assert f'href="{reverse("hints")}"' in body
+
+    def test_the_base_template_loads_the_hints_script(self, client):
+        """The project includes Driver.js's hints script on every page."""
+        page = self.page(client, "overview")
+
+        assert "page_tours/vendor/driver.js-1.11.0/hints.iife.js" in page

@@ -24,6 +24,24 @@ A piece of a shown step is called a part. A step has nine parts.
 A part carries its documented name on every step of every tour. The names are part of the public
 surface of the package.
 
+## Style hints
+
+A [hint](hints.md)'s popover takes the parts of a tour step, for each part it shows: the box, the
+title, the text, the close control and, in place of the next control, the button that dismisses
+the hint, which carries `page-tour-next`. Your rules against the documented names and the classes
+in `PAGE_TOURS_CLASSES` apply to hints as they do to steps.
+
+The marker on the page is one more part, `beacon`, with the documented class name
+`page-tour-beacon`. It takes classes from `PAGE_TOURS_CLASSES` and from an app's
+`page_tour_classes` as the other parts do, and they come ahead of a class a hint gives its own
+beacon with `Beacon(className=...)`.
+
+```css
+.page-tour-beacon {
+  --driver-hint-color: #059669;
+}
+```
+
 ## Style the parts from your stylesheet
 
 Write rules against the documented names in your own stylesheet:

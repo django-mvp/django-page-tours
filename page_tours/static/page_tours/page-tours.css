@@ -1,1 +1,2 @@
-@import url("vendor/driver.js-1.10.2/driver.css") layer(page-tours);
+@import url("vendor/driver.js-1.11.0/driver.css") layer(page-tours);
+@import url("vendor/driver.js-1.11.0/hints.css") layer(page-tours);
