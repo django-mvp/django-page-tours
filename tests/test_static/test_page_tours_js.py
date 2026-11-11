@@ -1307,6 +1307,83 @@ class TestHintOwnBeacon:
         expect(page.locator(HINT_BUTTON)).to_have_text(hints.buttonText)
 
 
+class TestHintParts:
+    """A hint takes the site's look: popover parts and beacon carry their classes."""
+
+    HINT_CLASSES = {
+        "box": "site-box",
+        "title": "site-title",
+        "text": "site-text",
+        "next": "site-next",
+        "beacon": "site-beacon",
+    }
+    POPOVER_PARTS = {
+        "box": ".driver-popover",
+        "title": TITLE,
+        "text": ".driver-popover-description",
+        "next": HINT_BUTTON,
+    }
+
+    def test_the_popover_parts_carry_their_names_and_configured_classes(
+        self, page, live_server, settings
+    ):
+        """Opening a hint shows its box, title, text and button as a step's are."""
+        settings.PAGE_TOURS_CLASSES = self.HINT_CLASSES
+        page.goto(live_server.url + reverse("hints"))
+
+        page.locator(BEACON).first.click()
+
+        expect(page.locator(TITLE)).to_be_visible()
+        for part, selector in self.POPOVER_PARTS.items():
+            tokens = classes_of(page, selector)
+            assert f"page-tour-{part}" in tokens, part
+            assert f"site-{part}" in tokens, part
+
+    def test_every_beacon_carries_the_beacon_part_ahead_of_the_hints_class(
+        self, page, live_server, settings
+    ):
+        """The part's classes come first, then the hint's own, else the shared."""
+        settings.PAGE_TOURS_CLASSES = self.HINT_CLASSES
+        page.goto(live_server.url + reverse("own-beacon"))
+        expect(page.locator(BEACON)).to_have_count(2)
+
+        own, shared = (
+            page.locator(BEACON).nth(n).evaluate("(e) => [...e.classList]")
+            for n in (0, 1)
+        )
+
+        assert own.index("page-tour-beacon") < own.index("site-beacon")
+        assert own.index("site-beacon") < own.index("own-beacon")
+        assert shared.index("page-tour-beacon") < shared.index("site-beacon")
+        assert shared.index("site-beacon") < shared.index("shared-beacon")
+
+    def test_a_hint_with_no_class_of_its_own_keeps_the_hints_shared_class(
+        self, page, live_server, settings
+    ):
+        """The shared beacon's class stays when the beacon part has none."""
+        settings.PAGE_TOURS_CLASSES = {}
+        page.goto(live_server.url + reverse("own-beacon"))
+        expect(page.locator(BEACON)).to_have_count(2)
+
+        shared = page.locator(BEACON).nth(1).evaluate("(e) => [...e.classList]")
+
+        assert "page-tour-beacon" in shared
+        assert "shared-beacon" in shared
+
+    def test_an_installed_apps_beacon_classes_apply_when_the_setting_has_none(
+        self, page, live_server, settings
+    ):
+        """A design system styles the beacon with nothing configured."""
+        settings.PAGE_TOURS_CLASSES = {}
+        settings.INSTALLED_APPS = [*settings.INSTALLED_APPS, "tests.design_system"]
+        page.goto(live_server.url + reverse("hints"))
+        expect(page.locator(BEACON)).to_have_count(len(views.THREE_HINTS.hints))
+
+        for beacon in page.locator(BEACON).all():
+            expect(beacon).to_have_class(re.compile(r"\bpage-tour-beacon\b"))
+            expect(beacon).to_have_class(re.compile(r"\bds-beacon\b"))
+
+
 class TestHintsRestoreControl:
     """The restore control shows only where hints play."""
 
