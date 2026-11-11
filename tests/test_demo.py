@@ -37,11 +37,11 @@ class TestTourPage:
     def steps(self, page):
         """Return the steps the page hands to the browser."""
         match = re.search(
-            r'<script id="page-tour-steps" type="application/json">(.*?)</script>',
+            r'<script id="page-tours-tour" type="application/json">(.*?)</script>',
             page,
             re.DOTALL,
         )
-        return json.loads(match.group(1))["steps"]
+        return json.loads(match.group(1))["config"]["steps"]
 
     def test_it_responds(self, client):
         """The page renders for an anonymous visitor."""
@@ -56,18 +56,18 @@ class TestTourPage:
     def test_its_tour_has_a_step_attached_to_an_element_on_the_page(self, client):
         """A step names an element that is in the page's HTML."""
         page = client.get(reverse("tour")).content.decode()
-        selectors = [s["element"] for s in self.steps(page) if "element" in s]
+        selectors = [s["element"] for s in self.steps(page) if s["element"]]
         assert any(f'id="{s.removeprefix("#")}"' in page for s in selectors)
 
     def test_its_tour_has_a_step_attached_to_nothing(self, client):
         """A step carries no element key."""
         page = client.get(reverse("tour")).content.decode()
-        assert any("element" not in s for s in self.steps(page))
+        assert any(not s["element"] for s in self.steps(page))
 
     def test_its_tour_has_a_step_whose_element_is_not_on_the_page(self, client):
         """A step names an element the page does not contain."""
         page = client.get(reverse("tour")).content.decode()
-        selectors = [s["element"] for s in self.steps(page) if "element" in s]
+        selectors = [s["element"] for s in self.steps(page) if s["element"]]
         assert any(f'id="{s.removeprefix("#")}"' not in page for s in selectors)
 
 
@@ -81,11 +81,11 @@ class TestDriverOptionsPage:
     def test_its_tour_turns_on_the_step_count(self, client):
         """The tour sets its ``showProgress`` field, which arrives as Driver.js's."""
         match = re.search(
-            r'<script id="page-tour-steps" type="application/json">(.*?)</script>',
+            r'<script id="page-tours-tour" type="application/json">(.*?)</script>',
             self.page(client),
             re.DOTALL,
         )
-        assert json.loads(match.group(1))["options"]["showProgress"] is True
+        assert json.loads(match.group(1))["config"]["showProgress"] is True
 
     def test_it_is_linked_from_the_page_bar(self, client):
         """The bar every demo page shares links the page."""
@@ -106,7 +106,7 @@ class TestDemoTourPages:
     def payload(self, page):
         """Return the payload the page hands to the browser."""
         match = re.search(
-            r'<script id="page-tour-steps" type="application/json">(.*?)</script>',
+            r'<script id="page-tours-tour" type="application/json">(.*?)</script>',
             page,
             re.DOTALL,
         )
@@ -122,7 +122,7 @@ class TestDemoTourPages:
         response = client.get(reverse(name))
 
         assert response.status_code == 200
-        assert 'id="page-tour-steps"' in response.content.decode()
+        assert 'id="page-tours-tour"' in response.content.decode()
 
     def test_the_plays_once_page_plays_by_itself(self, client):
         """Its payload says the tour autoplays."""
@@ -180,7 +180,7 @@ class TestDemoTourPages:
         """With no tour on the page, the script leaves its control hidden."""
         page = client.get(reverse("overview")).content.decode()
 
-        assert 'id="page-tour-steps"' not in page
+        assert 'id="page-tours-tour"' not in page
 
     def test_the_on_request_page_places_a_second_control_in_its_body(self, client):
         """The page carries two controls: the bar's and its own."""
@@ -202,7 +202,7 @@ class TestLibraryPages:
     def payload(self, page):
         """Return the payload the page hands to the browser."""
         match = re.search(
-            r'<script id="page-tour-steps" type="application/json">(.*?)</script>',
+            r'<script id="page-tours-tour" type="application/json">(.*?)</script>',
             page,
             re.DOTALL,
         )
@@ -221,38 +221,40 @@ class TestLibraryPages:
         """Its payload is the app's own tour."""
         page = client.get(reverse("library-books")).content.decode()
 
-        assert self.payload(page)["steps"] == BOOK_LIST_TOUR.as_driver_steps()
+        assert (
+            self.payload(page)["config"]["steps"] == BOOK_LIST_TOUR.as_driver()["steps"]
+        )
 
     def test_the_book_page_plays_the_projects_replacement(self, client):
         """Its payload carries the replacement's steps under the app tour's name."""
         payload = self.payload(client.get(reverse("library-book")).content.decode())
 
-        assert payload["steps"] == book_tour.as_driver_steps()
+        assert payload["config"]["steps"] == book_tour.as_driver()["steps"]
         assert payload["id"] == BOOK_TOUR.name
 
     def test_the_replacement_differs_from_the_apps_tour(self):
         """The project reworded a step, so the two tours are not the same."""
-        assert book_tour.as_driver_steps() != BOOK_TOUR.as_driver_steps()
+        assert book_tour.as_driver()["steps"] != BOOK_TOUR.as_driver()["steps"]
 
     def test_the_loans_page_has_no_tour_payload(self, client):
         """The project turned its tour off."""
         page = client.get(reverse("library-loans")).content.decode()
 
-        assert 'id="page-tour-steps"' not in page
+        assert 'id="page-tours-tour"' not in page
 
     def test_the_loans_page_does_not_show_the_replay_control(self, client):
         """With no tour the script leaves the bar's control hidden."""
         page = client.get(reverse("library-loans")).content.decode()
 
         assert "data-page-tour-replay hidden" in self.bar(page)
-        assert 'id="page-tour-steps"' not in page
+        assert 'id="page-tours-tour"' not in page
 
     @pytest.mark.parametrize("name", ["library-books", "library-book"])
     def test_every_step_with_an_element_points_at_the_page(self, client, name):
         """The markup each step points at is in the page."""
         page = client.get(reverse(name)).content.decode()
         selectors = [
-            s["element"] for s in self.payload(page)["steps"] if "element" in s
+            s["element"] for s in self.payload(page)["config"]["steps"] if s["element"]
         ]
 
         assert selectors
@@ -349,7 +351,7 @@ class TestOwnLookPage:
     def payload(self, page):
         """Return the payload the page hands to the browser."""
         match = re.search(
-            r'<script id="page-tour-steps" type="application/json">(.*?)</script>',
+            r'<script id="page-tours-tour" type="application/json">(.*?)</script>',
             page,
             re.DOTALL,
         )
@@ -360,19 +362,19 @@ class TestOwnLookPage:
         response = client.get(reverse("own-look"))
 
         assert response.status_code == 200
-        assert 'id="page-tour-steps"' in response.content.decode()
+        assert 'id="page-tours-tour"' in response.content.decode()
 
     def test_its_tour_has_a_step_attached_to_nothing(self, client):
         """A step carries no element key."""
         page = client.get(reverse("own-look")).content.decode()
 
-        assert any("element" not in s for s in self.payload(page)["steps"])
+        assert any(not s["element"] for s in self.payload(page)["config"]["steps"])
 
     def test_its_tour_has_a_step_attached_to_an_element_on_the_page(self, client):
         """A step names an element that is in the page's HTML."""
         page = client.get(reverse("own-look")).content.decode()
         selectors = [
-            s["element"] for s in self.payload(page)["steps"] if "element" in s
+            s["element"] for s in self.payload(page)["config"]["steps"] if s["element"]
         ]
 
         assert any(f'id="{s.removeprefix("#")}"' in page for s in selectors)

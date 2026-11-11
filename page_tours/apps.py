@@ -17,6 +17,6 @@ class PageToursConfig(AppConfig):
             ImproperlyConfigured: If an entry of the setting cannot be resolved.
         """
         from page_tours import checks  # noqa: F401
-        from page_tours.tours import tour_overrides
+        from page_tours.driver import declaration_overrides
 
-        tour_overrides()
+        declaration_overrides()

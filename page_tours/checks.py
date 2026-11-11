@@ -5,8 +5,8 @@ from django.core import checks
 from django.urls import get_resolver
 from django.utils.translation import gettext_lazy as _
 
+from page_tours.driver import declarations
 from page_tours.parts import TourParts
-from page_tours.tours import declared_tours
 
 
 @checks.register(checks.Tags.urls)
@@ -29,7 +29,7 @@ def check_overrides_name_declared_tours(app_configs, **kwargs):
     if not overrides:
         return []
     get_resolver().url_patterns  # noqa: B018 - importing the views declares their tours
-    declared = declared_tours()
+    declared = declarations()
     return [
         checks.Warning(
             _(
@@ -50,10 +50,11 @@ def check_overrides_name_declared_tours(app_configs, **kwargs):
 def check_tour_names_are_unique(app_configs, **kwargs):
     """Warn about each name that tours with different steps are declared with.
 
-    Two tours with one name share what a browser remembers about them and the
-    entry ``PAGE_TOURS_OVERRIDES`` changes them by. Tours with the same steps are
-    one tour, whatever their version or autoplay, so one tour used on several
-    views, or routed at two versions, is not reported.
+    Two declarations with one name share what a browser remembers about them and
+    the entry ``PAGE_TOURS_OVERRIDES`` changes them by. Declarations of one class
+    with the same content are one declaration, whatever their version or
+    autoplay, so one tour used on several views, or routed at two versions, is
+    not reported.
 
     Args:
         app_configs: The app configs being checked, supplied by Django.
@@ -70,7 +71,7 @@ def check_tour_names_are_unique(app_configs, **kwargs):
                 "%(count)d tours with different steps are declared with the name "
                 "%(name)s, so a browser that saw one counts them all as seen."
             )
-            % {"count": len(steps), "name": name},
+            % {"count": len(contents), "name": name},
             hint=_(
                 "Give each tour its own name. A reusable app names its tours "
                 "'<app_label>.<tour>'."
@@ -78,8 +79,13 @@ def check_tour_names_are_unique(app_configs, **kwargs):
             obj=name,
             id="page_tours.W005",
         )
-        for name, tours in declared_tours().items()
-        if len(steps := {tour.steps for tour in tours}) > 1
+        for name, found in declarations().items()
+        if len(
+            contents := {
+                (type(item), getattr(item, item.content_field)) for item in found
+            }
+        )
+        > 1
     ]
 
 
