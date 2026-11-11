@@ -25,3 +25,11 @@ msgstr "Schließen & beenden"
 msgctxt "page hint control"
 msgid "Got it"
 msgstr "Verstanden"
+
+msgctxt "page checklist"
+msgid "Get started"
+msgstr "Los geht's"
+
+msgctxt "page checklist"
+msgid "{{done}} of {{total}}"
+msgstr "{{done}} von {{total}}"
