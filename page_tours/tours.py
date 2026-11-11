@@ -22,7 +22,7 @@ from page_tours.parts import TourParts
 _declared: dict[str, list[weakref.ref["Tour"]]] = {}
 
 # The fields of Tour that are the package's own. Every other field is a
-# Driver.js option, passed to the browser under its Driver.js name.
+# Driver.js option, passed to the browser under its own name.
 PACKAGE_FIELDS = {"name", "steps", "autoplay", "version"}
 
 Button = Literal["next", "previous", "close"]
@@ -36,19 +36,6 @@ NEXT_LABEL = pgettext_lazy("page tour control", "Next")
 PREVIOUS_LABEL = pgettext_lazy("page tour control", "Previous")
 DONE_LABEL = pgettext_lazy("page tour control", "Done")
 CLOSE_LABEL = pgettext_lazy("page tour control", "Close")
-
-
-def camel_case(name: str) -> str:
-    """Convert a snake_case field name to the camelCase name Driver.js uses.
-
-    Args:
-        name: The field name, such as ``overlay_opacity``.
-
-    Returns:
-        The Driver.js name, such as ``overlayOpacity``.
-    """
-    first, *rest = name.split("_")
-    return first + "".join(word.capitalize() for word in rest)
 
 
 def _forget(name: str, ref: weakref.ref["Tour"]) -> None:
@@ -101,8 +88,8 @@ class Tour:
     made, so the system checks can report a name declared twice or a
     ``PAGE_TOURS_OVERRIDES`` key that names no tour.
 
-    The fields after ``version`` are Driver.js's configuration options, named in
-    snake_case and defaulting to the value Driver.js 1.10.2 itself uses. See
+    The fields after ``version`` are Driver.js's configuration options, named and
+    defaulting to the value Driver.js 1.10.2 itself uses. See
     https://driverjs.com/docs/configuration for what each one does. Options that
     take a JavaScript function are not available. Driver.js writes the button
     texts and the progress text into the page as HTML, so they are passed on as
@@ -121,36 +108,36 @@ class Tour:
             another version plays it by itself once more.
         animate: Whether to animate the tour.
         duration: How long the animation takes, in milliseconds.
-        allow_close: Whether a visitor can close the tour before its last step.
-        allow_scroll: Whether the page can be scrolled while the tour shows.
-        overlay_click_behavior: What clicking the overlay does: ``"close"`` the tour
+        allowClose: Whether a visitor can close the tour before its last step.
+        allowScroll: Whether the page can be scrolled while the tour shows.
+        overlayClickBehavior: What clicking the overlay does: ``"close"`` the tour
             or go to the ``"nextStep"``.
-        overlay_color: The colour of the overlay.
-        overlay_opacity: The opacity of the overlay, from 0 to 1.
-        smooth_scroll: Whether to scroll smoothly to each step's element.
-        disable_active_interaction: Whether the highlighted element ignores clicks.
-        allow_keyboard_control: Whether the arrow and escape keys move through and
+        overlayColor: The colour of the overlay.
+        overlayOpacity: The opacity of the overlay, from 0 to 1.
+        smoothScroll: Whether to scroll smoothly to each step's element.
+        disableActiveInteraction: Whether the highlighted element ignores clicks.
+        allowKeyboardControl: Whether the arrow and escape keys move through and
             close the tour.
-        advance_on_click: Whether clicking a step's element moves to the next step.
-        wait_for_element: How long to wait for a step's element to appear, in
+        advanceOnClick: Whether clicking a step's element moves to the next step.
+        waitForElement: How long to wait for a step's element to appear, in
             milliseconds.
-        stage_padding: The space around the highlighted element, in pixels.
-        stage_radius: The corner radius of the highlight, in pixels.
-        popover_offset: The distance between the popover and the element, in pixels.
-        popover_class: A class added to every popover.
-        show_buttons: The buttons the popover shows, from ``"next"``,
+        stagePadding: The space around the highlighted element, in pixels.
+        stageRadius: The corner radius of the highlight, in pixels.
+        popoverOffset: The distance between the popover and the element, in pixels.
+        popoverClass: A class added to every popover.
+        showButtons: The buttons the popover shows, from ``"next"``,
             ``"previous"`` and ``"close"``.
-        disable_buttons: The buttons that show but cannot be pressed.
-        show_progress: Whether the popover shows how far through the tour it is.
-        progress_text: The progress text, with ``{{current}}`` and ``{{total}}``
+        disableButtons: The buttons that show but cannot be pressed.
+        showProgress: Whether the popover shows how far through the tour it is.
+        progressText: The progress text, with ``{{current}}`` and ``{{total}}``
             standing for the step's number and the number of steps.
-        next_btn_text: The text of the next button, in the active language by
+        nextBtnText: The text of the next button, in the active language by
             default.
-        prev_btn_text: The text of the previous button, in the active language by
+        prevBtnText: The text of the previous button, in the active language by
             default.
-        done_btn_text: The text of the button on the last step, in the active
+        doneBtnText: The text of the button on the last step, in the active
             language by default.
-        close_btn_label: The accessible name of the close button, in the active
+        closeBtnLabel: The accessible name of the close button, in the active
             language by default.
 
     Raises:
@@ -164,28 +151,28 @@ class Tour:
     version: int = 1
     animate: bool = True
     duration: int = 400
-    allow_close: bool = True
-    allow_scroll: bool = True
-    overlay_click_behavior: Literal["close", "nextStep"] = "close"
-    overlay_color: str = "#000"
-    overlay_opacity: float = 0.7
-    smooth_scroll: bool = False
-    disable_active_interaction: bool = False
-    allow_keyboard_control: bool = True
-    advance_on_click: bool = False
-    wait_for_element: int = 0
-    stage_padding: int = 10
-    stage_radius: int = 5
-    popover_offset: int = 10
-    popover_class: str = ""
-    show_buttons: tuple[Button, ...] = ("next", "previous", "close")
-    disable_buttons: tuple[Button, ...] = ()
-    show_progress: bool = False
-    progress_text: str = PROGRESS_TEXT
-    next_btn_text: str | Promise = NEXT_LABEL
-    prev_btn_text: str | Promise = PREVIOUS_LABEL
-    done_btn_text: str | Promise = DONE_LABEL
-    close_btn_label: str | Promise = CLOSE_LABEL
+    allowClose: bool = True
+    allowScroll: bool = True
+    overlayClickBehavior: Literal["close", "nextStep"] = "close"
+    overlayColor: str = "#000"
+    overlayOpacity: float = 0.7
+    smoothScroll: bool = False
+    disableActiveInteraction: bool = False
+    allowKeyboardControl: bool = True
+    advanceOnClick: bool = False
+    waitForElement: int = 0
+    stagePadding: int = 10
+    stageRadius: int = 5
+    popoverOffset: int = 10
+    popoverClass: str = ""
+    showButtons: tuple[Button, ...] = ("next", "previous", "close")
+    disableButtons: tuple[Button, ...] = ()
+    showProgress: bool = False
+    progressText: str = PROGRESS_TEXT
+    nextBtnText: str | Promise = NEXT_LABEL
+    prevBtnText: str | Promise = PREVIOUS_LABEL
+    doneBtnText: str | Promise = DONE_LABEL
+    closeBtnLabel: str | Promise = CLOSE_LABEL
 
     def __post_init__(self):
         """Refuse a bad tour, freeze its steps and record it under its name."""
@@ -245,7 +232,7 @@ class Tour:
             "steps": played.as_driver_steps(),
             "parts": TourParts.classes(),
             "options": {
-                camel_case(option.name): getattr(played, option.name)
+                option.name: getattr(played, option.name)
                 for option in fields(played)
                 if option.name not in PACKAGE_FIELDS
             },

@@ -241,17 +241,16 @@ own labels, set them on the tour, as described in
 ## Set Driver.js options
 
 `Tour` mirrors the configuration object of Driver.js 1.10.2. Set an option as a field of the
-tour, named in snake_case, and it reaches Driver.js under its own name: `show_progress` is
-`showProgress`. Every field defaults to the value Driver.js uses, so a tour sets only what it
+tour, under the same name Driver.js gives it. Every field defaults to the value Driver.js uses, so a tour sets only what it
 changes:
 
 ```python
 Tour(
     name="dashboard",
     steps=[...],
-    show_progress=True,
-    progress_text="{{current}} / {{total}}",
-    next_btn_text="Continue",
+    showProgress=True,
+    progressText="{{current}} / {{total}}",
+    nextBtnText="Continue",
 )
 ```
 
@@ -261,28 +260,28 @@ The fields, with the Driver.js option each one is:
 |-------|---------|--------------|
 | `animate` | `True` | Whether to animate the tour. |
 | `duration` | `400` | How long the animation takes, in milliseconds. |
-| `allow_close` | `True` | Whether a visitor can close the tour before its last step. |
-| `allow_scroll` | `True` | Whether the page can be scrolled while the tour shows. |
-| `overlay_click_behavior` | `"close"` | What clicking the overlay does: `"close"` or `"nextStep"`. |
-| `overlay_color` | `"#000"` | The colour of the overlay. |
-| `overlay_opacity` | `0.7` | The opacity of the overlay, from 0 to 1. |
-| `smooth_scroll` | `False` | Whether to scroll smoothly to each step's element. |
-| `disable_active_interaction` | `False` | Whether the highlighted element ignores clicks. |
-| `allow_keyboard_control` | `True` | Whether the arrow and escape keys move through and close the tour. |
-| `advance_on_click` | `False` | Whether clicking a step's element moves to the next step. |
-| `wait_for_element` | `0` | How long to wait for a step's element to appear, in milliseconds. |
-| `stage_padding` | `10` | The space around the highlighted element, in pixels. |
-| `stage_radius` | `5` | The corner radius of the highlight, in pixels. |
-| `popover_offset` | `10` | The distance between the popover and the element, in pixels. |
-| `popover_class` | `""` | A class added to every popover. |
-| `show_buttons` | `("next", "previous", "close")` | The buttons the popover shows. |
-| `disable_buttons` | `()` | The buttons that show but cannot be pressed. |
-| `show_progress` | `False` | Whether the popover shows how far through the tour it is. |
-| `progress_text` | `"{{current}} of {{total}}"` | The progress text. `{{current}}` and `{{total}}` stand for the step's number and the number of steps. |
-| `next_btn_text` | "Next", translated | The text of the next button. |
-| `prev_btn_text` | "Previous", translated | The text of the previous button. |
-| `done_btn_text` | "Done", translated | The text of the button on the last step. |
-| `close_btn_label` | "Close", translated | The accessible name of the close button. |
+| `allowClose` | `True` | Whether a visitor can close the tour before its last step. |
+| `allowScroll` | `True` | Whether the page can be scrolled while the tour shows. |
+| `overlayClickBehavior` | `"close"` | What clicking the overlay does: `"close"` or `"nextStep"`. |
+| `overlayColor` | `"#000"` | The colour of the overlay. |
+| `overlayOpacity` | `0.7` | The opacity of the overlay, from 0 to 1. |
+| `smoothScroll` | `False` | Whether to scroll smoothly to each step's element. |
+| `disableActiveInteraction` | `False` | Whether the highlighted element ignores clicks. |
+| `allowKeyboardControl` | `True` | Whether the arrow and escape keys move through and close the tour. |
+| `advanceOnClick` | `False` | Whether clicking a step's element moves to the next step. |
+| `waitForElement` | `0` | How long to wait for a step's element to appear, in milliseconds. |
+| `stagePadding` | `10` | The space around the highlighted element, in pixels. |
+| `stageRadius` | `5` | The corner radius of the highlight, in pixels. |
+| `popoverOffset` | `10` | The distance between the popover and the element, in pixels. |
+| `popoverClass` | `""` | A class added to every popover. |
+| `showButtons` | `("next", "previous", "close")` | The buttons the popover shows. |
+| `disableButtons` | `()` | The buttons that show but cannot be pressed. |
+| `showProgress` | `False` | Whether the popover shows how far through the tour it is. |
+| `progressText` | `"{{current}} of {{total}}"` | The progress text. `{{current}}` and `{{total}}` stand for the step's number and the number of steps. |
+| `nextBtnText` | "Next", translated | The text of the next button. |
+| `prevBtnText` | "Previous", translated | The text of the previous button. |
+| `doneBtnText` | "Done", translated | The text of the button on the last step. |
+| `closeBtnLabel` | "Close", translated | The accessible name of the close button. |
 
 The [Driver.js configuration reference](https://driverjs.com/docs/configuration) describes each
 option, so moving between it and `Tour` is one to one.
@@ -313,7 +312,7 @@ more in a browser that saw the first.
 
 The function-view page at `/function-view/` is rendered by a function-based view that passes its
 tour in the template context. The Driver.js options page at `/driver-options/` plays a tour that
-sets `show_progress`, `progress_text` and `next_btn_text`. Every demo page outputs its tour with
+sets `showProgress`, `progressText` and `nextBtnText`. Every demo page outputs its tour with
 `{{ tour }}` in its own template, and the demo's base template includes the package's files.
 
 ## Why a visitor can always use the page

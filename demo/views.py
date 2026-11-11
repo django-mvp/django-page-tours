@@ -182,8 +182,8 @@ class DriverOptionsView(TemplateView):
                     element="#demo-driver-options",
                 ),
             ],
-            show_progress=True,
-            progress_text="Step {{current}} of {{total}}",
-            next_btn_text="Onwards",
+            showProgress=True,
+            progressText="Step {{current}} of {{total}}",
+            nextBtnText="Onwards",
         )
     }

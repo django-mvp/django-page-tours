@@ -116,7 +116,7 @@ page. The package's script makes it start the tour:
 ```
 
 `Tour` mirrors Driver.js's configuration object, so a tour sets Driver.js options as fields named
-in snake_case, such as `Tour(show_progress=True)`. See the
+as Driver.js names them, such as `Tour(showProgress=True)`. See the
 [Driver.js configuration reference](https://driverjs.com/docs/configuration) for each option.
 Options that take a function are not available.
 

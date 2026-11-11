@@ -117,9 +117,9 @@ class TestTour:
 class TestTourDriverOptions:
     """A tour's Driver.js options reach the page under Driver.js's own names."""
 
-    def test_a_field_arrives_under_its_camel_case_name(self):
-        """``overlay_opacity`` is ``overlayOpacity`` in the rendered options."""
-        tour = Tour(name="tests.options-field", steps=[STEP], overlay_opacity=0.4)
+    def test_a_field_arrives_in_the_rendered_options(self):
+        """``overlayOpacity`` set on a tour is in the rendered options."""
+        tour = Tour(name="tests.options-field", steps=[STEP], overlayOpacity=0.4)
 
         assert payload_of(tour)["options"]["overlayOpacity"] == 0.4
 
@@ -162,7 +162,7 @@ class TestTourDriverOptions:
 
     def test_a_tuple_of_buttons_arrives_as_a_list(self):
         """The buttons shown are carried as a JSON list."""
-        tour = Tour(name="tests.options-buttons", steps=[STEP], show_buttons=("next",))
+        tour = Tour(name="tests.options-buttons", steps=[STEP], showButtons=("next",))
 
         assert payload_of(tour)["options"]["showButtons"] == ["next"]
 
@@ -178,7 +178,7 @@ class TestTourDriverOptions:
 
     def test_a_label_set_on_the_tour_replaces_the_translated_one(self):
         """A tour names its own label, and it is passed as written."""
-        tour = Tour(name="tests.options-label", steps=[STEP], next_btn_text="Go <b>")
+        tour = Tour(name="tests.options-label", steps=[STEP], nextBtnText="Go <b>")
 
         with translation.override("de"):
             assert payload_of(tour)["options"]["nextBtnText"] == "Go <b>"
@@ -186,7 +186,7 @@ class TestTourDriverOptions:
     def test_a_value_holding_markup_stays_inside_the_script_element(self):
         """A value cannot close the element it is carried in."""
         value = "</script><script>alert(1)</script>"
-        tour = Tour(name="tests.options-markup", steps=[STEP], popover_class=value)
+        tour = Tour(name="tests.options-markup", steps=[STEP], popoverClass=value)
 
         assert payload_of(tour)["options"]["popoverClass"] == value
 

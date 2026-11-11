@@ -51,8 +51,8 @@ def steps_for(name, *selectors):
 OPTIONS_TOUR = Tour(
     name="tests.options",
     steps=CLASS_TOUR.steps,
-    show_progress=True,
-    progress_text="{{current}} / {{total}}",
+    showProgress=True,
+    progressText="{{current}} / {{total}}",
 )
 
 

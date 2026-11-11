@@ -115,15 +115,15 @@ action, and that every control the page offers works afterwards.
 
 A developer wants a tour to use something Driver.js already does, such as showing the step
 count, turning the animation off or wording a button differently. The tour has a field for each
-Driver.js configuration option that takes a plain value, named in snake_case after the option,
-and the package hands the values to Driver.js under Driver.js's own names. The fields default to
+Driver.js configuration option that takes a plain value, named exactly as the option is,
+and the package hands the values to Driver.js as they are. The fields default to
 Driver.js's own defaults. Options that take a JavaScript function are not available.
 
 **Why this priority**: The package leans on Driver.js for what it already does, so moving between
 Driver.js's documentation and a tour is one to one, and a developer gets type hints and linting
 for each option (G1).
 
-**Independent Test**: Declare a tour with `show_progress=True`, open its page, and confirm the
+**Independent Test**: Declare a tour with `showProgress=True`, open its page, and confirm the
 step count shows.
 
 **Acceptance Scenarios**:
@@ -202,8 +202,8 @@ step count shows.
   translation exists, and in English otherwise, unless the tour sets its own labels. The package MUST
   ship an English catalogue of its own strings. (US2)
 - **FR-018**: A tour MUST have a field for each Driver.js configuration option that takes a
-  plain value, named in snake_case after the option and defaulting to Driver.js's own default,
-  and the option MUST reach the Driver.js constructor under Driver.js's name. The options the
+  plain value, named exactly as the option is and defaulting to Driver.js's own default,
+  and the option MUST reach the Driver.js constructor under that name. The options the
   package sets itself (the steps, the skipping of missing elements and the hooks the package
   uses) are not fields, and options that take a JavaScript function are not available. The
   package MUST NOT check what an option does. (US3)

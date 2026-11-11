@@ -79,7 +79,7 @@ class TestDriverOptionsPage:
         return client.get(reverse(name)).content.decode()
 
     def test_its_tour_turns_on_the_step_count(self, client):
-        """The tour sets its ``show_progress`` field, which arrives as Driver.js's."""
+        """The tour sets its ``showProgress`` field, which arrives as Driver.js's."""
         match = re.search(
             r'<script id="page-tour-steps" type="application/json">(.*?)</script>',
             self.page(client),
