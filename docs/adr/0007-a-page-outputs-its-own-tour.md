@@ -1,6 +1,7 @@
 # ADR 0007 — A page outputs its own tour
 
-**Status:** accepted. Supersedes ADR 0001 and amends ADR 0006.
+**Status:** accepted. Supersedes ADR 0001 and amends ADR 0006. Amended by ADR 0008, which renames
+the element a tour renders and moves its rendering onto the base every declaration shares.
 
 ## Decision
 

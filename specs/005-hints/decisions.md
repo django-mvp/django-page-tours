@@ -126,7 +126,7 @@ names, `PAGE_TOURS_OVERRIDES`, the payload and its element `page-tours-<kind>`. 
 function keeps what a visitor did as a version and a list of ids under the declaration's name.
 The checklist (FS-006) is its third kind. Taken at research, from the hand-over.
 
-**ADR:** to graduate at converge — it binds every later kind of declaration
+**ADR:** docs/adr/0008-every-declaration-shares-one-base.md
 
 ## D15 — The base is named `Declaration` (answers D11)
 

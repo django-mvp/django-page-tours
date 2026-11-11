@@ -326,10 +326,11 @@
 
   // Plays every kind of declaration the page carries, each from its own element
   // and each in its own try, so one that fails neither stops the other nor
-  // raises on the page. Hints come first, so a tour step can point at one. The
-  // page is looked at only once it is parsed, so an element may sit anywhere in
-  // it and the scripts may load in any way. A page has one of each kind: should
-  // an element appear twice, the first is played and the other is left alone.
+  // raises on the page. Hints come first, so they are on the page before a tour
+  // starts. The page is looked at only once it is parsed, so an element may sit
+  // anywhere in it and the scripts may load in any way. A page has one of each
+  // kind: should an element appear twice, the first is played and the other is
+  // left alone.
   function play() {
     var tourDriver = window.driver && window.driver.js && window.driver.js.driver;
     var hintsDriver = window.driverHints && window.driverHints.hints;
