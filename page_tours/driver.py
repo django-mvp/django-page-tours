@@ -11,7 +11,6 @@ from django.utils.functional import Promise
 from django.utils.html import json_script
 from django.utils.module_loading import import_string
 from django.utils.safestring import SafeString
-from django.utils.translation import gettext_lazy as _
 
 from page_tours.parts import TourParts
 
@@ -167,15 +166,14 @@ class Declaration(DriverObject):
         """Refuse a bad name or version and record the declaration under its name."""
         cls = type(self).__name__
         if not isinstance(self.name, str) or not self.name.strip():
-            raise ImproperlyConfigured(_("%(cls)s needs a name.") % {"cls": cls})
+            raise ImproperlyConfigured(f"{cls} needs a name.")
         if (
             not isinstance(self.version, int)
             or isinstance(self.version, bool)
             or self.version < 1
         ):
             raise ImproperlyConfigured(
-                _("The version of %(cls)s must be a whole number of 1 or more.")
-                % {"cls": cls}
+                f"The version of {cls} must be a whole number of 1 or more."
             )
         declared.setdefault(self.name, []).append(
             weakref.ref(self, partial(forget, self.name))
@@ -287,23 +285,18 @@ def resolve_override(
         return None
     if not isinstance(value, str):
         raise ImproperlyConfigured(
-            _(
-                "PAGE_TOURS_OVERRIDES[%(name)s] must be the dotted path of a "
-                "%(cls)s or None."
-            )
-            % {"name": name, "cls": cls.__name__}
+            f"PAGE_TOURS_OVERRIDES[{name}] must be the dotted path of a "
+            f"{cls.__name__} or None."
         )
     try:
         replacement = import_string(value)
     except ImportError as error:
         raise ImproperlyConfigured(
-            _("PAGE_TOURS_OVERRIDES[%(name)s]: %(path)s cannot be imported.")
-            % {"name": name, "path": value}
+            f"PAGE_TOURS_OVERRIDES[{name}]: {value} cannot be imported."
         ) from error
     if not isinstance(replacement, cls):
         raise ImproperlyConfigured(
-            _("PAGE_TOURS_OVERRIDES[%(name)s]: %(path)s is not a %(cls)s.")
-            % {"name": name, "path": value, "cls": cls.__name__}
+            f"PAGE_TOURS_OVERRIDES[{name}]: {value} is not a {cls.__name__}."
         )
     return replacement
 

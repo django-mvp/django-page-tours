@@ -32,6 +32,9 @@ All notable changes to this project are documented in this file. The format foll
 
 ### Changed
 
+- System check messages and configuration errors are no longer marked for translation, so the
+  English catalogue holds only text people see on the site: the controls of a tour, a hint and a
+  checklist, and the app's name in the admin.
 - **Breaking:** the element a tour renders is now `<script id="page-tours-tour">`, in place of
   `page-tour-steps`, and the Driver.js options and the steps are under `config`. Only the package's
   own script reads it.

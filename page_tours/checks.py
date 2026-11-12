@@ -3,7 +3,6 @@
 from django.conf import settings
 from django.core import checks
 from django.urls import get_resolver
-from django.utils.translation import gettext_lazy as _
 
 from page_tours.driver import declarations
 from page_tours.parts import TourParts
@@ -33,12 +32,9 @@ def check_overrides_name_declarations(app_configs, **kwargs):
     declared = declarations()
     return [
         checks.Warning(
-            _(
-                "No tour, hints or checklist are declared with the name %(name)s, so "
-                "its entry in PAGE_TOURS_OVERRIDES changes nothing."
-            )
-            % {"name": name},
-            hint=_(
+            f"No tour, hints or checklist are declared with the name {name}, so "
+            "its entry in PAGE_TOURS_OVERRIDES changes nothing.",
+            hint=(
                 "A tour, hints or checklist that were renamed have a new name. "
                 "Update the key to match."
             ),
@@ -72,13 +68,10 @@ def check_declaration_names_are_unique(app_configs, **kwargs):
     get_resolver().url_patterns  # noqa: B018 - importing the views declares their tours
     return [
         checks.Warning(
-            _(
-                "%(count)d tours, sets of hints or checklists with different content "
-                "are declared with the name %(name)s, so a browser that saw one "
-                "counts them all as seen."
-            )
-            % {"count": len(contents), "name": name},
-            hint=_(
+            f"{len(contents)} tours, sets of hints or checklists with different "
+            f"content are declared with the name {name}, so a browser that saw one "
+            "counts them all as seen.",
+            hint=(
                 "Give each its own name. A reusable app names its declarations "
                 "'<app_label>.<name>'."
             ),
@@ -130,8 +123,7 @@ def check_part_classes(app_configs, **kwargs):
         if not isinstance(mapping, dict):
             issues.append(
                 checks.Warning(
-                    _("%(source)s must be a dict from part to a string of class names.")
-                    % {"source": source},
+                    f"{source} must be a dict from part to a string of class names.",
                     id="page_tours.W004",
                 )
             )
@@ -140,19 +132,16 @@ def check_part_classes(app_configs, **kwargs):
             if part not in TourParts.parts:
                 issues.append(
                     checks.Warning(
-                        _("%(source)s names '%(part)s', which is not a part of a tour.")
-                        % {"source": source, "part": part},
-                        hint=_("The parts are: %(parts)s.")
-                        % {"parts": ", ".join(TourParts.parts)},
+                        f"{source} names '{part}', which is not a part of a tour.",
+                        hint=f"The parts are: {', '.join(TourParts.parts)}.",
                         id="page_tours.W003",
                     )
                 )
             elif not isinstance(value, str):
                 issues.append(
                     checks.Warning(
-                        _("%(source)s gives '%(part)s' a value that is not a string.")
-                        % {"source": source, "part": part},
-                        hint=_("Write the class names as one string."),
+                        f"{source} gives '{part}' a value that is not a string.",
+                        hint="Write the class names as one string.",
                         id="page_tours.W004",
                     )
                 )

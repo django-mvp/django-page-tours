@@ -7,7 +7,6 @@ from typing import Any, ClassVar, Literal
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.functional import Promise
-from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 
 from page_tours.driver import Declaration, PopoverContent
@@ -207,7 +206,7 @@ class Tour(Declaration):
     def __post_init__(self):
         """Refuse a tour without steps, freeze its steps and declare it."""
         if not self.steps:
-            raise ImproperlyConfigured(_("A tour needs at least one step."))
+            raise ImproperlyConfigured("A tour needs at least one step.")
         object.__setattr__(self, "steps", tuple(self.steps))
         super().__post_init__()
 
