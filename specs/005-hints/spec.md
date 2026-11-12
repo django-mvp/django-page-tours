@@ -207,7 +207,8 @@ the beacon carry them.
   the title, description, side, alignment and class, alongside the hint's own button options.
   (US1)
 - **FR-005**: The default text of a hint's button MUST be translatable, and render in the active
-  language. (US1)
+  language. A site can give it other text for every set of hints with `PAGE_TOURS_TEXT`
+  (specification 001, FR-019). (US1)
 - **FR-006**: A hint's title, description and button text MUST be passed to Driver.js as they are,
   with no escaping and no checks of their content. (US1)
 - **FR-007**: The package MUST NOT check the values of Driver.js's options beyond what it depends

@@ -4,6 +4,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any, ClassVar, Literal
 
+from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.functional import Promise
 from django.utils.translation import gettext_lazy as _
@@ -13,15 +14,20 @@ from page_tours.driver import Declaration, PopoverContent
 
 Button = Literal["next", "previous", "close"]
 
-# Driver.js's own default progress text.
-PROGRESS_TEXT = "{{current}} of {{total}}"
-
-# The default labels of the controls: lazy, so the active language applies when
-# the tour renders.
-NEXT_LABEL = pgettext_lazy("page tour control", "Next")
-PREVIOUS_LABEL = pgettext_lazy("page tour control", "Previous")
-DONE_LABEL = pgettext_lazy("page tour control", "Done")
-CLOSE_LABEL = pgettext_lazy("page tour control", "Close")
+# The default texts of the controls, from PAGE_TOURS_TEXT or else the package's
+# own: lazy, so the active language applies when the tour renders.
+SITE_TEXT = getattr(settings, "PAGE_TOURS_TEXT", {}).get("tour", {})
+PROGRESS_TEXT = SITE_TEXT.get(
+    "progressText", pgettext_lazy("page tour control", "{{current}} of {{total}}")
+)
+NEXT_LABEL = SITE_TEXT.get("nextBtnText", pgettext_lazy("page tour control", "Next"))
+PREVIOUS_LABEL = SITE_TEXT.get(
+    "prevBtnText", pgettext_lazy("page tour control", "Previous")
+)
+DONE_LABEL = SITE_TEXT.get("doneBtnText", pgettext_lazy("page tour control", "Done"))
+CLOSE_LABEL = SITE_TEXT.get(
+    "closeBtnLabel", pgettext_lazy("page tour control", "Close")
+)
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -192,7 +198,7 @@ class Tour(Declaration):
     showButtons: tuple[Button, ...] = ("next", "previous", "close")
     disableButtons: tuple[Button, ...] = ()
     showProgress: bool = False
-    progressText: str = PROGRESS_TEXT
+    progressText: str | Promise = PROGRESS_TEXT
     nextBtnText: str | Promise = NEXT_LABEL
     prevBtnText: str | Promise = PREVIOUS_LABEL
     doneBtnText: str | Promise = DONE_LABEL

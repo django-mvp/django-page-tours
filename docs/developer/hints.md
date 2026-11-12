@@ -98,10 +98,13 @@ applies, or else Driver.js's own default.
 
 ### Options of the hints
 
+To word `buttonText` for every set of hints on the site, use `PAGE_TOURS_TEXT`, as
+[Word every tour on the site](site-text.md) shows.
+
 | Field | Default | What it does |
 |---|---|---|
 | `beacon` | none | The `Beacon` of every hint that has none of its own. |
-| `buttonText` | "Got it", in the active language | The text of every popover's button. |
+| `buttonText` | "Got it", in the active language, or the site's text | The text of every popover's button. |
 | `popoverClass` | `""` | A class added to every popover. |
 | `popoverOffset` | `10` | The distance between the popover and its element, in pixels. |
 | `overlay` | `False` | Whether the page is dimmed while a popover is open. |

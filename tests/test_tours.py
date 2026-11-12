@@ -18,6 +18,8 @@ from page_tours.driver import declaration_overrides, declarations, resolve_overr
 from page_tours.parts import TourParts
 from page_tours.tours import Tour, TourStep
 from tests import views
+from tests.settings_site_text import PAGE_TOURS_TEXT as SITE_TEXT
+from tests.site_text import run_with_site_text
 
 STEP = TourStep(title="Title", description="Body")
 
@@ -747,3 +749,63 @@ class TestDeclaredTours:
         assert any(
             tour is views.APP_TOUR for tour in declarations()[views.APP_TOUR.name]
         )
+
+
+class TestTourSiteText:
+    """``PAGE_TOURS_TEXT`` gives the default text of every tour."""
+
+    def test_a_tour_that_sets_nothing_takes_the_setting(self):
+        """A tour's texts come from the setting, and the rest from the package."""
+        config = run_with_site_text(
+            """
+            import json
+            from page_tours import Tour, TourStep
+            from page_tours.tours import DONE_LABEL
+            tour = Tour(name="tests.site-text", steps=[TourStep(title="One")])
+            driver = tour.as_driver()
+            print(json.dumps({
+                "next": driver["nextBtnText"],
+                "progress": driver["progressText"],
+                "done_is_default": driver["doneBtnText"] == str(DONE_LABEL),
+            }))
+            """
+        )
+
+        assert config == {
+            "next": SITE_TEXT["tour"]["nextBtnText"],
+            "progress": SITE_TEXT["tour"]["progressText"],
+            "done_is_default": True,
+        }
+
+    def test_a_tour_step_or_subclass_that_sets_its_own_text_keeps_it(self):
+        """Text set on a tour, a subclass or a step wins over the setting."""
+        config = run_with_site_text(
+            """
+            import json
+            from dataclasses import dataclass
+            from page_tours import Tour, TourStep
+
+            @dataclass(frozen=True, kw_only=True)
+            class WordedTour(Tour):
+                nextBtnText: str = "Subclass next"
+
+            steps = [TourStep(title="One", nextBtnText="Step next")]
+            print(json.dumps({
+                "argument": Tour(
+                    name="tests.own", steps=steps, nextBtnText="Own next"
+                ).as_driver()["nextBtnText"],
+                "subclass": WordedTour(name="tests.sub", steps=steps).as_driver()[
+                    "nextBtnText"
+                ],
+                "step": Tour(name="tests.step", steps=steps).as_driver()["steps"][0][
+                    "popover"
+                ]["nextBtnText"],
+            }))
+            """
+        )
+
+        assert config == {
+            "argument": "Own next",
+            "subclass": "Subclass next",
+            "step": "Step next",
+        }

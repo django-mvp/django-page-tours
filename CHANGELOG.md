@@ -8,6 +8,12 @@ All notable changes to this project are documented in this file. The format foll
 
 ### Added
 
+- A `PAGE_TOURS_TEXT` setting that words every tour, set of hints and checklist on a site at once.
+  Keyed by `"tour"`, `"hint"` or `"checklist"` and then by the name of the text, such as
+  `nextBtnText`, `buttonText` or `title`, it gives the text a declaration leaves at the package's
+  own. Text set on a step, hint, tour, hints or checklist still wins. The setting is read once,
+  when the package is imported. The tour's progress text and the checklist's launcher progress text are now
+  translatable like the other default texts.
 - A checklist on a page. `Checklist`, `ChecklistItem` and `Offset` declare a panel of items, each
   of which starts a tour, opens a page or is ticked by the app or the visitor. A view or a context
   processor puts the checklist in the template context under `checklist`, and the page outputs it

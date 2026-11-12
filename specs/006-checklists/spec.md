@@ -200,7 +200,9 @@ the checklist report it is complete.
   developer marks as its toggle, and that control MUST stay hidden where there is no checklist or
   no JavaScript. (US1)
 - **FR-011**: The checklist's default labels MUST be translatable and shown in the language the
-  page is served in. Text the developer sets MUST reach Driver.js as it is. (US1)
+  page is served in, unless the developer or `PAGE_TOURS_TEXT` (specification 001, FR-019) gives
+  other text. The progress text on the launcher MUST be translatable too. Text the developer sets MUST reach
+  Driver.js as it is. (US1)
 - **FR-012**: The checklist's panel, title, description, progress and close control MUST carry
   the classes a site gives the matching parts of a tour step, and its launcher and items MUST
   carry classes a site can give them under parts of their own. (US1)

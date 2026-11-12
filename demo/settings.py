@@ -85,6 +85,12 @@ PAGE_TOURS_CLASSES = {
     "done": "demo-done",
 }
 
+# The text every tour, set of hints and checklist takes unless it words its own.
+PAGE_TOURS_TEXT = {
+    "tour": {"doneBtnText": "Finish"},
+    "hint": {"buttonText": "Thanks"},
+}
+
 USE_TZ = True
 USE_I18N = True
 LANGUAGE_CODE = "en-us"

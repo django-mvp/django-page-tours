@@ -141,6 +141,37 @@ step count shows.
 
 ---
 
+### User Story 4 - A developer words every tour, hint and checklist on the site at once (Priority: P3)
+
+A developer wants the buttons and progress text of every tour, set of hints and checklist on the
+site to say what the site's voice says, such as "Continue" instead of "Next", without setting the
+text on each one. The `PAGE_TOURS_TEXT` setting gives the text for a kind of declaration: tours,
+hints or checklists. The text the developer leaves at the package's own is taken from the
+setting, and text the developer sets on a declaration or a step is left alone.
+
+**Why this priority**: Wording is a property of a site, and a site with dozens of tours should
+not have to repeat it on each one. It is a convenience, so the tours work without it.
+
+**Independent Test**: Set `PAGE_TOURS_TEXT = {"tour": {"nextBtnText": "Continue"}}`, open a page
+whose tour sets no button text, and confirm the next button says "Continue".
+
+**Acceptance Scenarios**:
+
+1. **Given** `PAGE_TOURS_TEXT` gives a text for tours, hints or checklists, **When** a tour, set
+   of hints or checklist that does not set that text plays, **Then** it shows the text from the
+   setting.
+2. **Given** a tour, set of hints or checklist that sets one of those texts itself, **When** it
+   plays, **Then** it shows its own text.
+3. **Given** a step or hint that sets its own text, **When** it shows, **Then** it shows its own
+   text, and the rest of its tour or hints show the text from the setting.
+4. **Given** a text in the setting that is translated lazily, **When** a page is served in
+   another language, **Then** the text is shown in that language.
+5. **Given** a tour, set of hints or checklist that replaces another through
+   `PAGE_TOURS_OVERRIDES`, **When** it plays, **Then** it shows the text from the setting like
+   any other that sets none.
+
+---
+
 ### Edge Cases
 
 - A step names an element that matches several elements on the page: the step is attached to the
@@ -201,9 +232,10 @@ step count shows.
 - **FR-016**: A visitor MUST be able to start, follow and close a tour from the keyboard alone.
   Focus MUST move into each step as it shows and, when the tour ends, MUST go back to where it
   was before the tour started. A screen reader MUST announce each step's title and description. (US2)
-- **FR-017**: The tour's own controls MUST be shown in the language the page is served in when a
-  translation exists, and in English otherwise, unless the tour sets its own labels. The package MUST
-  ship an English catalogue of its own strings. (US2)
+- **FR-017**: The tour's own controls and progress text MUST be shown in the language the page is
+  served in when a translation exists, and in English otherwise, unless the tour sets its own
+  labels or `PAGE_TOURS_TEXT` gives them. The package MUST ship an English catalogue of its own
+  strings. (US2)
 - **FR-018**: A tour MUST have a field for each Driver.js configuration option that takes a
   plain value, named exactly as the option is and defaulting to Driver.js's own default,
   and the option MUST reach the Driver.js constructor under that name. A step MUST have a field
@@ -212,6 +244,14 @@ step count shows.
   and the hooks the package uses) are not fields of the tour. Options that take a JavaScript
   function are not available, and `allowedElements` takes selector strings only. The package
   MUST NOT check what an option does. (US3)
+- **FR-019**: A `PAGE_TOURS_TEXT` setting, keyed by `"tour"`, `"hint"` or `"checklist"` and then
+  by a text's field name, MUST give the text of every tour, set of hints or checklist that has
+  not been given its own. For a tour the texts are `progressText`, `nextBtnText`, `prevBtnText`,
+  `doneBtnText` and `closeBtnLabel`; for hints, `buttonText`; for a checklist, `title`,
+  `progressText` and `launcherProgressText`. Text set on a step or hint wins over text set on a
+  tour, hints or checklist, or as a subclass's default, which wins over the setting, which wins
+  over the package's own. A value may be a string or a lazy translation. The setting is read
+  once, when the package is imported. A project that does not set it MUST see no change. (US4)
 
 ### Key Entities
 

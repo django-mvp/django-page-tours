@@ -72,9 +72,11 @@ then outputs its own tour with `{{ tour }}`, the way a form outputs its assets w
 
 ## Settings
 
-None are required. Two are there when you need them:
+None are required. Three are there when you need them:
 
 - `PAGE_TOURS_CLASSES` gives the parts of a shown step classes of your own. See
   [Styling tours](styling-tours.md).
 - `PAGE_TOURS_OVERRIDES` replaces or turns off the tour of an installed app. See
   [Tours from reusable apps](tours-from-reusable-apps.md).
+- `PAGE_TOURS_TEXT` words the buttons and progress text of every tour, set of hints and
+  checklist at once. See [Word every tour on the site](site-text.md).

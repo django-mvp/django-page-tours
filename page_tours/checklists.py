@@ -4,6 +4,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any, ClassVar, Literal
 
+from django.conf import settings
 from django.utils.functional import Promise
 from django.utils.translation import pgettext_lazy
 
@@ -12,11 +13,18 @@ from page_tours.tours import Tour
 
 Position = Literal["bottom-right", "bottom-left", "top-right", "top-left"]
 
-# The defaults of the checklist's text, lazy so the active language applies when
-# the checklist renders. The launcher's is plain, as Driver.js has it.
-GET_STARTED_LABEL = pgettext_lazy("page checklist", "Get started")
-CHECKLIST_PROGRESS_TEXT = pgettext_lazy("page checklist", "{{done}} of {{total}}")
-LAUNCHER_PROGRESS_TEXT = "{{done}}/{{total}}"
+# The defaults of the checklist's text, from PAGE_TOURS_TEXT or else the
+# package's own: lazy, so the active language applies when the checklist renders.
+SITE_TEXT = getattr(settings, "PAGE_TOURS_TEXT", {}).get("checklist", {})
+GET_STARTED_LABEL = SITE_TEXT.get(
+    "title", pgettext_lazy("page checklist", "Get started")
+)
+CHECKLIST_PROGRESS_TEXT = SITE_TEXT.get(
+    "progressText", pgettext_lazy("page checklist", "{{done}} of {{total}}")
+)
+LAUNCHER_PROGRESS_TEXT = SITE_TEXT.get(
+    "launcherProgressText", pgettext_lazy("page checklist", "{{done}}/{{total}}")
+)
 
 
 @dataclass(frozen=True, kw_only=True)

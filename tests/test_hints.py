@@ -12,6 +12,8 @@ import page_tours
 from page_tours import Beacon, Hint, Hints
 from page_tours.hints import GOT_IT_LABEL
 from tests import hints as hint_declarations
+from tests.settings_site_text import PAGE_TOURS_TEXT as SITE_TEXT
+from tests.site_text import run_with_site_text
 
 HINT = Hint(element="#menu", title="Title", description="Body")
 
@@ -265,3 +267,20 @@ class TestHintsOverrides:
 
         with pytest.raises(ImproperlyConfigured):
             str(hint_declarations.REPORT_HINTS)
+
+
+class TestHintsSiteText:
+    """``PAGE_TOURS_TEXT`` gives the default text of every set of hints."""
+
+    def test_hints_that_set_nothing_take_the_setting(self):
+        """A set of hints' button text comes from the setting."""
+        text = run_with_site_text(
+            """
+            import json
+            from page_tours import Hint, Hints
+            hints = Hints(name="tests.site-text-hints", hints=[Hint(element="#a")])
+            print(json.dumps(hints.as_driver()["buttonText"]))
+            """
+        )
+
+        assert text == SITE_TEXT["hint"]["buttonText"]

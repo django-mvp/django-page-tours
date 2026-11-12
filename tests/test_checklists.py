@@ -13,6 +13,8 @@ import page_tours
 from page_tours import Checklist, ChecklistItem, Offset, Tour, TourStep
 from page_tours.parts import TourParts
 from tests import checklists as checklist_declarations
+from tests.settings_site_text import PAGE_TOURS_TEXT as SITE_TEXT
+from tests.site_text import run_with_site_text
 
 ITEM = ChecklistItem(id="first", title="First")
 
@@ -420,3 +422,23 @@ class TestChecklistOverrides:
 
         with pytest.raises(ImproperlyConfigured):
             str(checklist)
+
+
+class TestChecklistSiteText:
+    """``PAGE_TOURS_TEXT`` gives the default text of every checklist."""
+
+    def test_a_checklist_that_sets_nothing_takes_the_setting(self):
+        """A checklist's title comes from the setting."""
+        text = run_with_site_text(
+            """
+            import json
+            from page_tours import Checklist, ChecklistItem
+            checklist = Checklist(
+                name="tests.site-text-checklist",
+                items=[ChecklistItem(id="one", title="One")],
+            )
+            print(json.dumps(checklist.as_driver()["title"]))
+            """
+        )
+
+        assert text == SITE_TEXT["checklist"]["title"]

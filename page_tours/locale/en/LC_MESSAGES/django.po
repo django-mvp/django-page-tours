@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: django-page-tours\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 15:55+0100\n"
+"POT-Creation-Date: 2026-11-12 12:08+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -20,14 +20,19 @@ msgstr ""
 msgid "Page tours"
 msgstr ""
 
-#: checklists.py:17
+#: checklists.py:20
 msgctxt "page checklist"
 msgid "Get started"
 msgstr ""
 
-#: checklists.py:18
+#: checklists.py:23
 msgctxt "page checklist"
 msgid "{{done}} of {{total}}"
+msgstr ""
+
+#: checklists.py:26
+msgctxt "page checklist"
+msgid "{{done}}/{{total}}"
 msgstr ""
 
 #: checks.py:37
@@ -57,27 +62,27 @@ msgid ""
 "<name>'."
 msgstr ""
 
-#: checks.py:118
+#: checks.py:133
 #, python-format
 msgid "%(source)s must be a dict from part to a string of class names."
 msgstr ""
 
-#: checks.py:128
+#: checks.py:143
 #, python-format
 msgid "%(source)s names '%(part)s', which is not a part of a tour."
 msgstr ""
 
-#: checks.py:130
+#: checks.py:145
 #, python-format
 msgid "The parts are: %(parts)s."
 msgstr ""
 
-#: checks.py:138
+#: checks.py:153
 #, python-format
 msgid "%(source)s gives '%(part)s' a value that is not a string."
 msgstr ""
 
-#: checks.py:140
+#: checks.py:155
 msgid "Write the class names as one string."
 msgstr ""
 
@@ -107,7 +112,7 @@ msgstr ""
 msgid "PAGE_TOURS_OVERRIDES[%(name)s]: %(path)s is not a %(cls)s."
 msgstr ""
 
-#: hints.py:14
+#: hints.py:16
 msgctxt "page hint control"
 msgid "Got it"
 msgstr ""
@@ -123,24 +128,29 @@ msgstr ""
 
 #: tours.py:21
 msgctxt "page tour control"
-msgid "Next"
-msgstr ""
-
-#: tours.py:22
-msgctxt "page tour control"
-msgid "Previous"
+msgid "{{current}} of {{total}}"
 msgstr ""
 
 #: tours.py:23
 msgctxt "page tour control"
+msgid "Next"
+msgstr ""
+
+#: tours.py:25
+msgctxt "page tour control"
+msgid "Previous"
+msgstr ""
+
+#: tours.py:27
+msgctxt "page tour control"
 msgid "Done"
 msgstr ""
 
-#: tours.py:24
+#: tours.py:29
 msgctxt "page tour control"
 msgid "Close"
 msgstr ""
 
-#: tours.py:191
+#: tours.py:210
 msgid "A tour needs at least one step."
 msgstr ""
