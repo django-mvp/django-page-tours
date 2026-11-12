@@ -88,7 +88,7 @@ PAGE_TOURS_CLASSES = {
 # The text every tour, set of hints and checklist takes unless it words its own.
 PAGE_TOURS_TEXT = {
     "tour": {"doneBtnText": "Finish"},
-    "hint": {"buttonText": "Understood"},
+    "hint": {"buttonText": "Thanks"},
 }
 
 USE_TZ = True
