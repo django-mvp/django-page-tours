@@ -36,6 +36,9 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    # Serves each page in the language its address names, so the package's own
+    # translations can be seen: /fr/tour/ is the tour page in French.
+    "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -93,7 +96,22 @@ PAGE_TOURS_TEXT = {
 
 USE_TZ = True
 USE_I18N = True
-LANGUAGE_CODE = "en-us"
+LANGUAGE_CODE = "en"
+LANGUAGES = [
+    ("en", "English"),
+    ("de", "Deutsch"),
+    ("es", "Español"),
+    ("fr", "Français"),
+    ("it", "Italiano"),
+    ("ja", "日本語"),
+    ("ko", "한국어"),
+    ("nl", "Nederlands"),
+    ("pl", "Polski"),
+    ("pt-br", "Português (Brasil)"),
+    ("ru", "Русский"),
+    ("tr", "Türkçe"),
+    ("zh-hans", "简体中文"),
+]
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
