@@ -789,7 +789,7 @@ class TestTourSiteText:
 
         assert tour.as_driver()["nextBtnText"] == "Onwards"
 
-    def test_a_subclasss_own_text_wins(self, settings):
+    def test_a_subclass_default_text_wins(self, settings):
         """A subclass that words a control by default keeps its wording."""
 
         @dataclass(frozen=True, kw_only=True)
