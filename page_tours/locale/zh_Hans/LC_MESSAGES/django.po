@@ -1,0 +1,64 @@
+# Simplified Chinese catalogue for django-page-tours.
+# This file is distributed under the same license as the django-page-tours package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: django-page-tours\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-11-12 11:33+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: zh_Hans\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+#: apps.py:11
+msgid "Page tours"
+msgstr "页面导览"
+
+#: checklists.py:20
+msgctxt "page checklist"
+msgid "Get started"
+msgstr "快速入门"
+
+#: checklists.py:23
+msgctxt "page checklist"
+msgid "{{done}} of {{total}}"
+msgstr "{{done}} / {{total}}"
+
+#: checklists.py:26
+msgctxt "page checklist"
+msgid "{{done}}/{{total}}"
+msgstr "{{done}}/{{total}}"
+
+#: hints.py:16
+msgctxt "page hint control"
+msgid "Got it"
+msgstr "知道了"
+
+#: tours.py:20
+msgctxt "page tour control"
+msgid "{{current}} of {{total}}"
+msgstr "{{current}} / {{total}}"
+
+#: tours.py:22
+msgctxt "page tour control"
+msgid "Next"
+msgstr "下一步"
+
+#: tours.py:24
+msgctxt "page tour control"
+msgid "Previous"
+msgstr "上一步"
+
+#: tours.py:26
+msgctxt "page tour control"
+msgid "Done"
+msgstr "完成"
+
+#: tours.py:28
+msgctxt "page tour control"
+msgid "Close"
+msgstr "关闭"

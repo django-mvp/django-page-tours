@@ -235,7 +235,7 @@ whose tour sets no button text, and confirm the next button says "Continue".
 - **FR-017**: The tour's own controls and progress text MUST be shown in the language the page is
   served in when a translation exists, and in English otherwise, unless the tour sets its own
   labels or `PAGE_TOURS_TEXT` gives them. The package MUST ship an English catalogue of its own
-  strings. (US2)
+  strings, and translations of them into German, Spanish, French, Italian, Dutch, Polish, Brazilian Portuguese, Russian, Turkish, Japanese, Korean and Simplified Chinese. (US2)
 - **FR-018**: A tour MUST have a field for each Driver.js configuration option that takes a
   plain value, named exactly as the option is and defaulting to Driver.js's own default,
   and the option MUST reach the Driver.js constructor under that name. A step MUST have a field
