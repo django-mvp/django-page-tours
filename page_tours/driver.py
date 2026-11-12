@@ -143,10 +143,6 @@ class Declaration(DriverObject):
         kind: What the declaration is called in the browser, such as ``"tour"``.
         content_field: The field that holds what the declaration shows, which the
             system checks compare to tell two declarations of one name apart.
-        text_kind: The key of ``PAGE_TOURS_TEXT`` that words this kind of
-            declaration, such as ``"tour"``. Empty when the setting words none.
-        text_fields: The fields ``PAGE_TOURS_TEXT`` can word, which hold the
-            package's own text unless the declaration is given another.
 
     Args:
         name: The name the declaration is known by: a browser remembers what a
@@ -162,8 +158,6 @@ class Declaration(DriverObject):
 
     kind: ClassVar[str]
     content_field: ClassVar[str]
-    text_kind: ClassVar[str] = ""
-    text_fields: ClassVar[frozenset[str]] = frozenset()
     package_fields = frozenset({"name", "version"})
 
     name: str
@@ -186,36 +180,6 @@ class Declaration(DriverObject):
         declared.setdefault(self.name, []).append(
             weakref.ref(self, partial(forget, self.name))
         )
-
-    def as_driver(self) -> dict[str, Any]:
-        """Convert the declaration to the form Driver.js takes, with the site's text.
-
-        A text field that still holds the package's own text takes what
-        ``PAGE_TOURS_TEXT`` gives it for this kind of declaration. A field the
-        declaration was given another value for, as an argument or as a
-        subclass's default, keeps that value. The setting is
-        read every time, and a value in it that is not a string is ignored.
-
-        Returns:
-            What ``DriverObject.as_driver()`` returns, with the site's text.
-        """
-        driver = super().as_driver()
-        site_text = getattr(settings, "PAGE_TOURS_TEXT", {})
-        site_text = site_text.get(self.text_kind) if isinstance(site_text, dict) else {}
-        if not isinstance(site_text, dict):
-            return driver
-        package_class = next(
-            cls for cls in type(self).__mro__ if "text_fields" in vars(cls)
-        )
-        for field in fields(package_class):
-            value = site_text.get(field.name)
-            if (
-                field.name in self.text_fields
-                and getattr(self, field.name) is field.default
-                and isinstance(value, str | Promise)
-            ):
-                driver[field.name] = driver_value(value)
-        return driver
 
     def payload(self, name: str, version: int) -> dict[str, Any]:
         """Return what the browser needs to play the declaration.

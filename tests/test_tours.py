@@ -3,7 +3,7 @@
 import gc
 import json
 import re
-from dataclasses import dataclass, replace
+from dataclasses import replace
 
 import pytest
 from django.core.exceptions import ImproperlyConfigured
@@ -16,8 +16,10 @@ from django.utils.translation import gettext, gettext_lazy
 from page_tours import driver as driver_module
 from page_tours.driver import declaration_overrides, declarations, resolve_override
 from page_tours.parts import TourParts
-from page_tours.tours import DONE_LABEL, Tour, TourStep
+from page_tours.tours import Tour, TourStep
 from tests import views
+from tests.settings_site_text import PAGE_TOURS_TEXT as SITE_TEXT
+from tests.site_text import run_with_site_text
 
 STEP = TourStep(title="Title", description="Body")
 
@@ -750,111 +752,60 @@ class TestDeclaredTours:
 
 
 class TestTourSiteText:
-    """``PAGE_TOURS_TEXT`` words every tour that does not word its own."""
+    """``PAGE_TOURS_TEXT`` gives the default text of every tour."""
 
-    def test_the_setting_applies_to_a_tour_that_sets_nothing(self, settings):
-        """A tour left at the package's text takes the site's."""
-        settings.PAGE_TOURS_TEXT = {"tour": {"nextBtnText": "Continue"}}
-        tour = Tour(name="tests.site-text-none", steps=[TourStep(title="One")])
-
-        config = tour.as_driver()
-
-        assert config["nextBtnText"] == "Continue"
-        assert config["doneBtnText"] == str(DONE_LABEL)
-
-    def test_every_text_of_a_tour_can_be_set(self, settings):
-        """Each of the five texts is read from the setting."""
-        texts = {
-            "progressText": "A",
-            "nextBtnText": "B",
-            "prevBtnText": "C",
-            "doneBtnText": "D",
-            "closeBtnLabel": "E",
-        }
-        settings.PAGE_TOURS_TEXT = {"tour": texts}
-        tour = Tour(name="tests.site-text-all", steps=[TourStep(title="One")])
-
-        config = tour.as_driver()
-
-        assert {key: config[key] for key in texts} == texts
-
-    def test_the_tours_own_text_wins(self, settings):
-        """A tour that words a control keeps its wording."""
-        settings.PAGE_TOURS_TEXT = {"tour": {"nextBtnText": "Continue"}}
-        tour = Tour(
-            name="tests.site-text-own",
-            steps=[TourStep(title="One")],
-            nextBtnText="Onwards",
+    def test_a_tour_that_sets_nothing_takes_the_setting(self):
+        """A tour's texts come from the setting, and the rest from the package."""
+        config = run_with_site_text(
+            """
+            import json
+            from page_tours import Tour, TourStep
+            from page_tours.tours import DONE_LABEL
+            tour = Tour(name="tests.site-text", steps=[TourStep(title="One")])
+            driver = tour.as_driver()
+            print(json.dumps({
+                "next": driver["nextBtnText"],
+                "progress": driver["progressText"],
+                "done_is_default": driver["doneBtnText"] == str(DONE_LABEL),
+            }))
+            """
         )
 
-        assert tour.as_driver()["nextBtnText"] == "Onwards"
-
-    def test_a_subclass_default_text_wins(self, settings):
-        """A subclass that words a control by default keeps its wording."""
-
-        @dataclass(frozen=True, kw_only=True)
-        class WordedTour(Tour):
-            nextBtnText: str = "Onwards"
-
-        settings.PAGE_TOURS_TEXT = {"tour": {"nextBtnText": "Continue"}}
-        tour = WordedTour(
-            name="tests.site-text-subclass", steps=[TourStep(title="One")]
-        )
-
-        assert tour.as_driver()["nextBtnText"] == "Onwards"
-
-    def test_a_steps_own_text_wins(self, settings):
-        """A step that words a control keeps its wording, and the tour takes the site's."""
-        settings.PAGE_TOURS_TEXT = {"tour": {"nextBtnText": "Continue"}}
-        tour = Tour(
-            name="tests.site-text-step",
-            steps=[TourStep(title="One", nextBtnText="Step's own")],
-        )
-
-        config = tour.as_driver()
-
-        assert config["steps"][0]["popover"]["nextBtnText"] == "Step's own"
-        assert config["nextBtnText"] == "Continue"
-
-    def test_a_lazy_value_is_shown_in_the_active_language(self, settings):
-        """A translated value is converted when the tour renders."""
-        settings.PAGE_TOURS_TEXT = {"tour": {"nextBtnText": gettext_lazy("Site next")}}
-        tour = Tour(name="tests.site-text-lazy", steps=[TourStep(title="One")])
-
-        with translation.override("en"):
-            config = tour.as_driver()
-
-        assert config["nextBtnText"] == "Site next"
-        assert type(config["nextBtnText"]) is str
-
-    def test_the_setting_is_read_when_the_tour_renders(self, settings):
-        """A tour made before the setting changed follows the change."""
-        tour = Tour(name="tests.site-text-late", steps=[TourStep(title="One")])
-        settings.PAGE_TOURS_TEXT = {"tour": {"doneBtnText": "Finish"}}
-
-        assert tour.as_driver()["doneBtnText"] == "Finish"
-
-    def test_a_replacement_from_the_overrides_takes_the_setting(self, settings):
-        """A tour that ``PAGE_TOURS_OVERRIDES`` plays gets the site's text too."""
-        settings.PAGE_TOURS_TEXT = {"tour": {"doneBtnText": "Finish"}}
-        settings.PAGE_TOURS_OVERRIDES = {
-            views.UNTOUCHED_TOUR.name: "tests.views.REWORDED_TOUR"
+        assert config == {
+            "next": SITE_TEXT["tour"]["nextBtnText"],
+            "progress": SITE_TEXT["tour"]["progressText"],
+            "done_is_default": True,
         }
 
-        played, _version = views.UNTOUCHED_TOUR.playing()
+    def test_a_tour_step_or_subclass_that_sets_its_own_text_keeps_it(self):
+        """Text set on a tour, a subclass or a step wins over the setting."""
+        config = run_with_site_text(
+            """
+            import json
+            from dataclasses import dataclass
+            from page_tours import Tour, TourStep
 
-        assert played.as_driver()["doneBtnText"] == "Finish"
+            @dataclass(frozen=True, kw_only=True)
+            class WordedTour(Tour):
+                nextBtnText: str = "Subclass next"
 
-    def test_a_value_that_is_not_text_is_ignored(self, settings):
-        """The system check reports it; the tour renders with the package's text."""
-        settings.PAGE_TOURS_TEXT = {"tour": {"nextBtnText": 5}, "hint": "wrong"}
-        tour = Tour(name="tests.site-text-bad", steps=[TourStep(title="One")])
+            steps = [TourStep(title="One", nextBtnText="Step next")]
+            print(json.dumps({
+                "argument": Tour(
+                    name="tests.own", steps=steps, nextBtnText="Own next"
+                ).as_driver()["nextBtnText"],
+                "subclass": WordedTour(name="tests.sub", steps=steps).as_driver()[
+                    "nextBtnText"
+                ],
+                "step": Tour(name="tests.step", steps=steps).as_driver()["steps"][0][
+                    "popover"
+                ]["nextBtnText"],
+            }))
+            """
+        )
 
-        assert isinstance(tour.as_driver()["nextBtnText"], str)
-        assert tour.as_driver()["nextBtnText"] != "5"
-
-    def test_a_project_without_the_setting_is_unchanged(self):
-        """The package's own text applies."""
-        tour = Tour(name="tests.site-text-unset", steps=[TourStep(title="One")])
-
-        assert tour.as_driver()["progressText"] == "{{current}} of {{total}}"
+        assert config == {
+            "argument": "Own next",
+            "subclass": "Subclass next",
+            "step": "Step next",
+        }

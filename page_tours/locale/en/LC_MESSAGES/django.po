@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: django-page-tours\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-12 10:38+0000\n"
+"POT-Creation-Date: 2026-11-12 12:08+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -20,35 +20,35 @@ msgstr ""
 msgid "Page tours"
 msgstr ""
 
-#: checklists.py:17
+#: checklists.py:20
 msgctxt "page checklist"
 msgid "Get started"
 msgstr ""
 
-#: checklists.py:18
+#: checklists.py:23
 msgctxt "page checklist"
 msgid "{{done}} of {{total}}"
 msgstr ""
 
-#: checklists.py:19
+#: checklists.py:26
 msgctxt "page checklist"
 msgid "{{done}}/{{total}}"
 msgstr ""
 
-#: checks.py:41
+#: checks.py:37
 #, python-format
 msgid ""
 "No tour, hints or checklist are declared with the name %(name)s, so its "
 "entry in PAGE_TOURS_OVERRIDES changes nothing."
 msgstr ""
 
-#: checks.py:46
+#: checks.py:42
 msgid ""
 "A tour, hints or checklist that were renamed have a new name. Update the key "
 "to match."
 msgstr ""
 
-#: checks.py:80
+#: checks.py:76
 #, python-format
 msgid ""
 "%(count)d tours, sets of hints or checklists with different content are "
@@ -56,105 +56,63 @@ msgid ""
 "as seen."
 msgstr ""
 
-#: checks.py:86
+#: checks.py:82
 msgid ""
 "Give each its own name. A reusable app names its declarations '<app_label>."
 "<name>'."
 msgstr ""
 
-#: checks.py:137
+#: checks.py:133
 #, python-format
 msgid "%(source)s must be a dict from part to a string of class names."
 msgstr ""
 
-#: checks.py:147
+#: checks.py:143
 #, python-format
 msgid "%(source)s names '%(part)s', which is not a part of a tour."
 msgstr ""
 
-#: checks.py:149
+#: checks.py:145
 #, python-format
 msgid "The parts are: %(parts)s."
 msgstr ""
 
-#: checks.py:157
+#: checks.py:153
 #, python-format
 msgid "%(source)s gives '%(part)s' a value that is not a string."
 msgstr ""
 
-#: checks.py:159
+#: checks.py:155
 msgid "Write the class names as one string."
 msgstr ""
 
-#: checks.py:189
-msgid "PAGE_TOURS_TEXT must be a dict from kind to a dict of texts."
-msgstr ""
-
-#: checks.py:200
-#, python-format
-msgid "PAGE_TOURS_TEXT names '%(kind)s', which is not a kind."
-msgstr ""
-
-#: checks.py:202
-#, python-format
-msgid "The kinds are: %(kinds)s."
-msgstr ""
-
-#: checks.py:210
-#, python-format
-msgid "PAGE_TOURS_TEXT['%(kind)s'] must be a dict of texts."
-msgstr ""
-
-#: checks.py:241
-#, python-format
-msgid ""
-"PAGE_TOURS_TEXT['%(kind)s'] names '%(attribute)s', which is not a text of a "
-"%(kind)s."
-msgstr ""
-
-#: checks.py:245
-#, python-format
-msgid "The texts are: %(texts)s."
-msgstr ""
-
-#: checks.py:255
-#, python-format
-msgid ""
-"PAGE_TOURS_TEXT['%(kind)s'] gives '%(attribute)s' a value that is not a "
-"string."
-msgstr ""
-
-#: checks.py:259
-msgid "Write the text as a string or a lazy translation."
-msgstr ""
-
-#: driver.py:176
+#: driver.py:170
 #, python-format
 msgid "%(cls)s needs a name."
 msgstr ""
 
-#: driver.py:183
+#: driver.py:177
 #, python-format
 msgid "The version of %(cls)s must be a whole number of 1 or more."
 msgstr ""
 
-#: driver.py:323
+#: driver.py:291
 #, python-format
 msgid ""
 "PAGE_TOURS_OVERRIDES[%(name)s] must be the dotted path of a %(cls)s or None."
 msgstr ""
 
-#: driver.py:332
+#: driver.py:300
 #, python-format
 msgid "PAGE_TOURS_OVERRIDES[%(name)s]: %(path)s cannot be imported."
 msgstr ""
 
-#: driver.py:337
+#: driver.py:305
 #, python-format
 msgid "PAGE_TOURS_OVERRIDES[%(name)s]: %(path)s is not a %(cls)s."
 msgstr ""
 
-#: hints.py:14
+#: hints.py:16
 msgctxt "page hint control"
 msgid "Got it"
 msgstr ""
@@ -168,31 +126,31 @@ msgstr ""
 msgid "the app '%(label)s'"
 msgstr ""
 
-#: tours.py:18
+#: tours.py:21
 msgctxt "page tour control"
 msgid "{{current}} of {{total}}"
 msgstr ""
 
-#: tours.py:19
+#: tours.py:23
 msgctxt "page tour control"
 msgid "Next"
 msgstr ""
 
-#: tours.py:20
+#: tours.py:25
 msgctxt "page tour control"
 msgid "Previous"
 msgstr ""
 
-#: tours.py:21
+#: tours.py:27
 msgctxt "page tour control"
 msgid "Done"
 msgstr ""
 
-#: tours.py:22
+#: tours.py:29
 msgctxt "page tour control"
 msgid "Close"
 msgstr ""
 
-#: tours.py:206
+#: tours.py:210
 msgid "A tour needs at least one step."
 msgstr ""

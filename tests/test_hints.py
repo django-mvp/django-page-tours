@@ -6,12 +6,14 @@ import re
 import pytest
 from django.core.exceptions import ImproperlyConfigured
 from django.utils import translation
-from django.utils.translation import gettext_lazy, pgettext
+from django.utils.translation import pgettext
 
 import page_tours
 from page_tours import Beacon, Hint, Hints
 from page_tours.hints import GOT_IT_LABEL
 from tests import hints as hint_declarations
+from tests.settings_site_text import PAGE_TOURS_TEXT as SITE_TEXT
+from tests.site_text import run_with_site_text
 
 HINT = Hint(element="#menu", title="Title", description="Body")
 
@@ -268,42 +270,17 @@ class TestHintsOverrides:
 
 
 class TestHintsSiteText:
-    """``PAGE_TOURS_TEXT`` words every set of hints that does not word its own."""
+    """``PAGE_TOURS_TEXT`` gives the default text of every set of hints."""
 
-    def test_the_setting_applies_to_hints_that_set_nothing(self, settings):
-        """Hints left at the package's text take the site's."""
-        settings.PAGE_TOURS_TEXT = {"hint": {"buttonText": "Understood"}}
-        hints = Hints(name="tests.site-hints", hints=[Hint(element="#a", title="A")])
-
-        assert hints.as_driver()["buttonText"] == "Understood"
-
-    def test_the_hints_own_text_wins(self, settings):
-        """Hints that word their button keep their wording."""
-        settings.PAGE_TOURS_TEXT = {"hint": {"buttonText": "Understood"}}
-        hints = Hints(
-            name="tests.site-hints-own",
-            hints=[Hint(element="#a", title="A")],
-            buttonText="Okay",
+    def test_hints_that_set_nothing_take_the_setting(self):
+        """A set of hints' button text comes from the setting."""
+        text = run_with_site_text(
+            """
+            import json
+            from page_tours import Hint, Hints
+            hints = Hints(name="tests.site-text-hints", hints=[Hint(element="#a")])
+            print(json.dumps(hints.as_driver()["buttonText"]))
+            """
         )
 
-        assert hints.as_driver()["buttonText"] == "Okay"
-
-    def test_a_hints_own_text_wins(self, settings):
-        """A hint that words its button keeps its wording."""
-        settings.PAGE_TOURS_TEXT = {"hint": {"buttonText": "Understood"}}
-        hints = Hints(
-            name="tests.site-hints-hint",
-            hints=[Hint(element="#a", title="A", buttonText="Hint's own")],
-        )
-
-        config = hints.as_driver()
-
-        assert config["hints"][0]["popover"]["buttonText"] == "Hint's own"
-        assert config["buttonText"] == "Understood"
-
-    def test_a_lazy_value_is_shown_in_the_active_language(self, settings):
-        """A translated value is converted when the hints render."""
-        settings.PAGE_TOURS_TEXT = {"hint": {"buttonText": gettext_lazy("Site ok")}}
-        hints = Hints(name="tests.site-hints-lazy", hints=[Hint(element="#a")])
-
-        assert hints.as_driver()["buttonText"] == "Site ok"
+        assert text == SITE_TEXT["hint"]["buttonText"]

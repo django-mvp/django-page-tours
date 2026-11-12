@@ -166,9 +166,7 @@ whose tour sets no button text, and confirm the next button says "Continue".
    text, and the rest of its tour or hints show the text from the setting.
 4. **Given** a text in the setting that is translated lazily, **When** a page is served in
    another language, **Then** the text is shown in that language.
-5. **Given** a setting with a kind or text that does not exist, or a text that is not a string,
-   **When** the project's checks run, **Then** each is reported.
-6. **Given** a tour, set of hints or checklist that replaces another through
+5. **Given** a tour, set of hints or checklist that replaces another through
    `PAGE_TOURS_OVERRIDES`, **When** it plays, **Then** it shows the text from the setting like
    any other that sets none.
 
@@ -251,10 +249,9 @@ whose tour sets no button text, and confirm the next button says "Continue".
   not been given its own. For a tour the texts are `progressText`, `nextBtnText`, `prevBtnText`,
   `doneBtnText` and `closeBtnLabel`; for hints, `buttonText`; for a checklist, `title`,
   `progressText` and `launcherProgressText`. Text set on a step or hint wins over text set on a
-  tour, hints or checklist, which wins over the setting, which wins over the package's own. A value
-  may be a string or a lazy translation, and the setting MUST be read each time a declaration
-  renders. The package's checks MUST report a kind or text that does not exist and a value that
-  is not a string. A project that does not set it MUST see no change. (US4)
+  tour, hints or checklist, or as a subclass's default, which wins over the setting, which wins
+  over the package's own. A value may be a string or a lazy translation. The setting is read
+  once, when the package is imported. A project that does not set it MUST see no change. (US4)
 
 ### Key Entities
 

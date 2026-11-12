@@ -4,14 +4,16 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import ClassVar
 
+from django.conf import settings
 from django.utils.functional import Promise
 from django.utils.translation import pgettext_lazy
 
 from page_tours.driver import Alignment, Declaration, DriverObject, PopoverContent, Side
 
-# The default label of a hint's button: lazy, so the active language applies when
-# the hints render.
-GOT_IT_LABEL = pgettext_lazy("page hint control", "Got it")
+# The default label of a hint's button, from PAGE_TOURS_TEXT or else the
+# package's own: lazy, so the active language applies when the hints render.
+SITE_TEXT = getattr(settings, "PAGE_TOURS_TEXT", {}).get("hint", {})
+GOT_IT_LABEL = SITE_TEXT.get("buttonText", pgettext_lazy("page hint control", "Got it"))
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -108,8 +110,6 @@ class Hints(Declaration):
 
     kind: ClassVar[str] = "hints"
     content_field: ClassVar[str] = "hints"
-    text_kind: ClassVar[str] = "hint"
-    text_fields: ClassVar[frozenset[str]] = frozenset({"buttonText"})
 
     hints: Sequence[Hint]
     beacon: Beacon | None = None

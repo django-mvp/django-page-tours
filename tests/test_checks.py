@@ -5,7 +5,6 @@ from django.apps import apps
 from django.core import checks
 from django.core.checks import run_checks
 from django.core.management import call_command
-from django.utils.translation import gettext_lazy
 
 from page_tours.checklists import Checklist, ChecklistItem
 from page_tours.hints import Hint, Hints
@@ -406,63 +405,3 @@ class TestNamesWithListOptions:
 
         assert "tests.list-buttons" in found
         assert checklist != other
-
-
-class TestSiteTextCheck:
-    """The warnings for a ``PAGE_TOURS_TEXT`` that the package cannot use."""
-
-    def issues(self, settings, value):
-        """Return the ids of the issues raised for one setting value."""
-        settings.PAGE_TOURS_TEXT = value
-        return [
-            (issue.id, issue.obj)
-            for issue in run_checks()
-            if issue.id in {"page_tours.W006", "page_tours.W007"}
-        ]
-
-    def test_it_is_silent_for_a_valid_setting(self, settings):
-        """Known kinds, known attributes and text values raise nothing."""
-        value = {
-            "tour": {"nextBtnText": "Continue"},
-            "hint": {"buttonText": gettext_lazy("Understood")},
-            "checklist": {"title": "First steps"},
-        }
-
-        assert self.issues(settings, value) == []
-
-    def test_it_is_silent_when_the_setting_is_absent(self, settings):
-        """A project that does not use it is not told about it."""
-        assert self.issues(settings, {}) == []
-
-    def test_it_warns_for_an_unknown_kind(self, settings):
-        """``hints`` is not a kind; ``hint`` is."""
-        assert self.issues(settings, {"hints": {"buttonText": "Ok"}}) == [
-            ("page_tours.W006", "hints")
-        ]
-
-    def test_it_warns_for_an_unknown_attribute(self, settings):
-        """``showButtons`` is not text."""
-        assert self.issues(settings, {"tour": {"showButtons": "x"}}) == [
-            ("page_tours.W006", "tour.showButtons")
-        ]
-
-    def test_it_warns_for_an_attribute_of_another_kind(self, settings):
-        """``title`` belongs to checklists."""
-        assert self.issues(settings, {"tour": {"title": "x"}}) == [
-            ("page_tours.W006", "tour.title")
-        ]
-
-    def test_it_warns_for_a_value_that_is_not_a_string(self, settings):
-        """A number cannot word a button."""
-        assert self.issues(settings, {"tour": {"nextBtnText": 5}}) == [
-            ("page_tours.W007", "tour.nextBtnText")
-        ]
-
-    @pytest.mark.parametrize(
-        ("value", "obj"),
-        [("text", "PAGE_TOURS_TEXT"), ({"tour": "text"}, "tour")],
-        ids=["setting", "kind"],
-    )
-    def test_it_warns_for_a_mapping_that_is_not_a_dict(self, settings, value, obj):
-        """The setting and each kind in it are dicts."""
-        assert self.issues(settings, value) == [("page_tours.W007", obj)]

@@ -3,14 +3,10 @@
 from django.conf import settings
 from django.core import checks
 from django.urls import get_resolver
-from django.utils.functional import Promise
 from django.utils.translation import gettext_lazy as _
 
-from page_tours.checklists import Checklist
 from page_tours.driver import declarations
-from page_tours.hints import Hints
 from page_tours.parts import TourParts
-from page_tours.tours import Tour
 
 
 @checks.register(checks.Tags.urls)
@@ -160,105 +156,4 @@ def check_part_classes(app_configs, **kwargs):
                         id="page_tours.W004",
                     )
                 )
-    return issues
-
-
-@checks.register()
-def check_site_text(app_configs, **kwargs):
-    """Warn about what ``PAGE_TOURS_TEXT`` holds that the package cannot use.
-
-    Anything wrong is skipped when a declaration renders, so each is only a
-    warning.
-
-    Args:
-        app_configs: The app configs being checked, supplied by Django.
-        **kwargs: Other arguments Django passes to every check.
-
-    Returns:
-        A ``page_tours.W006`` warning for each kind that is not ``"tour"``,
-        ``"hint"`` or ``"checklist"`` and each attribute a kind does not have as
-        text, and a ``page_tours.W007`` warning for each mapping that is not a
-        dict and each value that is not a string. An empty list when the setting
-        is absent.
-    """
-    if not hasattr(settings, "PAGE_TOURS_TEXT"):
-        return []
-    if not isinstance(settings.PAGE_TOURS_TEXT, dict):
-        return [
-            checks.Warning(
-                _("PAGE_TOURS_TEXT must be a dict from kind to a dict of texts."),
-                obj="PAGE_TOURS_TEXT",
-                id="page_tours.W007",
-            )
-        ]
-    kinds = {cls.text_kind: cls.text_fields for cls in (Tour, Hints, Checklist)}
-    issues = []
-    for kind, texts in settings.PAGE_TOURS_TEXT.items():
-        if kind not in kinds:
-            issues.append(
-                checks.Warning(
-                    _("PAGE_TOURS_TEXT names '%(kind)s', which is not a kind.")
-                    % {"kind": kind},
-                    hint=_("The kinds are: %(kinds)s.") % {"kinds": ", ".join(kinds)},
-                    obj=kind,
-                    id="page_tours.W006",
-                )
-            )
-        elif not isinstance(texts, dict):
-            issues.append(
-                checks.Warning(
-                    _("PAGE_TOURS_TEXT['%(kind)s'] must be a dict of texts.")
-                    % {"kind": kind},
-                    obj=kind,
-                    id="page_tours.W007",
-                )
-            )
-        else:
-            issues.extend(site_text_issues(kind, texts, kinds[kind]))
-    return issues
-
-
-def site_text_issues(kind, texts, allowed):
-    """Return the warnings for the texts of one kind in ``PAGE_TOURS_TEXT``.
-
-    Args:
-        kind: The kind the texts are for.
-        texts: The attributes and their values, as found.
-        allowed: The attributes the kind has as text.
-
-    Returns:
-        A ``page_tours.W006`` warning for each attribute the kind does not have
-        as text and a ``page_tours.W007`` warning for each value that is not a
-        string.
-    """
-    issues = []
-    for attribute, value in texts.items():
-        where = f"{kind}.{attribute}"
-        if attribute not in allowed:
-            issues.append(
-                checks.Warning(
-                    _(
-                        "PAGE_TOURS_TEXT['%(kind)s'] names '%(attribute)s', which is not "
-                        "a text of a %(kind)s."
-                    )
-                    % {"kind": kind, "attribute": attribute},
-                    hint=_("The texts are: %(texts)s.")
-                    % {"texts": ", ".join(sorted(allowed))},
-                    obj=where,
-                    id="page_tours.W006",
-                )
-            )
-        elif not isinstance(value, str | Promise):
-            issues.append(
-                checks.Warning(
-                    _(
-                        "PAGE_TOURS_TEXT['%(kind)s'] gives '%(attribute)s' a value that "
-                        "is not a string."
-                    )
-                    % {"kind": kind, "attribute": attribute},
-                    hint=_("Write the text as a string or a lazy translation."),
-                    obj=where,
-                    id="page_tours.W007",
-                )
-            )
     return issues

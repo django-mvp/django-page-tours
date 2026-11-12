@@ -17,10 +17,14 @@ A tour says "Next", "Previous" and "Done", a set of hints says "Got it" and a ch
    }
    ```
 
-2. Open a page with a tour, hints or a checklist. Each one that does not word the text itself
+2. Restart the server. The setting is read once, when the package is imported, like most Django
+   settings.
+
+3. Open a page with a tour, hints or a checklist. Each one that does not word the text itself
    now shows yours.
 
-Run `python manage.py check` to have a mistake in the setting reported.
+A kind or name the package does not have is ignored, so check the spelling against the table
+below.
 
 ## The texts
 
@@ -43,7 +47,8 @@ checklist that `PAGE_TOURS_OVERRIDES` replaces takes them too.
 
 ## Give one tour its own text
 
-A text that you set on a tour, on hints or on a checklist wins over the setting. A text that you set on a step or a hint wins over both:
+A text that you set on a tour, on hints or on a checklist, or as the default of a subclass of
+one, wins over the setting. A text that you set on a step or a hint wins over both:
 
 ```python
 Tour(
@@ -70,12 +75,14 @@ from django.utils.translation import gettext_lazy as _
 PAGE_TOURS_TEXT = {"tour": {"nextBtnText": _("Continue")}}
 ```
 
-The setting is read every time a tour, hints or checklist renders, so it can be changed in a test
-with `override_settings`. Driver.js writes these texts into the page as HTML, so never build one
+Driver.js writes these texts into the page as HTML, so never build one
 from a visitor's input.
 
-## Why the setting changes only text left alone
+## How the setting works
 
-A declaration that sets nothing takes the setting, and one that sets a text keeps it, so a tour
-written for one place does not change when the site's wording does. A tour that sets a text to
-the package's own text, say `nextBtnText="Next"`, keeps "Next".
+The setting replaces the package's own default of each text it names. A declaration that sets
+nothing takes that default, and one that sets a text keeps it, so a tour written for one place
+does not change when the site's wording does.
+
+Because the setting is read at import, `override_settings` in a test does not change it. Set it
+in the settings module your tests run with.
