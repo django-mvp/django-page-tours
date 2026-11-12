@@ -18,6 +18,11 @@ All notable changes to this project are documented in this file. The format foll
 - Two parts to style, `launcher` and `item`, with the documented names `page-tour-launcher` and
   `page-tour-item`. They take classes from `PAGE_TOURS_CLASSES` and from an app's
   `page_tour_classes`.
+- The remaining Driver.js 1.11.0 options that take a plain value. `Tour` and `TourStep` take
+  `allowedElements`, a selector or a tuple of selectors for elements that stay usable while a step
+  shows. `TourStep` takes `skipMissingElement=False`, which shows the step attached to nothing when
+  its element is missing instead of skipping it, and `closeBtnLabel`, the close button's
+  accessible name on that step.
 
 ### Changed
 

@@ -274,6 +274,7 @@ The fields, with the Driver.js option each one is:
 | `allowKeyboardControl` | `True` | Whether the arrow and escape keys move through and close the tour. |
 | `advanceOn` | `False` | The event on a step's element that moves to the next step, such as `"click"`, a tuple of events such as `("click", "keydown")`, or `False` for none. |
 | `waitForElement` | `0` | How long to wait for a step's element to appear, in milliseconds. |
+| `allowedElements` | `None` | A CSS selector, or a tuple of them such as `("#search", ".help")`, for elements besides the highlighted one that stay usable while the tour shows. `None` leaves none. |
 | `stagePadding` | `10` | The space around the highlighted element, in pixels. |
 | `stageRadius` | `5` | The corner radius of the highlight, in pixels. |
 | `popoverOffset` | `10` | The distance between the popover and the element, in pixels. |
@@ -301,9 +302,11 @@ Tour(name="dashboard", steps=[...], showButtons=("next", "close"), disableButton
 cannot be pressed. A step takes the same two fields and then uses its own list in place of the
 tour's.
 
-Options that take a JavaScript function, such as `onNextClick`, are not available. Neither are
-`steps` and `skipMissingElement`, which the package sets itself so that a missing or hidden
-element is skipped.
+Options that take a JavaScript function, such as `onNextClick`, are not available, and neither
+are a function or an element in `allowedElements`: it takes selectors only. Neither are `steps`
+and the tour's `skipMissingElement`, which the package sets itself so that a missing or hidden
+element is skipped. A step can still turn skipping off for itself, as the next section
+describes.
 
 The four labels default to the package's translated strings, as described in
 [Translate a tour](#translate-a-tour). A label you set is shown as you wrote it, and Driver.js
@@ -322,6 +325,8 @@ options:
 | `disableActiveInteraction` | Whether the highlighted element ignores clicks. |
 | `advanceOn` | The event or tuple of events on the element that moves to the next step, or `False` for none. |
 | `waitForElement` | How long to wait for the element to appear, in milliseconds. |
+| `allowedElements` | A CSS selector, or a tuple of them, for elements besides the highlighted one that stay usable on this step. |
+| `skipMissingElement` | `False` shows the step attached to nothing when its element is missing or hidden, instead of skipping it. |
 | `side` | Which side of the element the popover sits on: `"top"`, `"right"`, `"bottom"` or `"left"`. |
 | `align` | How the popover lines up along that side: `"start"`, `"center"` or `"end"`. |
 | `popoverClass` | A class added to this step's popover. |
@@ -330,6 +335,7 @@ options:
 | `showProgress` | Whether the popover shows how far through the tour it is. |
 | `progressText` | The progress text. |
 | `nextBtnText`, `prevBtnText`, `doneBtnText` | The texts of the buttons. |
+| `closeBtnLabel` | The accessible name of the close button. |
 
 Every one defaults to `None`, which means the step uses the tour's value of the same name. A value
 you set on a step overrides the tour's for that step only:
@@ -408,8 +414,10 @@ This is what a visitor sees when a page with a tour opens in their browser.
   One click anywhere on the dimmed part closes the tour, so the rest of the page is one click away.
 - **Steps whose element cannot be shown are skipped,** going forward and going back. That covers
   an element that is not on the page, one that is hidden, and a selector that is not valid CSS.
-  The first step shown is the first one that can be.
-- **A tour whose every element is missing does not play.** The page opens as if it had no tour.
+  The first step shown is the first one that can be. A step that sets `skipMissingElement=False`
+  is shown attached to nothing instead.
+- **A tour whose every element is missing does not play,** unless one of its steps turns skipping
+  off. The page opens as if it had no tour.
 - **A tour that fails ends, and the page keeps working.** If the Driver.js file cannot be loaded,
   fails while starting, or a step raises an error while the tour plays, the tour ends and
   everything it added to the page is removed. Every control on the page works afterwards.

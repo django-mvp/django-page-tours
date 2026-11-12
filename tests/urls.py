@@ -18,6 +18,7 @@ urlpatterns = [
     path("hidden-middle/", views.HiddenMiddleTourView.as_view(), name="hidden-middle"),
     path("invalid-selector/", views.InvalidSelectorTourView.as_view(), name="invalid"),
     path("nothing-showable/", views.NothingShowableTourView.as_view(), name="nothing"),
+    path("kept-missing/", views.KeptMissingTourView.as_view(), name="kept-missing"),
     path("twins/", views.TwinTourView.as_view(), name="twins"),
     path("fragile/", views.FragileTourView.as_view(), name="fragile"),
     path("with-tour-bare/", views.BareTourView.as_view(), name="bare-with-tour"),

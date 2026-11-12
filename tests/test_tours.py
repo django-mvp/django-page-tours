@@ -147,6 +147,14 @@ class TestTourDriverOptions:
 
         assert not {"name", "autoplay", "version"} & set(options)
 
+    def test_allowed_elements_arrive_as_a_list(self):
+        """The selectors of the elements left usable are carried as a JSON list."""
+        tour = Tour(
+            name="tests.options-allowed", steps=[STEP], allowedElements=("#search",)
+        )
+
+        assert payload_of(tour)["config"]["allowedElements"] == ["#search"]
+
     def test_a_tuple_of_buttons_arrives_as_a_list(self):
         """The buttons shown are carried as a JSON list."""
         tour = Tour(name="tests.options-buttons", steps=[STEP], showButtons=("next",))
@@ -246,6 +254,30 @@ class TestTourAsDriverSteps:
                 "popoverClass": "wide",
                 "showButtons": ["next"],
             },
+        }
+
+    def test_the_remaining_step_options_arrive_where_driverjs_reads_them(self):
+        """Allowed elements and skipping sit on the step, the close label in ``popover``."""
+        tour = Tour(
+            name="test",
+            steps=[
+                TourStep(
+                    element="#menu",
+                    description="Body",
+                    allowedElements=("#search", ".help"),
+                    skipMissingElement=False,
+                    closeBtnLabel="Stop the tour",
+                )
+            ],
+        )
+
+        (step,) = tour.as_driver()["steps"]
+
+        assert step == {
+            "element": "#menu",
+            "allowedElements": ["#search", ".help"],
+            "skipMissingElement": False,
+            "popover": {"description": "Body", "closeBtnLabel": "Stop the tour"},
         }
 
     def test_an_option_left_as_none_is_absent_so_the_tours_value_applies(self):
