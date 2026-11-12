@@ -181,7 +181,17 @@ class DriverOptionsView(TemplateView):
                     description="Each is a field of the Tour, named like Driver.js's option.",
                     element="#demo-driver-options",
                 ),
+                TourStep(
+                    title="A step that keeps its place",
+                    description=(
+                        "Its element is not on this page, and it sets "
+                        "skipMissingElement to False, so it shows attached to nothing."
+                    ),
+                    element="#demo-not-on-this-page",
+                    skipMissingElement=False,
+                ),
             ],
+            version=2,
             showProgress=True,
             progressText="Step {{current}} of {{total}}",
             nextBtnText="Onwards",

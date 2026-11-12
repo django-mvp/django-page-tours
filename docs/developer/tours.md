@@ -393,7 +393,8 @@ more in a browser that saw the first.
 
 The function-view page at `/function-view/` is rendered by a function-based view that passes its
 tour in the template context. The Driver.js options page at `/driver-options/` plays a tour that
-sets `showProgress`, `progressText` and `nextBtnText`. Every demo page outputs its tour with
+sets `showProgress`, `progressText` and `nextBtnText`, and whose last step sets
+`skipMissingElement=False` on an element the page does not have. Every demo page outputs its tour with
 `{{ tour }}` in its own template, and the demo's base template includes the package's files.
 
 ## Why a visitor can always use the page
