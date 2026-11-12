@@ -110,19 +110,22 @@ applies, or else Driver.js's own default.
 
 ### Options of the checklist
 
+The site's text is what `PAGE_TOURS_TEXT` gives the `"checklist"` kind, as
+[Word every tour on the site](site-text.md) shows.
+
 | Field | Default | What it does |
 |---|---|---|
 | `name` | required | What the checklist is known by. Driver.js receives it as `id`. |
 | `items` | required | The items, in order. |
 | `version` | `1` | See [Show a changed checklist again](#show-a-changed-checklist-again). |
-| `title` | "Get started", in the active language | The heading of the checklist. |
+| `title` | "Get started", in the active language, or the site's text | The heading of the checklist. |
 | `description` | none | The text under the heading. |
 | `launcherText` | none | The text of the launcher. |
 | `completeTitle` | none | The heading once every item is done. |
 | `completeDescription` | none | The text once every item is done. |
 | `completeLauncherText` | none | The text of the launcher once every item is done. |
-| `progressText` | `"{{done}} of {{total}}"`, in the active language | The progress in the panel. |
-| `launcherProgressText` | `"{{done}}/{{total}}"` | The progress on the launcher. |
+| `progressText` | `"{{done}} of {{total}}"`, in the active language, or the site's text | The progress in the panel. |
+| `launcherProgressText` | `"{{done}}/{{total}}"`, in the active language, or the site's text | The progress on the launcher. |
 | `position` | `"bottom-right"` | Which corner of the window the checklist sits in: a `Position`, one of `"bottom-right"`, `"bottom-left"`, `"top-right"` or `"top-left"`. |
 | `launcher` | `True` | Whether a launcher shows while the panel is closed. |
 | `offset` | none | An `Offset`: how far the checklist sits from that corner. |

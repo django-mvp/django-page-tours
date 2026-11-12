@@ -130,7 +130,9 @@ tour, opening a page or ticked by the app, with the visitor's ticks kept in thei
 [documentation](https://django-mvp.github.io/django-page-tours/developer/checklists.html).
 
 A project can replace the tour of an installed app, or turn it off, from its own settings with
-`PAGE_TOURS_OVERRIDES`, keyed by the tour's name, without editing the app.
+`PAGE_TOURS_OVERRIDES`, keyed by the tour's name, without editing the app. It can also word the
+buttons and progress text of every tour, set of hints and checklist at once with
+`PAGE_TOURS_TEXT`, which a tour, hints or checklist that sets its own text overrides.
 
 The [documentation](https://django-mvp.github.io/django-page-tours/) covers naming a tour, function-based views,
 steps attached to elements, tour versions, replaying a tour and tours that play only on request,

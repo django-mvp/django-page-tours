@@ -240,7 +240,9 @@ msgstr "Schließen"
 
 A control with no translation in the page's language shows in English. To give one tour its
 own labels, set them on the tour, as described in
-[Set Driver.js options](#set-driverjs-options). Like a step's title and description, a label is shown as HTML.
+[Set Driver.js options](#set-driverjs-options). To give every tour on the site the same labels,
+use `PAGE_TOURS_TEXT`, as [Word every tour on the site](site-text.md) shows. Like a step's title
+and description, a label is shown as HTML.
 
 ## Set Driver.js options
 
@@ -282,7 +284,7 @@ The fields, with the Driver.js option each one is:
 | `showButtons` | `("next", "previous", "close")` | The buttons the popover shows. |
 | `disableButtons` | `()` | The buttons that show but cannot be pressed. |
 | `showProgress` | `False` | Whether the popover shows how far through the tour it is. |
-| `progressText` | `"{{current}} of {{total}}"` | The progress text. `{{current}}` and `{{total}}` stand for the step's number and the number of steps. |
+| `progressText` | `"{{current}} of {{total}}"`, in the active language | The progress text. `{{current}}` and `{{total}}` stand for the step's number and the number of steps. |
 | `nextBtnText` | "Next", translated | The text of the next button. |
 | `prevBtnText` | "Previous", translated | The text of the previous button. |
 | `doneBtnText` | "Done", translated | The text of the button on the last step. |
@@ -308,8 +310,9 @@ and the tour's `skipMissingElement`, which the package sets itself so that a mis
 element is skipped. A step can still turn skipping off for itself, as the next section
 describes.
 
-The four labels default to the package's translated strings, as described in
-[Translate a tour](#translate-a-tour). A label you set is shown as you wrote it, and Driver.js
+The four labels and the progress text default to the package's translated strings, as described
+in [Translate a tour](#translate-a-tour), unless `PAGE_TOURS_TEXT` gives them
+([Word every tour on the site](site-text.md)). A label you set is shown as you wrote it, and Driver.js
 writes the button texts and the progress text into the page as markup, so never build one from a
 visitor's input.
 
