@@ -3,7 +3,7 @@
 import gc
 import json
 import re
-from dataclasses import replace
+from dataclasses import dataclass, replace
 
 import pytest
 from django.core.exceptions import ImproperlyConfigured
@@ -785,6 +785,20 @@ class TestTourSiteText:
             name="tests.site-text-own",
             steps=[TourStep(title="One")],
             nextBtnText="Onwards",
+        )
+
+        assert tour.as_driver()["nextBtnText"] == "Onwards"
+
+    def test_a_subclasss_own_text_wins(self, settings):
+        """A subclass that words a control by default keeps its wording."""
+
+        @dataclass(frozen=True, kw_only=True)
+        class WordedTour(Tour):
+            nextBtnText: str = "Onwards"
+
+        settings.PAGE_TOURS_TEXT = {"tour": {"nextBtnText": "Continue"}}
+        tour = WordedTour(
+            name="tests.site-text-subclass", steps=[TourStep(title="One")]
         )
 
         assert tour.as_driver()["nextBtnText"] == "Onwards"

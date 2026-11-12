@@ -192,7 +192,8 @@ class Declaration(DriverObject):
 
         A text field that still holds the package's own text takes what
         ``PAGE_TOURS_TEXT`` gives it for this kind of declaration. A field the
-        declaration was given another value for keeps that value. The setting is
+        declaration was given another value for, as an argument or as a
+        subclass's default, keeps that value. The setting is
         read every time, and a value in it that is not a string is ignored.
 
         Returns:
@@ -203,7 +204,10 @@ class Declaration(DriverObject):
         site_text = site_text.get(self.text_kind) if isinstance(site_text, dict) else {}
         if not isinstance(site_text, dict):
             return driver
-        for field in fields(self):
+        package_class = next(
+            cls for cls in type(self).__mro__ if "text_fields" in vars(cls)
+        )
+        for field in fields(package_class):
             value = site_text.get(field.name)
             if (
                 field.name in self.text_fields
