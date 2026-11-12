@@ -13,10 +13,10 @@ from page_tours.tours import Tour
 Position = Literal["bottom-right", "bottom-left", "top-right", "top-left"]
 
 # The defaults of the checklist's text, lazy so the active language applies when
-# the checklist renders. The launcher's is plain, as Driver.js has it.
+# the checklist renders.
 GET_STARTED_LABEL = pgettext_lazy("page checklist", "Get started")
 CHECKLIST_PROGRESS_TEXT = pgettext_lazy("page checklist", "{{done}} of {{total}}")
-LAUNCHER_PROGRESS_TEXT = "{{done}}/{{total}}"
+LAUNCHER_PROGRESS_TEXT = pgettext_lazy("page checklist", "{{done}}/{{total}}")
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -117,6 +117,10 @@ class Checklist(Declaration):
 
     kind: ClassVar[str] = "checklist"
     content_field: ClassVar[str] = "items"
+    text_kind: ClassVar[str] = "checklist"
+    text_fields: ClassVar[frozenset[str]] = frozenset(
+        {"title", "progressText", "launcherProgressText"}
+    )
 
     items: Sequence[ChecklistItem]
     title: str | Promise = GET_STARTED_LABEL

@@ -108,6 +108,8 @@ class Hints(Declaration):
 
     kind: ClassVar[str] = "hints"
     content_field: ClassVar[str] = "hints"
+    text_kind: ClassVar[str] = "hint"
+    text_fields: ClassVar[frozenset[str]] = frozenset({"buttonText"})
 
     hints: Sequence[Hint]
     beacon: Beacon | None = None

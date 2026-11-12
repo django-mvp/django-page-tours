@@ -13,11 +13,9 @@ from page_tours.driver import Declaration, PopoverContent
 
 Button = Literal["next", "previous", "close"]
 
-# Driver.js's own default progress text.
-PROGRESS_TEXT = "{{current}} of {{total}}"
-
-# The default labels of the controls: lazy, so the active language applies when
+# The default texts of the controls: lazy, so the active language applies when
 # the tour renders.
+PROGRESS_TEXT = pgettext_lazy("page tour control", "{{current}} of {{total}}")
 NEXT_LABEL = pgettext_lazy("page tour control", "Next")
 PREVIOUS_LABEL = pgettext_lazy("page tour control", "Previous")
 DONE_LABEL = pgettext_lazy("page tour control", "Done")
@@ -168,6 +166,10 @@ class Tour(Declaration):
 
     kind: ClassVar[str] = "tour"
     content_field: ClassVar[str] = "steps"
+    text_kind: ClassVar[str] = "tour"
+    text_fields: ClassVar[frozenset[str]] = frozenset(
+        {"progressText", "nextBtnText", "prevBtnText", "doneBtnText", "closeBtnLabel"}
+    )
     package_fields = Declaration.package_fields | {"autoplay"}
 
     steps: Sequence[TourStep]
@@ -192,7 +194,7 @@ class Tour(Declaration):
     showButtons: tuple[Button, ...] = ("next", "previous", "close")
     disableButtons: tuple[Button, ...] = ()
     showProgress: bool = False
-    progressText: str = PROGRESS_TEXT
+    progressText: str | Promise = PROGRESS_TEXT
     nextBtnText: str | Promise = NEXT_LABEL
     prevBtnText: str | Promise = PREVIOUS_LABEL
     doneBtnText: str | Promise = DONE_LABEL

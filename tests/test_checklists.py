@@ -7,7 +7,7 @@ from dataclasses import replace
 import pytest
 from django.core.exceptions import ImproperlyConfigured
 from django.utils import translation
-from django.utils.translation import pgettext
+from django.utils.translation import gettext_lazy, pgettext
 
 import page_tours
 from page_tours import Checklist, ChecklistItem, Offset, Tour, TourStep
@@ -420,3 +420,59 @@ class TestChecklistOverrides:
 
         with pytest.raises(ImproperlyConfigured):
             str(checklist)
+
+
+class TestChecklistSiteText:
+    """``PAGE_TOURS_TEXT`` words every checklist that does not word its own."""
+
+    def make(self, name, **options):
+        """Return a checklist with one item."""
+        return Checklist(
+            name=name, items=[ChecklistItem(id="one", title="One")], **options
+        )
+
+    def test_the_setting_applies_to_a_checklist_that_sets_nothing(self, settings):
+        """A checklist left at the package's text takes the site's."""
+        settings.PAGE_TOURS_TEXT = {
+            "checklist": {
+                "title": "Your first steps",
+                "progressText": "{{done}} finished",
+                "launcherProgressText": "{{done}} / {{total}}",
+            }
+        }
+
+        config = self.make("tests.site-list").as_driver()
+
+        assert config["title"] == "Your first steps"
+        assert config["progressText"] == "{{done}} finished"
+        assert config["launcherProgressText"] == "{{done}} / {{total}}"
+
+    def test_the_checklists_own_text_wins(self, settings):
+        """A checklist that words its heading keeps its wording."""
+        settings.PAGE_TOURS_TEXT = {"checklist": {"title": "Your first steps"}}
+
+        config = self.make("tests.site-list-own", title="Setup").as_driver()
+
+        assert config["title"] == "Setup"
+
+    def test_a_lazy_value_is_shown_in_the_active_language(self, settings):
+        """A translated value is converted when the checklist renders."""
+        settings.PAGE_TOURS_TEXT = {"checklist": {"title": gettext_lazy("Site title")}}
+
+        config = self.make("tests.site-list-lazy").as_driver()
+
+        assert config["title"] == "Site title"
+        assert type(config["title"]) is str
+
+    def test_a_tour_in_an_item_takes_the_tour_text(self, settings):
+        """The tour of an item is a tour, so the tour's text applies."""
+        settings.PAGE_TOURS_TEXT = {"tour": {"doneBtnText": "Finish"}}
+        tour = Tour(name="tests.site-list-tour", steps=[TourStep(title="One")])
+        checklist = Checklist(
+            name="tests.site-list-item-tour",
+            items=[ChecklistItem(id="tour", title="Tour", tour=tour)],
+        )
+
+        config = checklist.as_driver()
+
+        assert config["items"][0]["tour"]["config"]["doneBtnText"] == "Finish"

@@ -6,7 +6,7 @@ import re
 import pytest
 from django.core.exceptions import ImproperlyConfigured
 from django.utils import translation
-from django.utils.translation import pgettext
+from django.utils.translation import gettext_lazy, pgettext
 
 import page_tours
 from page_tours import Beacon, Hint, Hints
@@ -265,3 +265,45 @@ class TestHintsOverrides:
 
         with pytest.raises(ImproperlyConfigured):
             str(hint_declarations.REPORT_HINTS)
+
+
+class TestHintsSiteText:
+    """``PAGE_TOURS_TEXT`` words every set of hints that does not word its own."""
+
+    def test_the_setting_applies_to_hints_that_set_nothing(self, settings):
+        """Hints left at the package's text take the site's."""
+        settings.PAGE_TOURS_TEXT = {"hint": {"buttonText": "Understood"}}
+        hints = Hints(name="tests.site-hints", hints=[Hint(element="#a", title="A")])
+
+        assert hints.as_driver()["buttonText"] == "Understood"
+
+    def test_the_hints_own_text_wins(self, settings):
+        """Hints that word their button keep their wording."""
+        settings.PAGE_TOURS_TEXT = {"hint": {"buttonText": "Understood"}}
+        hints = Hints(
+            name="tests.site-hints-own",
+            hints=[Hint(element="#a", title="A")],
+            buttonText="Okay",
+        )
+
+        assert hints.as_driver()["buttonText"] == "Okay"
+
+    def test_a_hints_own_text_wins(self, settings):
+        """A hint that words its button keeps its wording."""
+        settings.PAGE_TOURS_TEXT = {"hint": {"buttonText": "Understood"}}
+        hints = Hints(
+            name="tests.site-hints-hint",
+            hints=[Hint(element="#a", title="A", buttonText="Hint's own")],
+        )
+
+        config = hints.as_driver()
+
+        assert config["hints"][0]["popover"]["buttonText"] == "Hint's own"
+        assert config["buttonText"] == "Understood"
+
+    def test_a_lazy_value_is_shown_in_the_active_language(self, settings):
+        """A translated value is converted when the hints render."""
+        settings.PAGE_TOURS_TEXT = {"hint": {"buttonText": gettext_lazy("Site ok")}}
+        hints = Hints(name="tests.site-hints-lazy", hints=[Hint(element="#a")])
+
+        assert hints.as_driver()["buttonText"] == "Site ok"
