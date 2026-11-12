@@ -94,9 +94,15 @@
       return driverStep;
     });
 
+    // A step that turns skipping off shows attached to nothing when its
+    // element cannot be shown, so it always counts.
     function showable() {
       return payload.config.steps.some(function (step) {
-        return !step.element || visibleElement(step.element);
+        return (
+          !step.element ||
+          step.skipMissingElement === false ||
+          visibleElement(step.element)
+        );
       });
     }
 

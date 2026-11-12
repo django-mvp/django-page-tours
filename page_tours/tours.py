@@ -46,6 +46,10 @@ class TourStep(PopoverContent):
             ``"click"``, a tuple of events, or ``False`` for none.
         waitForElement: How long to wait for the element to appear, in
             milliseconds.
+        allowedElements: A CSS selector, or a tuple of them, for elements besides
+            the highlighted one that stay usable on this step.
+        skipMissingElement: ``False`` shows this step attached to nothing when
+            its element is missing or hidden, instead of skipping it.
         side: Which side of the element the popover sits on.
         align: How the popover lines up along that side.
         popoverClass: A class added to this step's popover.
@@ -59,6 +63,7 @@ class TourStep(PopoverContent):
         nextBtnText: The text of the next button on this step.
         prevBtnText: The text of the previous button on this step.
         doneBtnText: The text of the button when this is the last step.
+        closeBtnLabel: The accessible name of the close button on this step.
     """
 
     nested = {
@@ -71,6 +76,7 @@ class TourStep(PopoverContent):
             "nextBtnText",
             "prevBtnText",
             "doneBtnText",
+            "closeBtnLabel",
         }
     }
 
@@ -78,6 +84,8 @@ class TourStep(PopoverContent):
     disableActiveInteraction: bool | None = None
     advanceOn: Literal[False] | str | tuple[str, ...] | None = None
     waitForElement: int | None = None
+    allowedElements: str | tuple[str, ...] | None = None
+    skipMissingElement: bool | None = None
     showButtons: tuple[Button, ...] | None = None
     disableButtons: tuple[Button, ...] | None = None
     showProgress: bool | None = None
@@ -85,6 +93,7 @@ class TourStep(PopoverContent):
     nextBtnText: str | Promise | None = None
     prevBtnText: str | Promise | None = None
     doneBtnText: str | Promise | None = None
+    closeBtnLabel: str | Promise | None = None
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -130,6 +139,9 @@ class Tour(Declaration):
             such as ``"click"``, a tuple of events, or ``False`` for none.
         waitForElement: How long to wait for a step's element to appear, in
             milliseconds.
+        allowedElements: A CSS selector, or a tuple of them, for elements besides
+            the highlighted one that stay usable on every step. Driver.js has no
+            default, so ``None`` leaves none.
         stagePadding: The space around the highlighted element, in pixels.
         stageRadius: The corner radius of the highlight, in pixels.
         popoverOffset: The distance between the popover and the element, in pixels.
@@ -172,6 +184,7 @@ class Tour(Declaration):
     allowKeyboardControl: bool = True
     advanceOn: Literal[False] | str | tuple[str, ...] = False
     waitForElement: int = 0
+    allowedElements: str | tuple[str, ...] | None = None
     stagePadding: int = 10
     stageRadius: int = 5
     popoverOffset: int = 10

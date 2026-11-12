@@ -173,6 +173,25 @@ class NothingShowableTourView(ControlsTourView):
     }
 
 
+class KeptMissingTourView(ControlsTourView):
+    """Every element is missing, and the second step is shown all the same."""
+
+    extra_context = {
+        "tour": Tour(
+            name="tests.kept-missing-tour",
+            steps=[
+                TourStep(title="Step 1", description="Text.", element="#absent"),
+                TourStep(
+                    title="Step 2",
+                    description="Text.",
+                    element="#also-absent",
+                    skipMissingElement=False,
+                ),
+            ],
+        )
+    }
+
+
 class TwinTourView(ControlsTourView):
     """A step whose selector matches two elements."""
 

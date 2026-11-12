@@ -177,6 +177,15 @@ class TestTourSkipsSteps:
         expect(page.locator(".driver-popover")).to_have_count(0)
         assert_no_driver_markup(page)
 
+    def test_a_step_that_turns_skipping_off_shows_attached_to_nothing(
+        self, page, live_server
+    ):
+        """With every element missing, the step that keeps its place still plays."""
+        page.goto(live_server.url + reverse("kept-missing"))
+
+        expect(page.locator(TITLE)).to_have_text("Step 2")
+        expect(page.locator("#driver-dummy-element")).to_have_count(1)
+
     def test_a_tour_with_nothing_showable_never_starts_driver(self, page, live_server):
         """Driver.js is not even asked for a tour when no step could show."""
         stand_in = "window.driver = {js: {driver: () => {window.started = true;}}};"

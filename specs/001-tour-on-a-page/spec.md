@@ -136,6 +136,8 @@ step count shows.
    shows that label.
 4. **Given** a tour replaced through `PAGE_TOURS_OVERRIDES`, **When** it plays, **Then** it plays
    with the replacement's options.
+5. **Given** a step that sets `skipMissingElement=False` and whose element is not on the page,
+   **When** the tour reaches it, **Then** the step is shown attached to nothing.
 
 ---
 
@@ -185,8 +187,9 @@ step count shows.
   browser opens the page, as the Seen tours and replay specification describes. (US2)
 - **FR-011**: The visitor MUST be able to move forward and back through the steps in the declared
   order, and close the tour at any step. Finishing the last step MUST end the tour. (US2)
-- **FR-012**: A step whose element is not on the page, or is hidden, MUST be skipped silently. A
-  tour with no showable step MUST NOT play. (US2)
+- **FR-012**: A step whose element is not on the page, or is hidden, MUST be skipped silently,
+  unless the step sets `skipMissingElement=False`, when it MUST be shown attached to nothing. A
+  tour with no showable step MUST NOT play. (US2, US3)
 - **FR-013**: A failure inside the tour's script MUST end the tour and leave the page as usable as
   it was without the tour. The package MUST NOT hide, move or change any element of the page
   except while a step attached to it is showing. (US2)
@@ -203,10 +206,12 @@ step count shows.
   ship an English catalogue of its own strings. (US2)
 - **FR-018**: A tour MUST have a field for each Driver.js configuration option that takes a
   plain value, named exactly as the option is and defaulting to Driver.js's own default,
-  and the option MUST reach the Driver.js constructor under that name. The options the
-  package sets itself (the steps, the skipping of missing elements and the hooks the package
-  uses) are not fields, and options that take a JavaScript function are not available. The
-  package MUST NOT check what an option does. (US3)
+  and the option MUST reach the Driver.js constructor under that name. A step MUST have a field
+  for each Driver.js step and popover option that takes a plain value, defaulting to the tour's
+  value. The options the package sets itself (the steps, the tour's skipping of missing elements
+  and the hooks the package uses) are not fields of the tour. Options that take a JavaScript
+  function are not available, and `allowedElements` takes selector strings only. The package
+  MUST NOT check what an option does. (US3)
 
 ### Key Entities
 
