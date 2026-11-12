@@ -53,8 +53,9 @@ validators) they are wrapped with `gettext_lazy` (imported as `_`); templates lo
 acronyms are exempt. A package ships a base English (`en`) catalog and a `locale/` directory so
 host projects can compile or extend translations. CI runs `makemessages` clean over the source as
 the i18n gate; correct wrapper usage is otherwise enforced by review, and a hard-coded user-visible
-string in a PR is a blocking comment. A package with no user-facing strings satisfies this
-trivially.
+string in a PR is a blocking comment. Messages written for the developer, such as system
+checks, exception messages and log lines, are plain English and never marked for translation. A
+package with no user-facing strings satisfies this trivially.
 
 This article covers the package and never its demo or example application. A demo is never
 translated: its strings are plain text, with no `gettext_lazy`, `{% load i18n %}`, `{% trans %}`

@@ -2,7 +2,6 @@
 
 from django.apps import apps
 from django.conf import settings
-from django.utils.translation import gettext_lazy
 
 
 class TourParts:
@@ -53,17 +52,17 @@ class TourParts:
         every call, so a changed setting applies at once.
 
         Yields:
-            A ``(source, mapping)`` pair: a translatable description of where
+            A ``(source, mapping)`` pair: a description of where
             the mapping came from, and the mapping as found, which may be wrong.
         """
         yield (
-            gettext_lazy("the PAGE_TOURS_CLASSES setting"),
+            "the PAGE_TOURS_CLASSES setting",
             getattr(settings, "PAGE_TOURS_CLASSES", {}),
         )
         for config in apps.get_app_configs():
             if hasattr(config, "page_tour_classes"):
                 yield (
-                    gettext_lazy("the app '%(label)s'") % {"label": config.label},
+                    f"the app '{config.label}'",
                     config.page_tour_classes,
                 )
 

@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: django-page-tours\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-12 12:08+0100\n"
+"POT-Creation-Date: 2026-11-12 11:17+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -35,122 +35,32 @@ msgctxt "page checklist"
 msgid "{{done}}/{{total}}"
 msgstr ""
 
-#: checks.py:37
-#, python-format
-msgid ""
-"No tour, hints or checklist are declared with the name %(name)s, so its "
-"entry in PAGE_TOURS_OVERRIDES changes nothing."
-msgstr ""
-
-#: checks.py:42
-msgid ""
-"A tour, hints or checklist that were renamed have a new name. Update the key "
-"to match."
-msgstr ""
-
-#: checks.py:76
-#, python-format
-msgid ""
-"%(count)d tours, sets of hints or checklists with different content are "
-"declared with the name %(name)s, so a browser that saw one counts them all "
-"as seen."
-msgstr ""
-
-#: checks.py:82
-msgid ""
-"Give each its own name. A reusable app names its declarations '<app_label>."
-"<name>'."
-msgstr ""
-
-#: checks.py:133
-#, python-format
-msgid "%(source)s must be a dict from part to a string of class names."
-msgstr ""
-
-#: checks.py:143
-#, python-format
-msgid "%(source)s names '%(part)s', which is not a part of a tour."
-msgstr ""
-
-#: checks.py:145
-#, python-format
-msgid "The parts are: %(parts)s."
-msgstr ""
-
-#: checks.py:153
-#, python-format
-msgid "%(source)s gives '%(part)s' a value that is not a string."
-msgstr ""
-
-#: checks.py:155
-msgid "Write the class names as one string."
-msgstr ""
-
-#: driver.py:170
-#, python-format
-msgid "%(cls)s needs a name."
-msgstr ""
-
-#: driver.py:177
-#, python-format
-msgid "The version of %(cls)s must be a whole number of 1 or more."
-msgstr ""
-
-#: driver.py:291
-#, python-format
-msgid ""
-"PAGE_TOURS_OVERRIDES[%(name)s] must be the dotted path of a %(cls)s or None."
-msgstr ""
-
-#: driver.py:300
-#, python-format
-msgid "PAGE_TOURS_OVERRIDES[%(name)s]: %(path)s cannot be imported."
-msgstr ""
-
-#: driver.py:305
-#, python-format
-msgid "PAGE_TOURS_OVERRIDES[%(name)s]: %(path)s is not a %(cls)s."
-msgstr ""
-
 #: hints.py:16
 msgctxt "page hint control"
 msgid "Got it"
 msgstr ""
 
-#: parts.py:60
-msgid "the PAGE_TOURS_CLASSES setting"
-msgstr ""
-
-#: parts.py:66
-#, python-format
-msgid "the app '%(label)s'"
-msgstr ""
-
-#: tours.py:21
+#: tours.py:20
 msgctxt "page tour control"
 msgid "{{current}} of {{total}}"
 msgstr ""
 
-#: tours.py:23
+#: tours.py:22
 msgctxt "page tour control"
 msgid "Next"
 msgstr ""
 
-#: tours.py:25
+#: tours.py:24
 msgctxt "page tour control"
 msgid "Previous"
 msgstr ""
 
-#: tours.py:27
+#: tours.py:26
 msgctxt "page tour control"
 msgid "Done"
 msgstr ""
 
-#: tours.py:29
+#: tours.py:28
 msgctxt "page tour control"
 msgid "Close"
-msgstr ""
-
-#: tours.py:210
-msgid "A tour needs at least one step."
 msgstr ""
