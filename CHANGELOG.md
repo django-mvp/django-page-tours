@@ -8,6 +8,9 @@ All notable changes to this project are documented in this file. The format foll
 
 ### Added
 
+- Translations of the tour, hint and checklist controls into German, Spanish, French, Italian, Dutch, Polish, Brazilian Portuguese, Russian, Turkish, Japanese, Korean and Simplified Chinese. A
+  page served in one of those languages shows them translated with nothing to set up, and a
+  project's own catalogue still wins.
 - A `PAGE_TOURS_TEXT` setting that words every tour, set of hints and checklist on a site at once.
   Keyed by `"tour"`, `"hint"` or `"checklist"` and then by the name of the text, such as
   `nextBtnText`, `buttonText` or `title`, it gives the text a declaration leaves at the package's

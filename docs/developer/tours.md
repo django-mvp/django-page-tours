@@ -216,9 +216,12 @@ TourStep(title=_("Your projects"), description=_("Everything is listed here."))
 
 The tour's own controls are the next, previous and done buttons and the label a screen reader
 gives the close button. Their text comes from the package's catalogue, under the context
-`page tour control`. The package ships an English catalogue in
-`page_tours/locale/en/LC_MESSAGES/django.po`. To show the controls in another language, add the
-four entries to your project's catalogue for that language and compile it:
+`page tour control`. The package translates them into German, Spanish, French, Italian, Dutch, Polish, Brazilian Portuguese, Russian, Turkish, Japanese, Korean and Simplified Chinese, so
+a site served in one of those languages shows them translated with nothing to set up. Its English
+catalogue, `page_tours/locale/en/LC_MESSAGES/django.po`, lists every entry. To show the controls in
+another language, or to change a translation the package ships, add the four entries to your
+project's catalogue for that language and compile it. A project's own catalogue wins over the
+package's:
 
 ```po
 msgctxt "page tour control"

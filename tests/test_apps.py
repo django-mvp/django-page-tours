@@ -1,9 +1,18 @@
 """Tests for page_tours.apps."""
 
+import gettext
+import re
+from pathlib import Path
+
 import pytest
 from django.apps import apps
 from django.core.exceptions import ImproperlyConfigured
 from django.urls import reverse
+
+import page_tours
+
+LOCALE = Path(page_tours.__file__).parent / "locale"
+SHIPPED_LANGUAGES = sorted(path.name for path in LOCALE.iterdir() if path.name != "en")
 
 
 class TestPageToursConfig:
@@ -62,3 +71,24 @@ class TestPageToursConfigReady:
 
         with pytest.raises(ImproperlyConfigured):
             self.ready()
+
+
+class TestShippedTranslations:
+    """The catalogues the package ships beside its English one."""
+
+    @staticmethod
+    def english_keys():
+        """Return the key gettext stores each message of the English catalogue under."""
+        text = (LOCALE / "en" / "LC_MESSAGES" / "django.po").read_text()
+        entries = re.findall(r'(?:msgctxt "(.*)"\n)?msgid "(.+)"\n', text)
+        return [
+            f"{context}\x04{message}" if context else message
+            for context, message in entries
+        ]
+
+    @pytest.mark.parametrize("language", SHIPPED_LANGUAGES)
+    def test_every_message_is_translated(self, language):
+        """The compiled catalogue translates every message the package marks."""
+        with (LOCALE / language / "LC_MESSAGES" / "django.mo").open("rb") as compiled:
+            catalogue = gettext.GNUTranslations(compiled)._catalog
+        assert [key for key in self.english_keys() if not catalogue.get(key)] == []
