@@ -2,7 +2,7 @@
 name = "django-page-tours"
 # 0.x until every Expected goal in GOALS.md is delivered, then 1.0.0. See the
 # versioning table in docs/ROADMAP.md.
-version = "0.2.0"
+version = "0.3.0"
 description = "Guided tours of a page for Django sites, shown with Driver.js"
 authors = [
     { name = "Samuel Jennings", email = "samuel.scott.jennings@gmail.com" },

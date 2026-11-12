@@ -6,6 +6,8 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+## [v0.3.0] - 2026-11-12
+
 ### Added
 
 - Translations of the tour, hint and checklist controls into German, Spanish, French, Italian, Dutch, Polish, Brazilian Portuguese, Russian, Turkish, Japanese, Korean and Simplified Chinese. A
